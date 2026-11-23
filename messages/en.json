@@ -164,5 +164,8 @@
   "media_pages": "Pages",
   "request_language_not_accepted": "Chaptarr only accepts books in {languages}, and this one isn't available in it. Look for an edition in {languages}.",
   "media_language_not_accepted": "Not in {languages}: Chaptarr won't add it.",
-  "media_languages": "Languages"
+  "media_languages": "Languages",
+  "language_label": "Language",
+  "language_en": "English",
+  "language_fr": "Français"
 }

@@ -16,6 +16,10 @@ import type { SessionUser } from "#/functions/auth.functions";
 import { authClient } from "#/lib/auth-client";
 import { authKeys } from "#/lib/queries/auth";
 import { m } from "#/paraglide/messages.js";
+import { getLocale, locales, setLocale, type Locale } from "#/paraglide/runtime.js";
+
+/** Each language in its own language, whatever the current one. */
+const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
 
 export function AppHeader({ user }: { user: SessionUser }) {
   return (
@@ -88,6 +92,28 @@ function UserMenu({ user }: { user: SessionUser }) {
             <div className="truncate text-sm text-foreground">{user.email}</div>
             <div>{user.isAdmin ? m.role_admin() : m.role_user()}</div>
           </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup
+          aria-label={m.language_label()}
+          selectionMode="single"
+          selectedKeys={[getLocale()]}
+          onSelectionChange={(keys) => {
+            const locale = locales.find((l) => keys !== "all" && keys.has(l));
+            // Saves the choice in Paraglide's cookie and reloads in that language.
+            if (locale && locale !== getLocale()) void setLocale(locale);
+          }}
+        >
+          {locales.map((locale) => (
+            <DropdownMenuItem
+              key={locale}
+              id={locale}
+              textValue={languageLabels[locale]()}
+              lang={locale}
+            >
+              {languageLabels[locale]()}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
