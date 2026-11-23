@@ -9,6 +9,7 @@ import {
 import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
 import { m } from "#/paraglide/messages.js";
 import { requireAdmin } from "#/server/auth/middleware";
+import { getEnv } from "#/server/env";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
 import {
@@ -22,6 +23,7 @@ import {
   resolveConnection,
   testConnection,
 } from "#/server/settings/services";
+import { getOrCreateWebhookToken } from "#/server/webhooks/chaptarr";
 
 const globalFetch: typeof fetch = (input, init) => fetch(input, init);
 
@@ -120,4 +122,14 @@ export const getChaptarrAudiobookOptions = createServerFn({ method: "GET" })
       qualityProfiles: quality.value.map((p) => ({ id: p.id, name: p.name })),
       metadataProfiles: metadata.value.map((p) => ({ id: p.id, name: p.name })),
     };
+  });
+
+/** The URL to paste into Chaptarr → Settings → Connect → Webhook. Admin only. */
+export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .handler(async () => {
+    const token = await getOrCreateWebhookToken(settings);
+    const url = new URL("/api/webhooks/chaptarr", getEnv().BETTER_AUTH_URL);
+    url.searchParams.set("token", token);
+    return { url: url.toString() };
   });

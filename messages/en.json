@@ -137,5 +137,10 @@
   "history_created": "Requested by {actor}",
   "history_changed": "{status} by {actor}",
   "history_actor_system": "Storyrr",
-  "history_actor_webhook": "Chaptarr"
+  "history_actor_webhook": "Chaptarr",
+  "settings_webhook_title": "Chaptarr webhook",
+  "settings_webhook_description": "In Chaptarr, add a Webhook connection (Settings → Connect → Webhook, method POST, notify on import) with this URL, so requests turn available as soon as the book is imported. Keep it private: it contains a secret.",
+  "settings_webhook_url": "Webhook URL",
+  "action_copy": "Copy",
+  "action_copied": "Copied"
 }

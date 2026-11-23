@@ -18,6 +18,7 @@ import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 
 const AuthedRoute = AuthedRouteImport.update({
@@ -64,6 +65,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksChaptarrRoute = ApiWebhooksChaptarrRouteImport.update({
+  id: '/api/webhooks/chaptarr',
+  path: '/api/webhooks/chaptarr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedMediaTypeIdRoute = AuthedMediaTypeIdRouteImport.update({
   id: '/media/$type/$id',
   path: '/media/$type/$id',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesById {
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/settings/services'
     | '/api/auth/$'
+    | '/api/webhooks/chaptarr'
     | '/media/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings/services'
     | '/api/auth/$'
+    | '/api/webhooks/chaptarr'
     | '/media/$type/$id'
   id:
     | '__root__'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/settings/services'
     | '/api/auth/$'
+    | '/api/webhooks/chaptarr'
     | '/_authed/media/$type/$id'
   fileRoutesById: FileRoutesById
 }
@@ -148,6 +160,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiWebhooksChaptarrRoute: typeof ApiWebhooksChaptarrRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -215,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/chaptarr': {
+      id: '/api/webhooks/chaptarr'
+      path: '/api/webhooks/chaptarr'
+      fullPath: '/api/webhooks/chaptarr'
+      preLoaderRoute: typeof ApiWebhooksChaptarrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/media/$type/$id': {
       id: '/_authed/media/$type/$id'
       path: '/media/$type/$id'
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiWebhooksChaptarrRoute: ApiWebhooksChaptarrRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

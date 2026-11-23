@@ -38,3 +38,10 @@ export const connectionSettings = {
   chaptarr: chaptarrConnection,
   audiobookshelf: audiobookshelfConnection,
 } as const;
+
+/** Shared secret in the Chaptarr webhook URL (generated on first use). */
+export const chaptarrWebhookToken = defineSetting({
+  key: "webhooks.chaptarr.token",
+  schema: v.pipe(v.string(), v.minLength(32)),
+  secret: true,
+});

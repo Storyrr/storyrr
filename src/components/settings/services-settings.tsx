@@ -5,6 +5,7 @@ import { serviceSettingsQuery } from "#/lib/queries/settings";
 import { AudiobookDefaultsCard } from "./audiobook-defaults-card";
 import { ConnectionCard } from "./connection-card";
 import { MetadataCard } from "./metadata-card";
+import { WebhookCard } from "./webhook-card";
 
 /** Service connections, metadata region and audiobook defaults (settings page and setup step). */
 export function ServicesSettings() {
@@ -16,6 +17,7 @@ export function ServicesSettings() {
       <MetadataCard current={data.metadata} />
       {/* Remount once Chaptarr is saved so the folder list is fetched again. */}
       <AudiobookDefaultsCard key={data.chaptarr?.url ?? "none"} current={data.audiobookDefaults} />
+      {data.chaptarr ? <WebhookCard /> : null}
     </div>
   );
 }
