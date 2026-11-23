@@ -1,8 +1,10 @@
 import "@tanstack/react-start/server-only";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 
 import { getEnv } from "#/server/env";
 
-import { relations } from "./relations";
+import { createDatabase } from "./client";
 
-export const db = drizzle(getEnv().DATABASE_URL, { relations });
+export type { AppDatabase } from "./client";
+
+/** The app's database, migrated on first import. */
+export const db = createDatabase(getEnv().DATABASE_URL);
