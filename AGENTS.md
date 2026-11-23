@@ -29,7 +29,7 @@ This file is the single source of agent instructions for every tool: `CLAUDE.md`
 | i18n                      | **Paraglide JS** (inlang)                                                                                                                                                            | TanStack maintains a Start + Paraglide example (`examples/react/start-i18n-paraglide`)                                                                                                                                                                                        |
 | Tests                     | **Vitest** (unit/integration, runs on Node so the real SQLite driver works); Playwright later for E2E                                                                                | Integrations tested against fakes + recorded fixtures                                                                                                                                                                                                                         |
 | Lint / format             | **oxlint** (type-aware: `typeAware` + `typeCheck`, via `oxlint-tsgolint`) + **oxfmt** (Oxc)                                                                                          | oxlint also reports TypeScript errors, so there is no separate `tsc` step (the `typescript` package stays for editors). Pin exact versions (oxfmt and tsgolint are pre-1.0). Agent skill folders (`.claude/`, `.agents/`) are excluded from lint, format and `tsconfig.json`. |
-| Delivery                  | Docker image on GHCR via GitHub Actions                                                                                                                                              | Single container, single port                                                                                                                                                                                                                                                 |
+| Releases / delivery       | **release-please** (GitHub Action) + Docker image on GHCR                                                                                                                            | Versions, `CHANGELOG.md` and GitHub Release notes generated from the Conventional Commits; image built when a release is created                                                                                                                                              |
 
 **No TanStack DB in v1 (deliberate).** It is a client-side reactive store (live queries over local collections, sync engines), still beta/RC. Storyrr's data is small and server-owned; TanStack Query covers caching, polling and optimistic updates. If a live-updating view is needed later, TanStack DB can be added on top of TanStack Query collections for that view only.
 
@@ -191,10 +191,19 @@ These come from running Chaptarr, Audiobookshelf and Kavita together in producti
 - **Footer:** issue references (`Closes #12`) and breaking changes.
 - **Breaking changes:** `!` before the `:` (`feat(api)!: remove status endpoint`) plus a `BREAKING CHANGE: <what changes and how to migrate>` footer when the description isn't enough. Changing a DB schema in a way that needs manual migration, an env variable, or a public route counts.
 - Merge and revert commits keep git's default messages. The initial commit is `chore: init`.
-- **Versioning** (SemVer, derived from commits): a breaking change bumps the major, a `feat` the minor, anything else the patch.
+- **Versioning** (SemVer, computed by release-please from the commits): a breaking change bumps the major, a `feat` the minor, anything else the patch. Before 1.0, a breaking change only bumps the minor (`bump-minor-pre-major`). Commit messages are the release notes: write them for users. If PRs are squash-merged, the PR title must follow the same format.
 - One logical change per commit; `bun run check` passes on every commit.
 
 Examples: `feat(requests): let admins pick the target root folder`, `fix(chaptarr): send the media write scope on author updates`, `build(deps): bump drizzle-orm to 1.0.0-rc.7`, `ops: publish the Docker image on tags`.
+
+## Releases
+
+Managed by [release-please](https://github.com/googleapis/release-please) (to be set up with the first CI workflow, milestone 1):
+
+- On every push to `main`, release-please opens or updates a **release PR** with the next version, the `CHANGELOG.md` update and the `version` bump in `package.json`. Merging it creates the `vX.Y.Z` tag and the GitHub Release with generated notes. Never bump versions or edit `CHANGELOG.md` by hand.
+- Config in the repo: `release-please-config.json` (release type `node`, `bump-minor-pre-major: true`, changelog sections: Features, Bug Fixes, Performance, Reverts visible; refactor/docs/test/build/ops/style/chore hidden) and `.release-please-manifest.json` (current version).
+- **Pitfall:** a tag or release created with the default `GITHUB_TOKEN` does **not** trigger other workflows. Build and push the Docker image **in the same workflow**, in a job that runs only when the release-please step reports `release_created` (or use a GitHub App token). A separate `on: push: tags` workflow would never run.
+- Image tags: `X.Y.Z`, `X.Y`, `latest` on GHCR (`ghcr.io/storyrr/storyrr`). The app shows its version (from `package.json`) in Settings → About.
 
 ## Deployment
 
