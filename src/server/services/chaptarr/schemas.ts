@@ -86,3 +86,26 @@ export const PendingImportSchema = v.looseObject({
   ebookBooksToSearch: v.optional(v.nullable(v.array(v.string())), []),
 });
 export type PendingImport = v.InferOutput<typeof PendingImportSchema>;
+
+/** GET /api/v1/queue?includeBook=true: what the download client is fetching for Chaptarr. */
+export const QueuePageSchema = v.looseObject({
+  totalRecords: v.optional(v.number()),
+  records: v.array(
+    v.looseObject({
+      bookId: v.optional(v.nullable(v.number())),
+      book: v.optional(
+        v.nullable(
+          v.looseObject({
+            foreignBookId: v.optional(v.nullable(v.string())),
+            mediaType: v.optional(v.nullable(v.string())),
+          }),
+        ),
+      ),
+      size: v.optional(v.nullable(v.number())),
+      sizeleft: v.optional(v.nullable(v.number())),
+      status: v.optional(v.nullable(v.string())),
+      /** e.g. downloading, importPending, importing, failedPending. */
+      trackedDownloadState: v.optional(v.nullable(v.string())),
+    }),
+  ),
+});

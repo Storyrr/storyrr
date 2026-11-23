@@ -9,6 +9,7 @@ import {
   BookSchema,
   HealthItemSchema,
   PendingImportSchema,
+  QueuePageSchema,
   ProfileSchema,
   RootFolderSchema,
   SystemStatusSchema,
@@ -94,6 +95,11 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
         timeoutMs: 60_000,
       }),
     pendingImports: () => call("GET", "/pendingauthorimport", v.array(PendingImportSchema)),
+    queuePage: (page: number) =>
+      call("GET", "/queue", QueuePageSchema, {
+        query: { page: String(page), pageSize: "200", includeBook: "true" },
+        timeoutMs: 30_000,
+      }),
     /** `delete=true` removes the queued request (instead of keeping it as cancelled). */
     deletePendingImport: (id: number) =>
       call("DELETE", `/pendingauthorimport/${id}`, v.unknown(), { query: { delete: "true" } }),
@@ -231,4 +237,34 @@ export async function removeBook(
     return fail("not_found", `Chaptarr has nothing for ${providerId}`);
   }
   return ok(outcome);
+}
+
+export type QueueItem = {
+  bookId: number | null;
+  foreignBookId: string | null;
+  media: string | null;
+  /** 0 to 1, from size and size left (null when unknown). */
+  progress: number | null;
+  state: string | null;
+};
+
+/** Everything in Chaptarr's download queue (a few pages at most). */
+export async function downloadQueue(client: ChaptarrClient): Promise<ServiceResult<QueueItem[]>> {
+  const items: QueueItem[] = [];
+  for (let page = 1; page <= 5; page++) {
+    const result = await client.queuePage(page);
+    if (!result.ok) return result;
+    for (const record of result.value.records) {
+      const size = record.size ?? 0;
+      items.push({
+        bookId: record.bookId ?? null,
+        foreignBookId: record.book?.foreignBookId ?? null,
+        media: record.book?.mediaType ?? null,
+        progress: size > 0 ? Math.min(1, Math.max(0, 1 - (record.sizeleft ?? size) / size)) : null,
+        state: record.trackedDownloadState ?? record.status ?? null,
+      });
+    }
+    if (result.value.records.length < 200) break;
+  }
+  return ok(items);
 }

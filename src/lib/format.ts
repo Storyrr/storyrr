@@ -34,3 +34,7 @@ export function formatList(items: readonly string[]): string {
 }
 
 export const formatNumber = (value: number) => new Intl.NumberFormat(getLocale()).format(value);
+
+/** 0.42 → "42 %" (or "42%"), in the current locale. */
+export const formatPercent = (ratio: number) =>
+  new Intl.NumberFormat(getLocale(), { style: "percent", maximumFractionDigits: 0 }).format(ratio);

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import {
   ApproveRequestSchema,
@@ -24,6 +24,7 @@ import {
   upsertMedia,
   getRequestRow,
 } from "#/server/requests/queries";
+import { downloadsFor } from "#/server/requests/downloads";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { submitRequest } from "#/server/requests/submit";
 import {
@@ -116,16 +117,30 @@ export const requestMedia = createServerFn({ method: "POST" })
 export const getRequests = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(ListRequestsSchema)
-  .handler(({ data, context }) => {
+  .handler(async ({ data, context }) => {
     const isAdmin = context.session.user.role === "admin";
     if (data.scope === "all" && !isAdmin) {
       setResponseStatus(403);
       throw new Error("Forbidden");
     }
-    return listRequests(db, {
+    const rows = listRequests(db, {
       userId: data.scope === "mine" ? context.session.user.id : undefined,
       filter: data.filter,
     });
+    // "Downloading" only when Chaptarr's queue says so; otherwise a sent request is just requested.
+    const sentIds = rows
+      .filter((r) => r.status === "submitted" && !r.waitingForChaptarr)
+      .map((r) => r.id);
+    const sent =
+      sentIds.length > 0
+        ? db
+            .select({ id: request.id, format: request.format, backendRef: request.backendRef })
+            .from(request)
+            .where(inArray(request.id, sentIds))
+            .all()
+        : [];
+    const downloads = await downloadsFor(services, sent);
+    return rows.map((row) => ({ ...row, download: downloads.get(row.id) ?? null }));
   });
 
 /** A request's status history. Its requester, a watcher or an admin. */

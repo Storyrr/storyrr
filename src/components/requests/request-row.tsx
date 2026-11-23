@@ -77,6 +77,7 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             <RequestStatusBadge
               status={request.status}
               waitingForChaptarr={request.waitingForChaptarr}
+              download={request.download}
             />
           </div>
           {request.media.authors.length > 0 ? (

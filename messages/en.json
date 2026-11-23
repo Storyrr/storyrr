@@ -127,7 +127,7 @@
   "requests_history": "History",
   "status_pending": "Pending",
   "status_approved": "Approved",
-  "status_submitted": "Downloading",
+  "status_submitted": "Sent to Chaptarr",
   "status_available": "Available",
   "status_denied": "Denied",
   "status_failed": "Failed",
@@ -178,5 +178,8 @@
   "requests_remove_delete_files": "Also delete the downloaded files",
   "requests_removed": "Removed from Chaptarr.",
   "requests_removed_shared": "Removed from Chaptarr. Its pending request for this author also covers other books: delete it in Chaptarr (Wanted → Authors) if needed.",
-  "requests_remove_nothing": "Chaptarr has nothing for this book anymore."
+  "requests_remove_nothing": "Chaptarr has nothing for this book anymore.",
+  "status_requested": "Requested",
+  "status_downloading": "Downloading",
+  "status_downloading_progress": "Downloading ({percent})"
 }

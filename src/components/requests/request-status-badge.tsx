@@ -1,5 +1,6 @@
 import { Badge } from "#/components/ui/badge";
 import type { RequestStatus } from "#/lib/requests";
+import { formatPercent } from "#/lib/format";
 import { m } from "#/paraglide/messages.js";
 
 export const statusLabels: Record<RequestStatus, () => string> = {
@@ -25,14 +26,20 @@ const variants: Record<RequestStatus, "default" | "secondary" | "outline" | "des
 export function RequestStatusBadge({
   status,
   waitingForChaptarr = false,
+  download = null,
 }: {
   status: RequestStatus;
   /** Sent, but Chaptarr only queued it until the author's metadata is ready. */
   waitingForChaptarr?: boolean;
+  /** Present when the book is in Chaptarr's download queue. */
+  download?: { progress: number | null } | null;
 }) {
-  return (
-    <Badge variant={variants[status]}>
-      {waitingForChaptarr ? m.status_waiting_for_chaptarr() : statusLabels[status]()}
-    </Badge>
-  );
+  let label = statusLabels[status]();
+  if (status === "submitted") {
+    if (waitingForChaptarr) label = m.status_waiting_for_chaptarr();
+    else if (!download) label = m.status_requested();
+    else if (download.progress === null) label = m.status_downloading();
+    else label = m.status_downloading_progress({ percent: formatPercent(download.progress) });
+  }
+  return <Badge variant={variants[status]}>{label}</Badge>;
 }
