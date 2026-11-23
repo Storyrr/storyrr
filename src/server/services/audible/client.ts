@@ -5,6 +5,7 @@ import type { MediaDetails, MediaSummary } from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
+import { canonicalLanguage } from "#/lib/languages";
 import { htmlToText } from "#/server/services/text";
 
 const RESPONSE_GROUPS =
@@ -106,6 +107,7 @@ function toSummary(product: Product): MediaSummary | null {
     series: product.series.map((s) => ({ name: s.title, position: s.sequence || undefined })),
     coverUrl: product.product_images["500"] ?? Object.values(product.product_images)[0],
     language: product.language,
+    languages: product.language ? [canonicalLanguage(product.language)] : undefined,
     durationMinutes: product.runtime_length_min,
   };
 }

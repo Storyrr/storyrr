@@ -4,6 +4,7 @@ import * as v from "valibot";
 import type { MediaDetails, MediaSummary } from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
+import { canonicalLanguage } from "#/lib/languages";
 import { htmlToText } from "#/server/services/text";
 
 /*
@@ -42,6 +43,22 @@ const SearchDataSchema = v.object({
   }),
 });
 
+const EditionLanguagesSchema = v.optional(
+  v.array(
+    v.looseObject({
+      language: v.optional(
+        v.nullable(
+          v.looseObject({
+            code3: v.optional(v.nullable(v.string())),
+            code2: v.optional(v.nullable(v.string())),
+          }),
+        ),
+      ),
+    }),
+  ),
+  [],
+);
+
 const BookSchema = v.looseObject({
   id: v.number(),
   title: v.nullable(v.string()),
@@ -63,6 +80,7 @@ const BookSchema = v.looseObject({
       }),
     ),
   ),
+  editions: EditionLanguagesSchema,
   default_ebook_edition: v.optional(
     v.nullable(
       v.looseObject({
@@ -75,8 +93,28 @@ const BookSchema = v.looseObject({
 type HardcoverBook = v.InferOutput<typeof BookSchema>;
 const BookDataSchema = v.object({ books_by_pk: v.nullable(BookSchema) });
 
+const LanguagesDataSchema = v.object({
+  books: v.array(v.looseObject({ id: v.number(), editions: EditionLanguagesSchema })),
+});
+
+/** The distinct languages of a book's editions (null for editions without one). */
+const editionLanguages = (editions: v.InferOutput<typeof EditionLanguagesSchema>) => [
+  ...new Set(
+    editions.map((edition) =>
+      canonicalLanguage(edition.language?.code3 ?? edition.language?.code2),
+    ),
+  ),
+];
+
 const SEARCH_QUERY = `query StoryrrSearch($query: String!, $perPage: Int!) {
   search(query: $query, query_type: "Book", per_page: $perPage, page: 1) { results }
+}`;
+
+// One edition per language is enough to know which languages a book exists in.
+const EDITION_LANGUAGES = `editions(distinct_on: language_id, order_by: {language_id: asc}) { language { code3 code2 } }`;
+
+const LANGUAGES_QUERY = `query StoryrrLanguages($ids: [Int!]!) {
+  books(where: {id: {_in: $ids}}) { id ${EDITION_LANGUAGES} }
 }`;
 
 const BOOK_QUERY = `query StoryrrBook($id: Int!) {
@@ -86,6 +124,7 @@ const BOOK_QUERY = `query StoryrrBook($id: Int!) {
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { name } }
     featured_book_series { position details series { name } }
     default_ebook_edition { publisher { name } language { language } }
+    ${EDITION_LANGUAGES}
   }
 }`;
 
@@ -123,9 +162,18 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
     async search(query: string, { limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
       const result = await graphql(SEARCH_QUERY, { query, perPage: limit }, SearchDataSchema);
       if (!result.ok) return result;
-      return ok(
-        result.value.search.results.hits.flatMap(({ document }) => toSummary(document) ?? []),
+      const items = result.value.search.results.hits.flatMap(
+        ({ document }) => toSummary(document) ?? [],
       );
+      // Search documents don't carry languages: one more query covers all results. Best effort.
+      const ids = items.map((item) => Number(item.externalId)).filter(Number.isInteger);
+      if (ids.length === 0) return ok(items);
+      const languages = await graphql(LANGUAGES_QUERY, { ids }, LanguagesDataSchema);
+      if (!languages.ok) return ok(items);
+      const byId = new Map(
+        languages.value.books.map((book) => [String(book.id), editionLanguages(book.editions)]),
+      );
+      return ok(items.map((item) => ({ ...item, languages: byId.get(item.externalId) })));
     },
 
     async getById(id: string): Promise<ServiceResult<MediaDetails>> {
@@ -184,6 +232,7 @@ function toDetails(book: HardcoverBook): MediaDetails {
     coverUrl: book.image?.url ?? undefined,
     language: edition?.language?.language,
     pages: book.pages ?? undefined,
+    languages: editionLanguages(book.editions),
     description: book.description ? htmlToText(book.description) : undefined,
   };
 }

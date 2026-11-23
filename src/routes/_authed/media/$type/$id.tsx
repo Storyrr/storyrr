@@ -4,9 +4,11 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
+import { LanguageNotice } from "#/components/media/language-notice";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
+import { languageName } from "#/lib/languages";
 import { isSearchableType } from "#/lib/media-types";
 import { mediaQuery } from "#/lib/queries/media";
 import { serviceErrorMessage } from "#/lib/service-errors";
@@ -44,12 +46,16 @@ function MediaPage() {
       />
     );
   }
-  const { item, availability, request } = data;
+  const { item, availability, request, accepted, acceptedLanguages } = data;
+  const languages = (item.languages ?? []).filter((code): code is string => code !== null);
   const facts: [string, string | undefined][] = [
     [m.media_duration(), item.durationMinutes ? formatDuration(item.durationMinutes) : undefined],
     [m.media_pages(), item.pages ? formatNumber(item.pages) : undefined],
     [m.media_release_date(), item.releaseDate ? formatDate(item.releaseDate) : undefined],
-    [m.media_language(), item.language],
+    [
+      languages.length > 1 ? m.media_languages() : m.media_language(),
+      languages.length > 0 ? formatList(languages.map(languageName)) : item.language,
+    ],
     [m.media_publisher(), item.publisher],
   ];
 
@@ -57,10 +63,12 @@ function MediaPage() {
     <article className="grid gap-6 md:grid-cols-[16rem_1fr]">
       <div className="flex flex-col gap-3">
         <Cover src={item.coverUrl} type={type} className="w-full max-w-64" />
-        {availability === "none" ? (
-          <RequestDialog item={{ ...item, type }} />
-        ) : (
+        {availability !== "none" ? (
           <AvailabilityBadge availability={availability} />
+        ) : accepted === false && acceptedLanguages ? (
+          <LanguageNotice acceptedLanguages={acceptedLanguages} />
+        ) : (
+          <RequestDialog item={{ ...item, type }} />
         )}
         {request ? (
           <p className="text-sm text-muted-foreground">

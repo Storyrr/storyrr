@@ -31,7 +31,12 @@ export const RootFolderSchema = v.looseObject({
 });
 export type RootFolder = v.InferOutput<typeof RootFolderSchema>;
 
-export const ProfileSchema = v.looseObject({ id: v.number(), name: v.string() });
+export const ProfileSchema = v.looseObject({
+  id: v.number(),
+  name: v.string(),
+  /** Metadata profiles only: "fre,fra,null"-style ISO 639-2 codes; empty means any language. */
+  allowedLanguages: v.optional(v.nullable(v.string())),
+});
 export type Profile = v.InferOutput<typeof ProfileSchema>;
 
 /**

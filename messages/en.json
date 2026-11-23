@@ -161,5 +161,8 @@
   "search_tab_audiobooks": "Audiobooks",
   "search_tab_books": "Books",
   "search_type_label": "What to search",
-  "media_pages": "Pages"
+  "media_pages": "Pages",
+  "request_language_not_accepted": "Chaptarr only accepts books in {languages}, and this one isn't available in it. Look for an edition in {languages}.",
+  "media_language_not_accepted": "Not in {languages}: Chaptarr won't add it.",
+  "media_languages": "Languages"
 }

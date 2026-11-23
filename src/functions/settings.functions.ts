@@ -28,6 +28,7 @@ import {
   testConnection,
   testHardcoverToken,
 } from "#/server/settings/services";
+import { clearLanguagePolicyCache } from "#/server/requests/language-policy";
 import { getOrCreateWebhookToken } from "#/server/webhooks/chaptarr";
 
 const globalFetch: typeof fetch = (input, init) => fetch(input, init);
@@ -105,6 +106,7 @@ export const saveFormatDefaults = createServerFn({ method: "POST" })
   .validator(SaveFormatDefaultsSchema)
   .handler(async ({ data }) => {
     await settings.set(formatDefaults[data.format], data.defaults);
+    clearLanguagePolicyCache();
     return { ok: true };
   });
 

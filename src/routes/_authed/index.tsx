@@ -145,14 +145,15 @@ function SearchResults({
   } else if (search.data.results.length === 0) {
     body = <p className="text-muted-foreground">{m.search_no_results({ query })}</p>;
   } else {
+    const { results, acceptedLanguages } = search.data;
     body = (
       <ul
         className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
         aria-busy={search.isFetching}
       >
-        {search.data.results.map((item) => (
+        {results.map((item) => (
           <li key={item.externalId}>
-            <MediaCard type={type} item={item} />
+            <MediaCard type={type} item={item} acceptedLanguages={acceptedLanguages} />
           </li>
         ))}
       </ul>

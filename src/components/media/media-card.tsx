@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
+import { LanguageNotice } from "#/components/media/language-notice";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { Badge } from "#/components/ui/badge";
 import type { MediaSummary } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import { formatList, yearOf } from "#/lib/format";
+import { languageName } from "#/lib/languages";
 import type { MediaAvailability } from "#/lib/request-status";
 import { m } from "#/paraglide/messages.js";
 
@@ -14,9 +16,12 @@ import { m } from "#/paraglide/messages.js";
 export function MediaCard({
   type,
   item,
+  acceptedLanguages,
 }: {
   type: SearchableType;
-  item: MediaSummary & { availability: MediaAvailability };
+  item: MediaSummary & { availability: MediaAvailability; accepted: boolean | null };
+  /** Languages Chaptarr accepts for this type (null: any). */
+  acceptedLanguages: readonly string[] | null;
 }) {
   const series = item.series[0];
   return (
@@ -51,8 +56,23 @@ export function MediaCard({
           </Badge>
         ) : null}
         <AvailabilityBadge availability={item.availability} />
+        {item.accepted === false
+          ? (item.languages ?? [])
+              .filter((code): code is string => code !== null)
+              .slice(0, 2)
+              .map((code) => (
+                <Badge key={code} variant="outline">
+                  {languageName(code)}
+                </Badge>
+              ))
+          : null}
       </div>
-      {item.availability === "none" ? <RequestDialog item={{ ...item, type }} size="sm" /> : null}
+      {item.availability === "none" && item.accepted === false && acceptedLanguages ? (
+        <LanguageNotice acceptedLanguages={acceptedLanguages} />
+      ) : null}
+      {item.availability === "none" && item.accepted !== false ? (
+        <RequestDialog item={{ ...item, type }} size="sm" />
+      ) : null}
     </article>
   );
 }

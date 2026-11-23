@@ -33,6 +33,7 @@ describe("Audible client", () => {
       series: [{ name: "Dune", position: "1.1" }],
       coverUrl: "https://m.media-amazon.com/images/I/41ZARrCWHRL._SL500_.jpg",
       language: "french",
+      languages: ["fra"],
       durationMinutes: 1080,
     });
   });

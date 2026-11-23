@@ -9,6 +9,8 @@ import {
   ListRequestsSchema,
   RequestIdSchema,
 } from "#/lib/schemas/requests";
+import { formatList } from "#/lib/format";
+import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
 import { requireAdmin, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
@@ -21,6 +23,7 @@ import {
   upsertMedia,
   getRequestRow,
 } from "#/server/requests/queries";
+import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { submitRequest } from "#/server/requests/submit";
 import {
   createRequest,
@@ -81,6 +84,16 @@ export const requestMedia = createServerFn({ method: "POST" })
 
     const details = await mediaSources[format].getDetails(services, data.media.id);
     if (!details.ok) throw new Error(details.error.message);
+    // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
+    const policy = await getLanguagePolicy({ services, settings }, format);
+    if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
+      setResponseStatus(422);
+      throw new Error(
+        m.request_language_not_accepted({
+          languages: formatList(policy.allowed.map(languageName)),
+        }),
+      );
+    }
 
     const mediaId = upsertMedia(db, details.value);
     const result = createRequest(db, {

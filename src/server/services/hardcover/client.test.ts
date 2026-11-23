@@ -33,6 +33,31 @@ describe("Hardcover client", () => {
     ]);
   });
 
+  it("adds each result's edition languages with one more query", async () => {
+    const { fetch, calls } = fakeFetch((_url, init) =>
+      String(jsonBody(init) && JSON.stringify(jsonBody(init))).includes("StoryrrLanguages")
+        ? json({
+            data: {
+              books: [
+                {
+                  id: 312460,
+                  editions: [{ language: { code3: "eng" } }, { language: { code3: "fre" } }],
+                },
+                { id: 435109, editions: [{ language: null }] },
+              ],
+            },
+          })
+        : json(search),
+    );
+    const result = await createHardcoverClient({ token: "abc", fetch }).search("dune");
+    expect(calls).toHaveLength(2);
+    expect(jsonBody(calls[1]?.init)).toMatchObject({ variables: { ids: [312460, 435109] } });
+    expect(result.ok && result.value.map((item) => item.languages)).toEqual([
+      ["eng", "fra"],
+      [null],
+    ]);
+  });
+
   it("keeps a token pasted with its Bearer prefix", async () => {
     const { fetch, calls } = fakeFetch(() => json(search));
     await createHardcoverClient({ token: "Bearer abc", fetch }).search("dune");

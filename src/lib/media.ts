@@ -20,6 +20,11 @@ export type MediaSummary = {
   durationMinutes?: number;
   /** Page count (eBooks). */
   pages?: number;
+  /**
+   * Canonical 3-letter codes of the languages the work exists in (null: an
+   * edition without one). Undefined when the provider didn't say.
+   */
+  languages?: (string | null)[];
 };
 
 export type MediaDetails = MediaSummary & {
