@@ -5,6 +5,7 @@ import type { MediaDetails, MediaSummary } from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
+import { htmlToText } from "#/server/services/text";
 
 const RESPONSE_GROUPS =
   "contributors,media,product_attrs,product_desc,product_extended_attrs,series";
@@ -107,26 +108,4 @@ function toSummary(product: Product): MediaSummary | null {
     language: product.language,
     durationMinutes: product.runtime_length_min,
   };
-}
-
-const ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  "#39": "'",
-  nbsp: " ",
-};
-
-/** Turns provider HTML into plain text with paragraph breaks (never rendered as HTML). */
-export function htmlToText(html: string): string {
-  return html
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/\s*p\s*>/gi, "\n\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, name: string) => ENTITIES[name] ?? "")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n[ \t]+/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }

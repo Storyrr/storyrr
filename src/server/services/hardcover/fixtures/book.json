@@ -1,0 +1,19 @@
+{
+  "data": {
+    "books_by_pk": {
+      "id": 312460,
+      "title": "Dune",
+      "subtitle": null,
+      "description": "Set on the desert planet Arrakis, <i>Dune</i> is the story of Paul Atreides.",
+      "release_date": "1965-08-01",
+      "pages": 617,
+      "image": { "url": "https://assets.hardcover.app/edition/30408655/cover.jpg" },
+      "contributions": [{ "author": { "name": "Frank Herbert" } }],
+      "featured_book_series": { "position": 1, "details": "1", "series": { "name": "Dune" } },
+      "default_ebook_edition": {
+        "publisher": { "name": "Ace" },
+        "language": { "language": "English" }
+      }
+    }
+  }
+}

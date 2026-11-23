@@ -18,6 +18,8 @@ export type MediaSummary = {
   coverUrl?: string;
   language?: string;
   durationMinutes?: number;
+  /** Page count (eBooks). */
+  pages?: number;
 };
 
 export type MediaDetails = MediaSummary & {

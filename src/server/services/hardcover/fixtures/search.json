@@ -1,0 +1,34 @@
+{
+  "data": {
+    "search": {
+      "results": {
+        "found": 2,
+        "hits": [
+          {
+            "document": {
+              "id": "312460",
+              "title": "Dune",
+              "subtitle": null,
+              "author_names": ["Frank Herbert"],
+              "release_year": 1965,
+              "series_names": ["Dune"],
+              "featured_series_position": 1,
+              "image": { "url": "https://assets.hardcover.app/edition/30408655/cover.jpg" },
+              "has_ebook": true
+            }
+          },
+          {
+            "document": {
+              "id": "435109",
+              "title": "One Piece, Vol. 1",
+              "author_names": ["Eiichiro Oda"],
+              "release_year": 1997,
+              "series_names": [],
+              "featured_series_position": null
+            }
+          }
+        ]
+      }
+    }
+  }
+}

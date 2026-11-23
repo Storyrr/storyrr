@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { createAudibleClient, htmlToText } from "./client";
+import { htmlToText } from "#/server/services/text";
+
+import { createAudibleClient } from "./client";
 import notFound from "./fixtures/product-not-found.json" with { type: "json" };
 import product from "./fixtures/product-B07Q44JYLF.fr.json" with { type: "json" };
 import search from "./fixtures/search-dune.fr.json" with { type: "json" };

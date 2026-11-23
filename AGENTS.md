@@ -160,13 +160,15 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 
 ### Kavita (eBook availability)
 
+- Source of truth: [Kareadita/Kavita](https://github.com/Kareadita/Kavita) (`Kavita.Server/Controllers`).
+
 - Use a dedicated **Auth Key** (Settings → Account → Auth Keys / OPDS → + New), authenticate with `POST /api/Plugin/authenticate?apiKey=…&pluginName=Storyrr` to get a JWT, then query libraries/series.
 - Kavita libraries map 1:1 to Chaptarr eBook root folders (Books, Manga, Comics): use that to compute availability per folder.
 
 ### Metadata
 
 - Audiobooks: **Audible's catalog API**, called directly (`https://api.audible.<tld>/1.0/catalog/products`, no key; region configurable, default `fr`) for search and details. Decided over ABS's provider proxy so search works without Audiobookshelf; Audnexus only looks up by ASIN, so it can't search. The API is undocumented: validate every response with Valibot and degrade to "no results" with a logged reason. ASIN is the primary key.
-- eBooks: Hardcover (GraphQL, personal token) and/or Open Library (no key). ISBN/Hardcover id as keys.
+- eBooks (books, manga, comics): **Hardcover** (decided over Open Library, whose IDs Chaptarr may not resolve: Chaptarr's metadata server is built on Hardcover/Goodreads, so `hc:<id>` is a native Chaptarr ID). GraphQL at `https://api.hardcover.app/v1/graphql`, `authorization: Bearer <token>` (the admin's personal token, stored encrypted; only the `read:catalog:search` scope is needed), server-side only, search via `search(query, query_type: "Book")` (Typesense hits in `results`), details via `books_by_pk`. Source of truth: the docs repo [hardcoverapp/hardcover-docs](https://github.com/hardcoverapp/hardcover-docs) (the docs site refuses automated fetches). Limits: search times out after 2 s, rate limits per minute/day, the API is beta and may change. The Hardcover book id is the key.
 - Podcasts: iTunes Search API (`media=podcast`), feed URL as key.
 - Cache metadata in SQLite with a TTL; never block a page on a slow provider (show cached + refresh in background).
 
