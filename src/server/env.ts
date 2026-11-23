@@ -24,14 +24,18 @@ const EnvSchema = v.object({
 
 export type Env = v.InferOutput<typeof EnvSchema>;
 
-let cached: Env | undefined;
-
-export function getEnv(): Env {
-  if (cached) return cached;
-  const result = v.safeParse(EnvSchema, process.env);
+/** Validates an environment record; throws one error listing every invalid variable. */
+export function parseEnv(source: Record<string, string | undefined>): Env {
+  const result = v.safeParse(EnvSchema, source);
   if (!result.success) {
     throw new Error(`Invalid environment variables:\n${v.summarize(result.issues)}`);
   }
-  cached = result.output;
+  return result.output;
+}
+
+let cached: Env | undefined;
+
+export function getEnv(): Env {
+  cached ??= parseEnv(process.env);
   return cached;
 }

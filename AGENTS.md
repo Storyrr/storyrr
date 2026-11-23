@@ -78,7 +78,7 @@ The project was generated with `create-tanstack` (`.cta.json`: nitro, drizzle/sq
 
 1. ~~Wire better-auth to the database~~ **done**: `src/db/schema.ts` (generated auth tables) + `src/db/relations.ts`, Drizzle adapter, `admin` plugin (server + client), `disableSignUp`, first migration in `./drizzle`.
 2. ~~Swap the UI kit to React Aria~~ **done**: official shadcn aria base, Radix removed.
-3. **Add the remaining tooling:** ~~Paraglide~~ **done** (`project.inlang/`, `messages/en.json`, Vite plugin, `paraglideMiddleware` in `src/server.ts`, `<html lang={getLocale()}>`, `i18n:compile` run first by `check`). Still to do: Vitest (+ a `test` script, appended to `check`). oxlint/oxfmt are **done** (pinned, configs in `.oxlintrc.json` / `.oxfmtrc.json`, scripts `format`, `lint`, `check`).
+3. ~~Add the remaining tooling~~ **done**: Paraglide, Vitest (`test` script, appended to `check`), oxlint/oxfmt.
 4. ~~Clean the template~~ **done**: demo `todos` table and `pnpm` block removed; TanStack devtools are stripped from production builds by `@tanstack/devtools-vite` (`removeDevtoolsOnBuild`, default on).
 5. ~~Env~~ **done**: `src/server/env.ts` (server-only, Valibot, lazy `getEnv()`), `.env.example`; `*.db` and `/data/` git-ignored.
 6. Then follow the milestones in `docs/SPEC.md`.
@@ -180,7 +180,8 @@ These come from running Chaptarr, Audiobookshelf and Kavita together in producti
   - Add a locale to `project.inlang/settings.json` `locales` together with its `messages/<locale>.json`. The inlang message-format plugin is loaded from jsDelivr (pinned version), so compiling needs network access.
 - UI: compose from the shared components in `src/components/ui/` (shadcn, React Aria base); add new ones with the shadcn CLI instead of hand-writing primitives, and load the shadcn skill (`bunx --bun skills add shadcn/ui`) before UI work. Don't hand-edit vendored components unless needed; lint exceptions for them live in `.oxlintrc.json` overrides. Forms always use TanStack Form with the Valibot schema of the target server function; show server-side validation errors on the matching fields.
 - Accessibility: rely on React Aria for focus management, keyboard interaction and ARIA; every input labelled; contrast checked in both themes.
-- Before pushing: `bun run check` must pass. It runs `oxfmt --check` then `oxlint --deny-warnings` (lint + type check), and `vitest run` once Vitest is added. Format with `bun run format` (oxfmt), never by hand-aligning code.
+- Before pushing: `bun run check` must pass. It compiles the Paraglide messages, then runs `oxfmt --check`, `oxlint --deny-warnings` (lint + type check) and `vitest run`. Format with `bun run format` (oxfmt), never by hand-aligning code.
+- Tests: Vitest (`vitest.config.ts`, separate from the app's Vite config), files next to the code as `*.test.ts`. Run with `bun run test`, **never `bun test`** (Bun's own runner can't load `better-sqlite3`). Prefer pure functions that take their inputs (e.g. `parseEnv(source)`) over tests that patch globals.
 - Config lives in the repo (`.oxlintrc.json`, oxfmt config): fix the code rather than disabling a rule; any disabled rule gets a comment explaining why.
 
 ## Commits
