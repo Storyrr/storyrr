@@ -72,17 +72,6 @@ Before editing files for a substantial task:
 
 - Other skills are installed with the `skills` CLI and pinned in `skills-lock.json` (committed): shadcn/ui (`bunx --bun skills add shadcn/ui`), Valibot (`open-circle/agent-skills`), Drizzle (shipped in `drizzle-kit`). Re-run `skills add` to update, and load the matching skill before working with that library.
 
-## Bootstrap: first tasks (the scaffold differs from the decided stack)
-
-The project was generated with `create-tanstack` (`.cta.json`: nitro, drizzle/sqlite, form, shadcn, better-auth, tanstack-query). Before building features:
-
-1. ~~Wire better-auth to the database~~ **done**: `src/db/schema.ts` (generated auth tables) + `src/db/relations.ts`, Drizzle adapter, `admin` plugin (server + client), `disableSignUp`, first migration in `./drizzle`.
-2. ~~Swap the UI kit to React Aria~~ **done**: official shadcn aria base, Radix removed.
-3. ~~Add the remaining tooling~~ **done**: Paraglide, Vitest (`test` script, appended to `check`), oxlint/oxfmt.
-4. ~~Clean the template~~ **done**: demo `todos` table and `pnpm` block removed; TanStack devtools are stripped from production builds by `@tanstack/devtools-vite` (`removeDevtoolsOnBuild`, default on).
-5. ~~Env~~ **done**: `src/server/env.ts` (server-only, Valibot, lazy `getEnv()`), `.env.example`; `*.db` and `/data/` git-ignored.
-6. Then follow the milestones in `docs/SPEC.md`.
-
 ## Architecture
 
 Target layout (the scaffold's `src/db/` and `src/lib/auth.ts` move under `src/server/`; `src/integrations/` from the template keeps only client-side providers such as the Query provider):
