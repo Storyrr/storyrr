@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "vite";
 import { devtools } from "@tanstack/devtools-vite";
 
@@ -11,6 +12,13 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
+    paraglideVitePlugin({
+      project: "./project.inlang",
+      outdir: "./src/paraglide",
+      emitTsDeclarations: true,
+      // No locale in URLs: the locale is a user preference (cookie), falling back to the browser's.
+      strategy: ["cookie", "preferredLanguage", "baseLocale"],
+    }),
     nitro({ rollupConfig: { external: [/^@sentry\//] } }),
     tailwindcss(),
     tanstackStart(),

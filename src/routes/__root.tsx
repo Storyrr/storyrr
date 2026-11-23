@@ -3,6 +3,8 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { m } from "#/paraglide/messages.js";
+import { getLocale } from "#/paraglide/runtime.js";
 
 import appCss from "../styles.css?url";
 
@@ -23,7 +25,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: m.app_name(),
       },
     ],
     links: [
@@ -38,7 +40,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang={getLocale()}>
       <head>
         <HeadContent />
       </head>

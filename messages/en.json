@@ -1,0 +1,6 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "Storyrr",
+  "home_title": "Welcome to Storyrr",
+  "home_tagline": "Request audiobooks, eBooks and podcasts for your library."
+}
