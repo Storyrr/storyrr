@@ -141,5 +141,7 @@
   "settings_webhook_description": "In Chaptarr, add a Webhook connection (Settings → Connect → Webhook, method POST, notify on import) with this URL, so requests turn available as soon as the book is imported. Keep it private: it contains a secret.",
   "settings_webhook_url": "Webhook URL",
   "action_copy": "Copy",
-  "action_copied": "Copied"
+  "action_copied": "Copied",
+  "service_error_timeout": "{service} didn't answer within {seconds} seconds. Check that the URL is the address Storyrr can reach it at (in Docker: the container name and internal port), and that {service} isn't busy.",
+  "service_error_unreachable": "Couldn't connect to {service}. Check the URL and port, and that {service} is running."
 }

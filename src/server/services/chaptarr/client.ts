@@ -56,9 +56,12 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
 
   return {
     status: () => call("GET", "/system/status", SystemStatusSchema),
-    rootFolders: () => call("GET", "/rootfolder", v.array(RootFolderSchema)),
-    qualityProfiles: () => call("GET", "/qualityprofile", v.array(ProfileSchema)),
-    metadataProfiles: () => call("GET", "/metadataprofile", v.array(ProfileSchema)),
+    // Readarr-style apps compute free space per root folder, which is slow on network shares.
+    rootFolders: () => call("GET", "/rootfolder", v.array(RootFolderSchema), { timeoutMs: 60_000 }),
+    qualityProfiles: () =>
+      call("GET", "/qualityprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
+    metadataProfiles: () =>
+      call("GET", "/metadataprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
     authors: () => call("GET", "/author", v.array(AuthorSchema)),
     booksByAuthor: (authorId: number) =>
       call("GET", "/book", v.array(BookSchema), { query: { authorId: String(authorId) } }),

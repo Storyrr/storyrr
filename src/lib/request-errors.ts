@@ -14,6 +14,8 @@ export const RequestErrorSchema = v.variant("code", [
     service: v.picklist(["chaptarr", "audiobookshelf"]),
     kind: v.picklist(["retryable", "auth_failed", "not_found", "rejected"]),
     message: v.string(),
+    network: v.optional(v.picklist(["timeout", "unreachable"])),
+    timeoutSeconds: v.optional(v.number()),
   }),
   v.object({
     code: v.literal("not_configured"),

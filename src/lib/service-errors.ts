@@ -5,6 +5,8 @@ import { m } from "#/paraglide/messages.js";
 export type ServiceErrorLike = {
   kind: "retryable" | "auth_failed" | "not_found" | "rejected";
   message: string;
+  network?: "timeout" | "unreachable";
+  timeoutSeconds?: number;
 };
 
 const serviceNames: Record<ServiceName, () => string> = {
@@ -18,7 +20,13 @@ export function serviceErrorMessage(service: ServiceName, error: ServiceErrorLik
   const messages: Record<ServiceErrorLike["kind"], () => string> = {
     auth_failed: () => m.service_error_auth_failed({ service: name }),
     not_found: () => m.service_error_not_found({ service: name }),
-    retryable: () => m.service_error_retryable({ service: name, message: error.message }),
+    retryable: () => {
+      if (error.network === "timeout") {
+        return m.service_error_timeout({ service: name, seconds: error.timeoutSeconds ?? 0 });
+      }
+      if (error.network === "unreachable") return m.service_error_unreachable({ service: name });
+      return m.service_error_retryable({ service: name, message: error.message });
+    },
     rejected: () => m.service_error_rejected({ service: name, message: error.message }),
   };
   return messages[error.kind]();

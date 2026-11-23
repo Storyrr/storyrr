@@ -14,7 +14,14 @@ export type ServiceErrorKind =
   /** The service refused the request (4xx) or answered something unexpected. */
   | "rejected";
 
-export type ServiceError = { kind: ServiceErrorKind; message: string; status?: number };
+export type ServiceError = {
+  kind: ServiceErrorKind;
+  message: string;
+  status?: number;
+  /** For network failures: no answer within `timeoutSeconds`, or no connection at all. */
+  network?: "timeout" | "unreachable";
+  timeoutSeconds?: number;
+};
 
 export type ServiceResult<T> = { ok: true; value: T } | { ok: false; error: ServiceError };
 
@@ -53,9 +60,22 @@ export async function requestJson<TSchema extends v.GenericSchema>({
   try {
     response = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (error) {
-    const reason =
-      error instanceof Error && error.name === "TimeoutError" ? "timed out" : "unreachable";
-    return fail("retryable", `${service} is ${reason}`);
+    const timeoutSeconds = Math.round(timeoutMs / 1000);
+    if (error instanceof Error && error.name === "TimeoutError") {
+      return {
+        ok: false,
+        error: {
+          kind: "retryable",
+          message: `${service} didn't answer within ${timeoutSeconds} s`,
+          network: "timeout",
+          timeoutSeconds,
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: { kind: "retryable", message: `${service} is unreachable`, network: "unreachable" },
+    };
   }
 
   if (!response.ok) {
