@@ -143,7 +143,7 @@ See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 ## 8. Milestones
 
 1. **Skeleton:** TanStack Start + Bun + Drizzle + better-auth (invite-only, admin plugin) + Paraglide + Tailwind; CI (`bun run check`) + release-please + Docker image published on release (see AGENTS.md › Releases); health route; setup wizard (admin account only).
-2. **Audiobooks end-to-end:** Audible search, detail page, request modal (with admin target folder), approval, Chaptarr submit (write scope!), availability via ABS (ASIN) + Chaptarr webhook.
+2. **Audiobooks end-to-end:** Settings → Services (Chaptarr, Audiobookshelf, Audible region, default audiobook target, with Test) and the same forms as an optional wizard step; Audible search, detail page, request modal (with admin target folder), approval, Chaptarr submit (write scope!), availability via ABS (ASIN) + Chaptarr webhook.
 3. **eBooks:** Hardcover/Open Library search, Chaptarr eBook submit to Books/Manga/Comics folders, availability via Kavita.
 4. **Podcasts:** iTunes search, ABS podcast creation in the chosen library, availability by feed URL.
 5. **Polish:** users admin, settings + job history, retry/cancel, French translation, PWA manifest.

@@ -125,6 +125,10 @@ Rules:
 
 These come from running Chaptarr, Audiobookshelf and Kavita together in production. Read before touching an integration.
 
+### Unverified payload shapes
+
+There is no Chaptarr / Audiobookshelf instance in development. Clients are built from the references below plus the Readarr v1 / ABS API docs, with hand-written fixtures in `src/server/services/<service>/fixtures/`. Every field or endpoint not confirmed against a real instance carries an `// UNVERIFIED:` comment saying what was assumed; when a real response proves it, replace the fixture with a sanitized recording (no hostnames, keys, personal paths or library contents) and remove the comment.
+
 ### Chaptarr (audiobooks + eBooks, Readarr v1 API shape)
 
 - Auth: `X-Api-Key` header. The API key can change after Chaptarr's first-run setup: surface 401s clearly ("re-check the API key"), never as a generic failure.
@@ -153,7 +157,7 @@ These come from running Chaptarr, Audiobookshelf and Kavita together in producti
 
 ### Metadata
 
-- Audiobooks: Audible (FR/US/… region configurable) via ABS's provider proxy or Audnexus. ASIN is the primary key.
+- Audiobooks: **Audible's catalog API**, called directly (`https://api.audible.<tld>/1.0/catalog/products`, no key; region configurable, default `fr`) for search and details. Decided over ABS's provider proxy so search works without Audiobookshelf; Audnexus only looks up by ASIN, so it can't search. The API is undocumented: validate every response with Valibot and degrade to "no results" with a logged reason. ASIN is the primary key.
 - eBooks: Hardcover (GraphQL, personal token) and/or Open Library (no key). ISBN/Hardcover id as keys.
 - Podcasts: iTunes Search API (`media=podcast`), feed URL as key.
 - Cache metadata in SQLite with a TTL; never block a page on a slow provider (show cached + refresh in background).
