@@ -74,3 +74,15 @@ export const BookImportResponseSchema = v.looseObject({
   pendingId: v.optional(v.number()),
   message: v.optional(v.nullable(v.string())),
 });
+
+/** GET /api/v1/pendingauthorimport: authors Chaptarr queued until their metadata is ready. */
+export const PendingImportSchema = v.looseObject({
+  id: v.number(),
+  providerId: v.optional(v.nullable(v.string())),
+  authorName: v.optional(v.nullable(v.string())),
+  audiobookBooksToMonitor: v.optional(v.nullable(v.array(v.string())), []),
+  audiobookBooksToSearch: v.optional(v.nullable(v.array(v.string())), []),
+  ebookBooksToMonitor: v.optional(v.nullable(v.array(v.string())), []),
+  ebookBooksToSearch: v.optional(v.nullable(v.array(v.string())), []),
+});
+export type PendingImport = v.InferOutput<typeof PendingImportSchema>;

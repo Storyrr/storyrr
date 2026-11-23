@@ -20,17 +20,25 @@ export function fakeChaptarr({
   lookup = [remoteBook()],
   importResponse = { status: 201, body: { id: 42 } },
   metadataProfiles = [] as { id: number; name: string; allowedLanguages?: string }[],
+  pendingImports = [] as unknown[],
 }: {
   lookup?: Book[];
   importResponse?: { status: number; body: unknown };
   metadataProfiles?: { id: number; name: string; allowedLanguages?: string }[];
+  pendingImports?: unknown[];
 } = {}) {
-  const state = { lookup, importResponse, metadataProfiles };
+  const state = { lookup, importResponse, metadataProfiles, pendingImports };
   const fake = fakeFetch((url, init) => {
     const method = init?.method ?? "GET";
     if (method === "GET" && url.pathname === "/api/v1/book/lookup") {
       const media = url.searchParams.get("mediaType");
       return json(state.lookup.filter((b) => !media || b.mediaType === media));
+    }
+    if (method === "GET" && url.pathname === "/api/v1/pendingauthorimport") {
+      return json(state.pendingImports);
+    }
+    if (method === "DELETE" && /^\/api\/v1\/(book|pendingauthorimport)\/\d+$/.test(url.pathname)) {
+      return json({});
     }
     if (method === "GET" && url.pathname === "/api/v1/metadataprofile") {
       return json(state.metadataProfiles);

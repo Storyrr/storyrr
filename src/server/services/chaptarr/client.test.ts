@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { createChaptarrClient, hasBookFile, submitBook, type SubmitBookInput } from "./client";
+import {
+  createChaptarrClient,
+  hasBookFile,
+  removeBook,
+  submitBook,
+  type SubmitBookInput,
+} from "./client";
 import { book, fakeChaptarr, remoteBook } from "./fake";
 
 const connection = { url: "http://chaptarr:8789/", apiKey: "test-key" };
@@ -152,5 +158,60 @@ describe("rootFolders", () => {
     );
     const result = await createChaptarrClient(connection, fetch).rootFolders();
     expect(result.ok && result.value.map((f) => f.folderType)).toEqual([1, 2, 0]);
+  });
+});
+
+describe("removeBook", () => {
+  it("deletes this media side's rows, and keeps files unless asked", async () => {
+    const chaptarr = fakeChaptarr({ lookup: [book(5, "ebook"), book(6, "audiobook")] });
+    const client = createChaptarrClient(connection, chaptarr.fetch);
+    expect(
+      await removeBook(client, { providerId: "hc:1", media: "ebook", deleteFiles: false }),
+    ).toEqual({
+      ok: true,
+      value: { deletedBooks: 1, deletedPending: 0, sharedPending: 0 },
+    });
+    const [deleted] = chaptarr.calls("DELETE", "/api/v1/book/5");
+    expect(deleted?.url.searchParams.get("deleteFiles")).toBe("false");
+    expect(chaptarr.calls("DELETE", "/api/v1/book/6")).toHaveLength(0);
+  });
+
+  it("removes a pending import queued only for this book, not one shared with others", async () => {
+    const chaptarr = fakeChaptarr({
+      lookup: [],
+      pendingImports: [
+        // Shaped like a real pending import (Chaptarr's GET /api/v1/pendingauthorimport).
+        {
+          id: 1,
+          providerId: "hc:245256",
+          ebookBooksToMonitor: ["hc:780766"],
+          ebookBooksToSearch: ["hc:780766"],
+          audiobookBooksToMonitor: [],
+        },
+        { id: 2, providerId: "hc:9", ebookBooksToMonitor: ["hc:780766", "hc:42"] },
+      ],
+    });
+    const client = createChaptarrClient(connection, chaptarr.fetch);
+    expect(
+      await removeBook(client, { providerId: "hc:780766", media: "ebook", deleteFiles: false }),
+    ).toEqual({
+      ok: true,
+      value: { deletedBooks: 0, deletedPending: 1, sharedPending: 1 },
+    });
+    expect(
+      chaptarr.calls("DELETE", "/api/v1/pendingauthorimport/1")[0]?.url.searchParams.get("delete"),
+    ).toBe("true");
+    expect(chaptarr.calls("DELETE", "/api/v1/pendingauthorimport/2")).toHaveLength(0);
+  });
+
+  it("reports nothing to remove as not found", async () => {
+    const chaptarr = fakeChaptarr({ lookup: [] });
+    expect(
+      await removeBook(createChaptarrClient(connection, chaptarr.fetch), {
+        providerId: "hc:1",
+        media: "ebook",
+        deleteFiles: false,
+      }),
+    ).toMatchObject({ ok: false, error: { kind: "not_found" } });
   });
 });

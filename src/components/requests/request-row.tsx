@@ -31,14 +31,19 @@ import {
 import { formatDate, formatList } from "#/lib/format";
 import { isSearchableType } from "#/lib/media-types";
 import { describeRequestError } from "#/lib/request-errors";
+import type { RequestStatus } from "#/lib/requests";
 import { DenyReasonSchema } from "#/lib/schemas/requests";
 import { m } from "#/paraglide/messages.js";
 
+import { DeleteRequestButton, RemoveFromChaptarrButton } from "./request-admin-actions";
 import { RequestHistory } from "./request-history";
 import { RequestStatusBadge } from "./request-status-badge";
 import { useRequestAction } from "./use-request-action";
 
 type RequestListItem = Awaited<ReturnType<typeof getRequests>>[number];
+
+/** Statuses after which Chaptarr may hold the book (or a pending request for it). */
+const SENT_STATUSES: readonly RequestStatus[] = ["submitted", "available", "failed", "cancelled"];
 
 export function RequestRow({ request }: { request: RequestListItem }) {
   const { user } = useRouteContext({ from: "/_authed" });
@@ -128,6 +133,14 @@ export function RequestRow({ request }: { request: RequestListItem }) {
           >
             {m.action_cancel()}
           </Button>
+        ) : null}
+        {user.isAdmin ? (
+          <>
+            {SENT_STATUSES.includes(request.status) ? (
+              <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
+            ) : null}
+            <DeleteRequestButton id={request.id} title={request.media.title} />
+          </>
         ) : null}
         <HistoryDisclosure requestId={request.id} />
       </div>

@@ -7,6 +7,7 @@ import {
   CreateRequestSchema,
   DenyRequestSchema,
   ListRequestsSchema,
+  RemoveFromChaptarrSchema,
   RequestIdSchema,
 } from "#/lib/schemas/requests";
 import { formatList } from "#/lib/format";
@@ -14,7 +15,7 @@ import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
 import { requireAdmin, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
-import { request } from "#/server/db/schema";
+import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
   isAutoApproved,
@@ -32,9 +33,10 @@ import {
   transitionRequest as transitionUnchecked,
 } from "#/server/requests/transitions";
 import { services } from "#/server/services";
+import { removeBook } from "#/server/services/chaptarr/client";
 import { settings } from "#/server/settings";
 import { formatDefaults } from "#/server/settings/definitions";
-import { mediaSources } from "#/server/sources";
+import { chaptarrProviderId, mediaSources } from "#/server/sources";
 
 /** Submission can take a while (Chaptarr refreshes the author): never block the caller on it. */
 function submitInBackground(requestId: string) {
@@ -214,4 +216,57 @@ export const checkAvailabilityNow = createServerFn({ method: "POST" })
   .handler(async () => {
     await runJob("library-sync");
     return { ok: true };
+  });
+
+/** Deletes a request and its history from Storyrr (not from Chaptarr). Admins. */
+export const deleteRequest = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(RequestIdSchema)
+  .handler(({ data }) => {
+    const deleted = db
+      .delete(request)
+      .where(eq(request.id, data.id))
+      .returning({ id: request.id })
+      .all();
+    if (deleted.length === 0) return notFound();
+    return { ok: true };
+  });
+
+/**
+ * Removes the requested book from Chaptarr (its rows for that format, or the
+ * pending import queued only for it), optionally with its files. A request
+ * still on its way is then cancelled. Admins.
+ */
+export const removeFromChaptarr = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(RemoveFromChaptarrSchema)
+  .handler(async ({ data, context }) => {
+    const row = db
+      .select({
+        status: request.status,
+        format: request.format,
+        source: media.source,
+        externalId: media.externalId,
+      })
+      .from(request)
+      .innerJoin(media, eq(media.id, request.mediaId))
+      .where(eq(request.id, data.id))
+      .get();
+    if (!row) return notFound();
+    const providerId = chaptarrProviderId(row.source, row.externalId);
+    if (!providerId || row.format === "podcast") throw new Error(m.request_error_unsupported());
+    const chaptarr = await services.chaptarr();
+    if (!chaptarr)
+      throw new Error(m.request_error_not_configured({ service: m.service_chaptarr() }));
+
+    const result = await removeBook(chaptarr, {
+      providerId,
+      media: row.format,
+      deleteFiles: data.deleteFiles,
+    });
+    if (!result.ok) return { ok: false as const, error: result.error };
+    if (row.status === "submitted" || row.status === "approved") {
+      transitionRequest(db, data.id, { to: "cancelled", actor: context.session.user.id });
+    }
+    return { ok: true as const, ...result.value };
   });

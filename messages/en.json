@@ -168,5 +168,15 @@
   "language_label": "Language",
   "language_en": "English",
   "language_fr": "Français",
-  "status_waiting_for_chaptarr": "Waiting for Chaptarr"
+  "status_waiting_for_chaptarr": "Waiting for Chaptarr",
+  "action_delete_request": "Delete request",
+  "action_remove_from_chaptarr": "Remove from Chaptarr",
+  "requests_delete_title": "Delete the request for {title}?",
+  "requests_delete_description": "The request and its history are deleted from Storyrr. Nothing changes in Chaptarr.",
+  "requests_remove_title": "Remove {title} from Chaptarr?",
+  "requests_remove_description": "Chaptarr stops monitoring this book in this format and forgets it (or drops its pending request). A request still on its way is cancelled.",
+  "requests_remove_delete_files": "Also delete the downloaded files",
+  "requests_removed": "Removed from Chaptarr.",
+  "requests_removed_shared": "Removed from Chaptarr. Its pending request for this author also covers other books: delete it in Chaptarr (Wanted → Authors) if needed.",
+  "requests_remove_nothing": "Chaptarr has nothing for this book anymore."
 }

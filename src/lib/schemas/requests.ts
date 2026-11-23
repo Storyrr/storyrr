@@ -54,3 +54,8 @@ export const ListRequestsSchema = v.object({
   scope: v.picklist(["mine", "all"]),
   filter: v.picklist(["all", "pending", "processing", "available", "failed"]),
 });
+
+export const RemoveFromChaptarrSchema = v.object({
+  ...RequestIdSchema.entries,
+  deleteFiles: v.boolean(),
+});

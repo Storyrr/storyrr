@@ -8,6 +8,7 @@ import {
   BookImportResponseSchema,
   BookSchema,
   HealthItemSchema,
+  PendingImportSchema,
   ProfileSchema,
   RootFolderSchema,
   SystemStatusSchema,
@@ -86,6 +87,16 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
         query: { term, mediaType: media },
         timeoutMs: 60_000,
       }),
+    /** Deletes one local book row (one media side); files only when asked. */
+    deleteBook: (id: number, { deleteFiles }: { deleteFiles: boolean }) =>
+      call("DELETE", `/book/${id}`, v.unknown(), {
+        query: { deleteFiles: String(deleteFiles), addImportListExclusion: "false" },
+        timeoutMs: 60_000,
+      }),
+    pendingImports: () => call("GET", "/pendingauthorimport", v.array(PendingImportSchema)),
+    /** `delete=true` removes the queued request (instead of keeping it as cancelled). */
+    deletePendingImport: (id: number) =>
+      call("DELETE", `/pendingauthorimport/${id}`, v.unknown(), { query: { delete: "true" } }),
     importBook: (body: BookImportRequest) =>
       call("POST", "/book/import", BookImportResponseSchema, { body, timeoutMs: 90_000 }),
   };
@@ -165,3 +176,59 @@ export async function hasBookFile(
 }
 
 const hasFile = (book: Book) => book.hasFiles === true || (book.statistics?.bookFileCount ?? 0) > 0;
+
+export type RemoveOutcome = {
+  /** Local book rows deleted (this media side only). */
+  deletedBooks: number;
+  /** Pending imports removed because they only held this book. */
+  deletedPending: number;
+  /** Pending imports that also hold other books: left in place. */
+  sharedPending: number;
+};
+
+/**
+ * Removes a requested book from Chaptarr, like Seerr's "Remove from Radarr":
+ * its rows for that media side, and a pending import queued only for it.
+ */
+export async function removeBook(
+  client: ChaptarrClient,
+  {
+    providerId,
+    media,
+    deleteFiles,
+  }: { providerId: string; media: ChaptarrMedia; deleteFiles: boolean },
+): Promise<ServiceResult<RemoveOutcome>> {
+  const outcome: RemoveOutcome = { deletedBooks: 0, deletedPending: 0, sharedPending: 0 };
+
+  const books = await client.lookup(providerId, media);
+  if (!books.ok) return books;
+  for (const book of books.value.filter((b) => b.id > 0 && b.mediaType === media)) {
+    const deleted = await client.deleteBook(book.id, { deleteFiles });
+    if (!deleted.ok) return deleted;
+    outcome.deletedBooks++;
+  }
+
+  const pending = await client.pendingImports();
+  if (!pending.ok) return pending;
+  for (const item of pending.value) {
+    const requested = new Set([
+      ...(item.audiobookBooksToMonitor ?? []),
+      ...(item.audiobookBooksToSearch ?? []),
+      ...(item.ebookBooksToMonitor ?? []),
+      ...(item.ebookBooksToSearch ?? []),
+    ]);
+    if (!requested.has(providerId)) continue;
+    if (requested.size > 1) {
+      outcome.sharedPending++;
+      continue;
+    }
+    const deleted = await client.deletePendingImport(item.id);
+    if (!deleted.ok) return deleted;
+    outcome.deletedPending++;
+  }
+
+  if (outcome.deletedBooks + outcome.deletedPending + outcome.sharedPending === 0) {
+    return fail("not_found", `Chaptarr has nothing for ${providerId}`);
+  }
+  return ok(outcome);
+}
