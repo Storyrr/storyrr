@@ -92,7 +92,7 @@ src/
 │   ├── setup.ts            # first-run wizard (creates the first admin)
 │   ├── services/           # one client per external service: chaptarr, audiobookshelf, kavita, audible, hardcover, itunes
 │   ├── sources/            # one module per media type: search/details/request/availability
-│   ├── requests/           # request lifecycle (state machine), policies
+│   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   └── jobs/               # scheduler + jobs (availability sync, cache refresh)
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template
