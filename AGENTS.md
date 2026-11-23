@@ -39,9 +39,9 @@ This file is the single source of agent instructions for every tool: `CLAUDE.md`
 
 Docs disagree or move fast on these (checked 2026-11-23); the installed package wins:
 
-- Server function validation: TanStack docs show `createServerFn(...).validator(schema)`, better-auth's TanStack page shows `.inputValidator(schema)`. Use what `@tanstack/react-start` exposes.
-- better-auth schema: generate the auth tables into our Drizzle schema (better-auth CLI `generate`), then migrate with **drizzle-kit only** (one migration history).
-- Disabling public email/password sign-up (expected: `emailAndPassword.disableSignUp`): confirm the option name.
+- Server function validation: `@tanstack/react-start` 1.169 exposes `createServerFn(...).validator(schema)` (no `.inputValidator`, despite better-auth's TanStack page).
+- better-auth schema: generate the auth tables into our Drizzle schema with the better-auth CLI (package `auth`, same version as `better-auth`: `bunx auth@<version> generate --config src/lib/auth.ts --output src/db/schema.ts`), then migrate with **drizzle-kit only** (one migration history). The 1.7 CLI still emits Drizzle 0.x `relations()`, which Drizzle 1.0 removed: delete them from the output and keep relations in `src/db/relations.ts` (`defineRelations`). The adapter (`better-auth/adapters/drizzle`) gets the tables through its `schema` option and needs no relations unless `experimental.joins` is enabled.
+- Disabling public email/password sign-up: `emailAndPassword.disableSignUp: true` (confirmed in better-auth 1.7). Admins create accounts through the `admin` plugin (`auth.api.createUser`).
 
 ## Agent skills (read before coding)
 
@@ -76,7 +76,7 @@ Before editing files for a substantial task:
 
 The project was generated with `create-tanstack` (`.cta.json`: nitro, drizzle/sqlite, form, shadcn, better-auth, tanstack-query). Before building features:
 
-1. **Wire better-auth to the database.** `src/lib/auth.ts` has no `database` option, so it falls back to in-memory storage and loses users on restart. Recreate `src/db/schema.ts` (removed with the demo table; `drizzle.config.ts` points to it) with the better-auth tables (CLI `generate`), add the Drizzle adapter (`drizzleAdapter(db, { provider: "sqlite" })` from `better-auth/adapters/drizzle`), the `admin` plugin and invite-only sign-up, then `bun run db:generate`.
+1. ~~Wire better-auth to the database~~ **done**: `src/db/schema.ts` (generated auth tables) + `src/db/relations.ts`, Drizzle adapter, `admin` plugin (server + client), `disableSignUp`, first migration in `./drizzle`.
 2. ~~Swap the UI kit to React Aria~~ **done**: official shadcn aria base, Radix removed.
 3. **Add the remaining tooling:** Paraglide (Vite plugin + `paraglideMiddleware` in the server entry + `<html lang>`) and Vitest (+ a `test` script, appended to `check`). oxlint/oxfmt are **done** (pinned, configs in `.oxlintrc.json` / `.oxfmtrc.json`, scripts `format`, `lint`, `check`).
 4. ~~Clean the template~~ **done**: demo `todos` table and `pnpm` block removed; TanStack devtools are stripped from production builds by `@tanstack/devtools-vite` (`removeDevtoolsOnBuild`, default on).
