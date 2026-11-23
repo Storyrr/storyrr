@@ -141,6 +141,7 @@ There is no Chaptarr / Audiobookshelf instance in development. Clients are built
 - Audiobook lookup by ASIN: `GET /api/v1/book/lookup?term=az:<ASIN>&mediaType=audiobook`.
 - Chaptarr may pick a foreign-language edition if its metadata profile allows all languages: show the edition/language it resolved, don't assume.
 - Webhook (Settings → Connect → Webhook, POST): token in the URL query, compared in constant time; on import events, run the availability check for the affected request instead of trusting the payload.
+- Chaptarr can be slow (free-space checks on network shares, its own metadata service): use generous per-call timeouts (status/health 15 s, profiles and author list 30 s, an author's books 40 s, root folders and lookups 60 s, author add 90 s). The connection Test also shows `GET /api/v1/health` warnings, which often explain slowness or failed adds.
 - Reference implementation for payload shapes: Stackarr `stackarr/chaptarr.py` (MIT), including the media-scope fix (katalyst88/stackarr#6).
 
 ### Audiobookshelf (audiobook availability, podcasts)

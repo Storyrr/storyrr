@@ -46,10 +46,15 @@ describe("resolveConnection", () => {
 
 describe("testConnection", () => {
   it("reports Chaptarr's version", async () => {
-    const { fetch, calls } = fakeFetch(() => json({ version: "1.2.3" }));
+    const { fetch, calls } = fakeFetch((url) =>
+      url.pathname === "/api/v1/health"
+        ? json([{ type: "warning", message: "Metadata service is unavailable" }])
+        : json({ version: "1.2.3" }),
+    );
     expect(await testConnection("chaptarr", { url: "http://c", apiKey: "k" }, fetch)).toEqual({
       ok: true,
       version: "1.2.3",
+      warnings: ["Metadata service is unavailable"],
     });
     expect(calls[0]?.url.pathname).toBe("/api/v1/system/status");
   });

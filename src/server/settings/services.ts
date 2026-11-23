@@ -10,7 +10,7 @@ import { connectionSettings } from "./definitions";
 import type { SettingsStore } from "./store";
 
 export type ConnectionTest =
-  | { ok: true; version?: string; libraries?: number }
+  | { ok: true; version?: string; libraries?: number; warnings?: string[] }
   | { ok: false; error: ServiceError };
 
 export class MissingApiKeyError extends Error {
@@ -38,10 +38,17 @@ export async function testConnection(
   fetch: FetchFn,
 ): Promise<ConnectionTest> {
   if (service === "chaptarr") {
-    const status = await createChaptarrClient(connection, fetch).status();
-    return status.ok
-      ? { ok: true, version: status.value.version }
-      : { ok: false, error: status.error };
+    const client = createChaptarrClient(connection, fetch);
+    const status = await client.status();
+    if (!status.ok) return { ok: false, error: status.error };
+    // Best effort: Chaptarr's own warnings explain slowness or failing adds.
+    const health = await client.health();
+    const warnings = health.ok
+      ? health.value
+          .flatMap((item) => (item.message ? [item.message.slice(0, 200)] : []))
+          .slice(0, 3)
+      : [];
+    return { ok: true, version: status.value.version, warnings };
   }
   const libraries = await createAudiobookshelfClient(connection, fetch).libraries();
   return libraries.ok

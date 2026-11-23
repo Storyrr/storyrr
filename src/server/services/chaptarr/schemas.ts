@@ -14,6 +14,12 @@ export const SystemStatusSchema = v.looseObject({
   appName: v.optional(v.string()),
 });
 
+// GET /api/v1/health: [{ type: "warning" | "error" | …, message }] (as read by Stackarr).
+export const HealthItemSchema = v.looseObject({
+  type: v.optional(v.string()),
+  message: v.optional(v.string()),
+});
+
 /** 1 = audiobook, 2 = eBook, 3 = mixed (AGENTS.md › Chaptarr). */
 export const FOLDER_TYPES = { audiobook: 1, ebook: 2, mixed: 3 } as const;
 

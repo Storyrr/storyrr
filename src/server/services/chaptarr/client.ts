@@ -7,6 +7,7 @@ import { fail, ok, requestJson } from "#/server/services/result";
 import {
   AuthorSchema,
   BookLookupSchema,
+  HealthItemSchema,
   BookSchema,
   ProfileSchema,
   RootFolderSchema,
@@ -55,16 +56,22 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
   };
 
   return {
-    status: () => call("GET", "/system/status", SystemStatusSchema),
+    // Timeouts follow Stackarr's, which were tuned against real Chaptarr installs.
+    status: () => call("GET", "/system/status", SystemStatusSchema, { timeoutMs: 15_000 }),
+    /** Chaptarr's own warnings (e.g. its metadata service is down). */
+    health: () => call("GET", "/health", v.array(HealthItemSchema), { timeoutMs: 15_000 }),
     // Readarr-style apps compute free space per root folder, which is slow on network shares.
     rootFolders: () => call("GET", "/rootfolder", v.array(RootFolderSchema), { timeoutMs: 60_000 }),
     qualityProfiles: () =>
       call("GET", "/qualityprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
     metadataProfiles: () =>
       call("GET", "/metadataprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
-    authors: () => call("GET", "/author", v.array(AuthorSchema)),
+    authors: () => call("GET", "/author", v.array(AuthorSchema), { timeoutMs: 30_000 }),
     booksByAuthor: (authorId: number) =>
-      call("GET", "/book", v.array(BookSchema), { query: { authorId: String(authorId) } }),
+      call("GET", "/book", v.array(BookSchema), {
+        query: { authorId: String(authorId) },
+        timeoutMs: 40_000,
+      }),
     lookupByAsin: (asin: string, media: ChaptarrMedia) =>
       call("GET", "/book/lookup", v.array(BookLookupSchema), {
         query: { term: `az:${asin}`, mediaType: media },
@@ -81,11 +88,18 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
       call("PUT", `/author/${author.id}`, AuthorSchema, {
         query: { mediaType: media },
         body: author,
+        timeoutMs: 30_000,
       }),
     monitorBooks: (bookIds: number[]) =>
-      call("PUT", "/book/monitor", v.unknown(), { body: { bookIds, monitored: true } }),
+      call("PUT", "/book/monitor", v.unknown(), {
+        body: { bookIds, monitored: true },
+        timeoutMs: 30_000,
+      }),
     searchBooks: (bookIds: number[]) =>
-      call("POST", "/command", v.unknown(), { body: { name: "BookSearch", bookIds } }),
+      call("POST", "/command", v.unknown(), {
+        body: { name: "BookSearch", bookIds },
+        timeoutMs: 20_000,
+      }),
   };
 }
 

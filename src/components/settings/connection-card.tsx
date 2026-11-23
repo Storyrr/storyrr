@@ -58,7 +58,10 @@ export function ConnectionCard({
         tone: "success",
         message:
           service === "chaptarr"
-            ? m.test_ok_chaptarr({ version: result.version ?? "" })
+            ? [
+                m.test_ok_chaptarr({ version: result.version ?? "" }),
+                ...(result.warnings ?? []).map((warning) => m.test_chaptarr_warning({ warning })),
+              ].join(" ")
             : m.test_ok_audiobookshelf({ count: result.libraries ?? 0 }),
       });
     },
