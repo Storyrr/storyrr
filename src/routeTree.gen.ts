@@ -13,7 +13,9 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AuthedRoute = AuthedRouteImport.update({
@@ -35,10 +37,20 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedWelcomeRoute = AuthedWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedSettingsServicesRoute = AuthedSettingsServicesRouteImport.update({
+  id: '/settings/services',
+  path: '/settings/services',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -50,14 +62,18 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
+  '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -65,22 +81,40 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/setup' | '/sign-in' | '/api/health' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/setup'
+    | '/sign-in'
+    | '/welcome'
+    | '/api/health'
+    | '/settings/services'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/setup' | '/sign-in' | '/api/health' | '/' | '/api/auth/$'
+  to:
+    | '/setup'
+    | '/sign-in'
+    | '/welcome'
+    | '/api/health'
+    | '/'
+    | '/settings/services'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/_authed'
     | '/setup'
     | '/sign-in'
+    | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
+    | '/_authed/settings/services'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -122,12 +156,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/welcome': {
+      id: '/_authed/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof AuthedWelcomeRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/settings/services': {
+      id: '/_authed/settings/services'
+      path: '/settings/services'
+      fullPath: '/settings/services'
+      preLoaderRoute: typeof AuthedSettingsServicesRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -140,11 +188,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
 }
 
 const AuthedRouteWithChildren =

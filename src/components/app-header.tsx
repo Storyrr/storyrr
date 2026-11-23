@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
-import { Button } from "#/components/ui/button";
+import { Button, buttonVariants } from "#/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -24,7 +24,19 @@ export function AppHeader({ user }: { user: SessionUser }) {
         <Link to="/" className="text-lg font-semibold">
           {m.app_name()}
         </Link>
-        <UserMenu user={user} />
+        <nav className="flex items-center gap-1">
+          {user.isAdmin ? (
+            <Link
+              to="/settings/services"
+              className={buttonVariants({ variant: "ghost" })}
+              aria-label={m.nav_settings()}
+            >
+              <SettingsIcon data-icon="inline-start" />
+              <span className="hidden sm:inline">{m.nav_settings()}</span>
+            </Link>
+          ) : null}
+          <UserMenu user={user} />
+        </nav>
       </div>
     </header>
   );

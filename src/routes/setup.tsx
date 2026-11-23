@@ -32,7 +32,7 @@ function SetupPage() {
     mutationFn: (data: SetupInput) => completeSetupFn({ data }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: authKeys.all });
-      await router.navigate({ to: "/" });
+      await router.navigate({ to: "/welcome" });
     },
   });
 

@@ -1,4 +1,4 @@
-import { CircleAlertIcon } from "lucide-react";
+import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
 
 import { Alert, AlertDescription } from "#/components/ui/alert";
 
@@ -10,5 +10,19 @@ export function FormError({ message }: { message: string | null | undefined }) {
       <CircleAlertIcon />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
+  );
+}
+
+/** Form-level success notice, announced politely (`<output>` is a status region). */
+export function FormSuccess({ message }: { message: string | null | undefined }) {
+  if (!message) return null;
+  return (
+    <output className="block">
+      {/* The status region announces it; the alert role would interrupt. */}
+      <Alert role={undefined}>
+        <CircleCheckIcon />
+        <AlertDescription>{message}</AlertDescription>
+      </Alert>
+    </output>
   );
 }
