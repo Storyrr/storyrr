@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { LogOutIcon, SettingsIcon } from "lucide-react";
+import { InboxIcon, LogOutIcon, SearchIcon, SettingsIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
 import { Button, buttonVariants } from "#/components/ui/button";
@@ -25,6 +25,23 @@ export function AppHeader({ user }: { user: SessionUser }) {
           {m.app_name()}
         </Link>
         <nav className="flex items-center gap-1">
+          <Link
+            to="/"
+            className={buttonVariants({ variant: "ghost" })}
+            activeOptions={{ exact: true, includeSearch: false }}
+            aria-label={m.nav_search()}
+          >
+            <SearchIcon data-icon="inline-start" />
+            <span className="hidden sm:inline">{m.nav_search()}</span>
+          </Link>
+          <Link
+            to="/requests"
+            className={buttonVariants({ variant: "ghost" })}
+            aria-label={m.nav_requests()}
+          >
+            <InboxIcon data-icon="inline-start" />
+            <span className="hidden sm:inline">{m.nav_requests()}</span>
+          </Link>
           {user.isAdmin ? (
             <Link
               to="/settings/services"

@@ -13,10 +13,12 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedRequestsRouteImport } from './routes/_authed/requests'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -35,6 +37,11 @@ const SignInRoute = SignInRouteImport.update({
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRequestsRoute = AuthedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedWelcomeRoute = AuthedWelcomeRouteImport.update({
@@ -57,35 +64,46 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedMediaTypeIdRoute = AuthedMediaTypeIdRouteImport.update({
+  id: '/media/$type/$id',
+  path: '/media/$type/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/requests': typeof AuthedRequestsRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/requests': typeof AuthedRequestsRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/_authed/requests': typeof AuthedRequestsRoute
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,29 +111,35 @@ export interface FileRouteTypes {
     | '/'
     | '/setup'
     | '/sign-in'
+    | '/requests'
     | '/welcome'
     | '/api/health'
     | '/settings/services'
     | '/api/auth/$'
+    | '/media/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/setup'
     | '/sign-in'
+    | '/requests'
     | '/welcome'
     | '/api/health'
     | '/'
     | '/settings/services'
     | '/api/auth/$'
+    | '/media/$type/$id'
   id:
     | '__root__'
     | '/_authed'
     | '/setup'
     | '/sign-in'
+    | '/_authed/requests'
     | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
     | '/_authed/settings/services'
     | '/api/auth/$'
+    | '/_authed/media/$type/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -156,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/requests': {
+      id: '/_authed/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AuthedRequestsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/welcome': {
       id: '/_authed/welcome'
       path: '/welcome'
@@ -184,19 +215,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/media/$type/$id': {
+      id: '/_authed/media/$type/$id'
+      path: '/media/$type/$id'
+      fullPath: '/media/$type/$id'
+      preLoaderRoute: typeof AuthedMediaTypeIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
+  AuthedRequestsRoute: typeof AuthedRequestsRoute
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
+  AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedRequestsRoute: AuthedRequestsRoute,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
+  AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
 }
 
 const AuthedRouteWithChildren =

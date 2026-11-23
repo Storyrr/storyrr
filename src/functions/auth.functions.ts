@@ -5,6 +5,7 @@ import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { db } from "#/server/db";
+import { isAutoApproved } from "#/server/requests/queries";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
 
 export type SessionUser = {
@@ -12,6 +13,8 @@ export type SessionUser = {
   name: string;
   email: string;
   isAdmin: boolean;
+  /** Requests skip approval (admins, or the per-user flag). */
+  autoApproved: boolean;
 };
 
 /**
@@ -29,6 +32,7 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
         name: session.user.name,
         email: session.user.email,
         isAdmin: session.user.role === "admin",
+        autoApproved: isAutoApproved(db, session.user.id, session.user.role === "admin"),
       }
     : null;
   return { setupComplete, user };

@@ -1,5 +1,7 @@
 import * as v from "valibot";
 
+import { m } from "#/paraglide/messages.js";
+
 export const AsinSchema = v.pipe(v.string(), v.trim(), v.toUpperCase(), v.regex(/^[A-Z0-9]{10}$/));
 
 export const SearchInputSchema = v.object({
@@ -22,6 +24,14 @@ export const RequestIdSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });
 export const ApproveRequestSchema = v.object({
   ...RequestIdSchema.entries,
   ...TargetOverrideSchema.entries,
+});
+
+/** The deny form: an optional reason shown to the requester. */
+export const DenyReasonSchema = v.object({
+  reason: v.pipe(
+    v.string(),
+    v.maxLength(500, () => m.validation_too_long({ max: 500 })),
+  ),
 });
 
 export const DenyRequestSchema = v.object({
