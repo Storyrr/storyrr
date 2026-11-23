@@ -10,11 +10,19 @@ import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import { authStateQuery } from "#/lib/queries/auth";
+
 interface MyRouterContext {
   queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  // Setup state and the signed-in user, for route guards and the app shell. This is
+  // UX only: server functions check the session themselves.
+  beforeLoad: async ({ context }) => {
+    const authState = await context.queryClient.fetchQuery(authStateQuery());
+    return { authState };
+  },
   head: () => ({
     meta: [
       {
@@ -44,7 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-svh bg-background text-foreground antialiased">
         {children}
         <TanStackDevtools
           config={{

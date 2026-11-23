@@ -40,7 +40,7 @@ This file is the single source of agent instructions for every tool: `CLAUDE.md`
 Docs disagree or move fast on these (checked 2026-11-23); the installed package wins:
 
 - Server function validation: `@tanstack/react-start` 1.169 exposes `createServerFn(...).validator(schema)` (no `.inputValidator`, despite better-auth's TanStack page).
-- better-auth schema: generate the auth tables into our Drizzle schema with the better-auth CLI (package `auth`, same version as `better-auth`: `bunx auth@<version> generate --config src/server/auth.ts --output src/server/db/schema.ts`), then migrate with **drizzle-kit only** (one migration history). The 1.7 CLI still emits Drizzle 0.x `relations()`, which Drizzle 1.0 removed: delete them from the output and keep relations in `src/server/db/relations.ts` (`defineRelations`). The adapter (`better-auth/adapters/drizzle`) gets the tables through its `schema` option and needs no relations unless `experimental.joins` is enabled.
+- better-auth schema: generate the auth tables into our Drizzle schema with the better-auth CLI (package `auth`, same version as `better-auth`: `bunx auth@<version> generate --config src/server/auth/index.ts --output src/server/db/schema.ts`), then migrate with **drizzle-kit only** (one migration history). The 1.7 CLI still emits Drizzle 0.x `relations()`, which Drizzle 1.0 removed: delete them from the output and keep relations in `src/server/db/relations.ts` (`defineRelations`). The adapter (`better-auth/adapters/drizzle`) gets the tables through its `schema` option and needs no relations unless `experimental.joins` is enabled.
 - Disabling public email/password sign-up: `emailAndPassword.disableSignUp: true` (confirmed in better-auth 1.7). Admins create accounts through the `admin` plugin (`auth.api.createUser`).
 
 ## Agent skills (read before coding)
@@ -86,8 +86,9 @@ src/
 │   └── …pages (search, media/$type/$id, requests, settings, users, setup)
 ├── server/                 # framework-agnostic business logic, server-only
 │   ├── env.ts              # Valibot-validated env (getEnv())
-│   ├── db/                 # drizzle schema, client, migrations runner
-│   ├── auth.ts             # better-auth instance
+│   ├── db/                 # schema.ts, relations.ts, client.ts (createDatabase: opens + migrates), index.ts (app instance)
+│   ├── auth/               # better-auth: config.ts (createAuth factory), index.ts (app instance), middleware.ts (requireUser / requireAdmin)
+│   ├── setup.ts            # first-run wizard (creates the first admin)
 │   ├── services/           # one client per external service: chaptarr, audiobookshelf, kavita, audible, hardcover, itunes
 │   ├── sources/            # one module per media type: search/details/request/availability
 │   ├── requests/           # request lifecycle (state machine), policies
@@ -95,7 +96,7 @@ src/
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template
 ├── components/             # app components; ui/ = shadcn-style React Aria primitives
-├── lib/                    # client-safe helpers (cn, auth client, query keys)
+├── lib/                    # client-safe helpers: cn, auth client, queries/ (query keys + queryOptions), schemas/ (Valibot, shared by forms and server functions)
 └── paraglide/              # generated, git-ignored
 messages/                   # en.json (source), fr.json …
 ```
@@ -104,7 +105,7 @@ Rules:
 
 - Import alias: **`#/`** (package.json `imports`, e.g. `#/server/db`). Don't introduce a second alias.
 - **UI never talks to external services directly.** Pages call server functions → server functions call `src/server/**`. Server-only modules live under `src/server/` (or use the `*.server.ts` suffix) so they can't leak into the client bundle.
-- **Every server function that touches private data checks the session itself** (route `beforeLoad` guards are not enough). Use a shared `requireUser()` / `requireAdmin()` helper or function middleware.
+- **Every server function that touches private data checks the session itself** (route `beforeLoad` guards are not enough). Attach the `requireUser` / `requireAdmin` function middleware (`#/server/auth/middleware`). The root route loads `authState` (setup done? current user) into the router context for guards; pages needing a user live under the `_authed` layout route.
 - **Background jobs:** TanStack Start has no documented startup/cron hook. Start an in-process scheduler (e.g. `croner`) from the custom server entry `src/server.ts` (singleton guard, so dev HMR doesn't start it twice). Jobs must be idempotent and safe to run concurrently with webhooks.
 - **Media sources share one interface** so adding a type never touches the request flow:
   ```ts
@@ -160,6 +161,7 @@ These come from running Chaptarr, Audiobookshelf and Kavita together in producti
 
 - TypeScript `strict` (already on), no `any` at module boundaries. Env parsed once with Valibot (`getEnv()`), fail fast with a clear message.
 - Data fetching: one query-key factory per domain (`requestKeys.list(filters)`, `mediaKeys.detail(type, id)`, …); every mutation invalidates the keys it affects; optimistic updates for approve/deny/cancel with rollback on error; request statuses poll (`refetchInterval`) only while something is in flight.
+- Server modules export factories that take their dependencies (`createDatabase(file)`, `createAuth(db, env)`, services taking `db`/`auth`) next to the app singletons in `index.ts`, so tests run against an in-memory database (`createDatabase(":memory:")`) without env.
 - Server-only code never imported from components. Secrets never reach the client or logs; logs redact tokens and API keys.
 - DB: every schema change is a drizzle-kit migration committed with the code (`./drizzle`); migrations run automatically at startup. `db:push` is for throwaway local experiments only.
 - Request status is a **state machine** (`pending → approved → submitted → available`, plus `denied`, `failed`, `cancelled`); all transitions go through one module, with a history row per transition.
