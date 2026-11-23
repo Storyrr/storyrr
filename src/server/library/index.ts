@@ -1,9 +1,12 @@
 import "@tanstack/react-start/server-only";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+
+import { titleKey } from "#/lib/match";
 
 import type { AppDatabase } from "#/server/db/client";
 import { libraryItem } from "#/server/db/schema";
 import type { AudiobookshelfClient } from "#/server/services/audiobookshelf/client";
+import type { KavitaClient } from "#/server/services/kavita/client";
 import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
 
@@ -24,6 +27,7 @@ export async function syncAudiobookshelf(
           itemId: item.itemId,
           libraryId: item.libraryId,
           externalId: item.asin,
+          matchKey: titleKey(item.title),
           title: item.title,
           author: item.author,
           syncedAt: now,
@@ -49,4 +53,50 @@ export function ownedAsins(db: AppDatabase, asins: readonly string[]): Set<strin
     )
     .all();
   return new Set(rows.flatMap((row) => (row.asin ? [row.asin] : [])));
+}
+
+/**
+ * Replaces the Kavita part of the library index. Kavita series carry no
+ * shared ID, so each of a series' names is indexed by its normalized title.
+ */
+export async function syncKavita(
+  db: AppDatabase,
+  kavita: KavitaClient,
+  now = new Date(),
+): Promise<ServiceResult<{ series: number }>> {
+  const series = await kavita.allSeries();
+  if (!series.ok) return series;
+  db.transaction((tx) => {
+    tx.delete(libraryItem).where(eq(libraryItem.backend, "kavita")).run();
+    for (const item of series.value) {
+      for (const [index, name] of item.names.entries()) {
+        tx.insert(libraryItem)
+          .values({
+            backend: "kavita",
+            itemId: `${item.seriesId}#${index}`,
+            libraryId: String(item.libraryId),
+            externalId: null,
+            matchKey: titleKey(name),
+            title: name,
+            author: "",
+            syncedAt: now,
+          })
+          .onConflictDoNothing()
+          .run();
+      }
+    }
+  });
+  return ok({ series: series.value.length });
+}
+
+/** Which of these titles Kavita probably holds (normalized title match: no shared ID). */
+export function ownedTitles(db: AppDatabase, titles: readonly string[]): Set<string> {
+  const keys = [...new Set(titles.map(titleKey).filter(Boolean))];
+  if (keys.length === 0) return new Set();
+  const rows = db
+    .selectDistinct({ key: libraryItem.matchKey })
+    .from(libraryItem)
+    .where(and(eq(libraryItem.backend, "kavita"), inArray(libraryItem.matchKey, keys)))
+    .all();
+  return new Set(rows.flatMap((row) => (row.key ? [row.key] : [])));
 }
