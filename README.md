@@ -1,233 +1,58 @@
-Welcome to your new TanStack Start app!
+# Storyrr
 
-# Getting Started
+A self-hosted request manager for **audiobooks, eBooks (including manga and comics) and podcasts**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to Chaptarr (audiobooks, eBooks) and [Audiobookshelf](https://www.audiobookshelf.org/) (podcasts), and checks availability in Audiobookshelf and [Kavita](https://www.kavitareader.com/).
 
-To run this application:
+> **Status: early development.** The first-run wizard, accounts and the app skeleton work; search and requests are being built. See the [v1 spec](docs/SPEC.md) for the roadmap.
+
+## Run with Docker
+
+```yaml
+# compose.yaml
+services:
+  storyrr:
+    image: ghcr.io/storyrr/storyrr:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      BETTER_AUTH_URL: https://storyrr.example.com # the URL you open Storyrr at
+      BETTER_AUTH_SECRET: change-me # at least 32 random characters: openssl rand -hex 32
+    volumes:
+      - ./data:/data
+```
+
+Then open the URL: the first visit runs the setup wizard, which creates the administrator account. There is no public sign-up; the administrator creates the other accounts.
+
+The SQLite database lives in `/data` (keep it on a volume); migrations run automatically at startup. `GET /api/health` reports the app version and database state, and the image uses it as its healthcheck.
+
+### Environment
+
+| Variable             | Required | Default            | Description                                                                       |
+| -------------------- | -------- | ------------------ | --------------------------------------------------------------------------------- |
+| `BETTER_AUTH_URL`    | yes      |                    | Public base URL of the app (used for sign-in redirects and cookies).              |
+| `BETTER_AUTH_SECRET` | yes      |                    | At least 32 random characters. Signs sessions; also encrypts stored service keys. |
+| `DATABASE_URL`       | no       | `/data/storyrr.db` | SQLite database file.                                                             |
+| `PORT`               | no       | `3000`             | HTTP port inside the container.                                                   |
+
+Behind a reverse proxy or Cloudflare Tunnel, set `BETTER_AUTH_URL` to the public `https://` URL: cookies are then marked secure.
+
+## Development
+
+Requirements: [Node.js](https://nodejs.org/) 22.12+ (runs the app) and [Bun](https://bun.sh/) (package manager and script runner).
 
 ```bash
 bun install
-bun --bun run dev
+cp .env.example .env.local   # then fill in BETTER_AUTH_SECRET
+bun run dev                  # http://localhost:3000
 ```
 
-# Building For Production
-
-To build this application for production:
-
-```bash
-bun --bun run build
-```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-## Deploy with Nitro
-
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
-
-```bash
-npm run build
-node .output/server/index.mjs
-```
-
-The build output is a self-contained Node server. To deploy, push the `.output/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
-
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-## Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   bunx --bun @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-bunx --bun @better-auth/cli migrate
-```
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "My App" },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-});
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from "@tanstack/react-start";
-
-const getServerTime = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    getServerTime().then(setTime);
-  }, []);
-
-  return <div>Server time: {time}</div>;
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-import { json } from "@tanstack/react-start";
-
-export const Route = createFileRoute("/api/hello")({
-  server: {
-    handlers: {
-      GET: () => json({ message: "Hello, World!" }),
-    },
-  },
-});
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/people")({
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json();
-  },
-  component: PeopleComponent,
-});
-
-function PeopleComponent() {
-  const data = Route.useLoaderData();
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+| Script                | What it does                                                         |
+| --------------------- | -------------------------------------------------------------------- |
+| `bun run dev`         | Dev server with hot reload                                           |
+| `bun run build`       | Production build into `.output/` (`bun run start` serves it on Node) |
+| `bun run check`       | Message compile, format check, type-aware lint, tests (CI runs this) |
+| `bun run format`      | Format with oxfmt                                                    |
+| `bun run test`        | Vitest (use this, not `bun test`)                                    |
+| `bun run db:generate` | Generate a migration from `src/server/db/schema.ts`                  |
+
+Contributor and agent guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
