@@ -71,5 +71,8 @@
   "audible_region_jp": "Japan",
   "request_error_not_configured": "{service} isn't connected. An admin can set it up in Settings → Services.",
   "request_error_defaults_missing": "No default folder and profiles for audiobooks. An admin can set them in Settings → Services.",
-  "request_error_unsupported": "This kind of request can't be sent yet."
+  "request_error_unsupported": "This kind of request can't be sent yet.",
+  "request_not_found": "This request doesn't exist or isn't yours.",
+  "request_cannot_cancel": "Only pending requests can be cancelled.",
+  "request_invalid_transition": "This request changed in the meantime. Refresh the page and try again."
 }
