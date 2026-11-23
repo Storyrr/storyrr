@@ -129,20 +129,25 @@ These come from running Chaptarr, Audiobookshelf and Kavita together in producti
 
 ### Unverified payload shapes
 
-There is no Chaptarr / Audiobookshelf instance in development. Clients are built from the references below plus the Readarr v1 / ABS API docs, with hand-written fixtures in `src/server/services/<service>/fixtures/`. Every field or endpoint not confirmed against a real instance carries an `// UNVERIFIED:` comment saying what was assumed; when a real response proves it, replace the fixture with a sanitized recording (no hostnames, keys, personal paths or library contents) and remove the comment.
+There is no Audiobookshelf / Kavita instance in development. Their clients are built from the API docs and references, with hand-written fixtures. Every field or endpoint not confirmed against a real instance or the service's source carries an `// UNVERIFIED:` comment saying what was assumed; when proven, replace the fixture with a sanitized recording (no hostnames, keys, personal paths or library contents) and remove the comment. Chaptarr is open source: check its code instead of guessing.
 
-### Chaptarr (audiobooks + eBooks, Readarr v1 API shape)
+### Chaptarr (audiobooks + eBooks)
+
+Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/chaptarr](https://github.com/Chaptarr/chaptarr) (checked at commit `42a0e0b`). Clone it read-only outside the repo when touching this integration.
 
 - Auth: `X-Api-Key` header. The API key can change after Chaptarr's first-run setup: surface 401s clearly ("re-check the API key"), never as a generic failure.
-- **Always send the write scope** on author writes: `POST /api/v1/author?mediaType=ebook|audiobook` and `PUT /api/v1/author/{id}?mediaType=…`. Chaptarr maps legacy single-format fields (`rootFolderPath`, `qualityProfileId`, `metadataProfileId`) onto that scope; without it, an eBook add is treated as audiobook and fails with _"Default audiobook root folder '/books' is not compatible with audiobook imports"_.
-- Prefer the **per-media fields** (`audiobookRootFolderPath`, `ebookRootFolderPath`, `audiobookQualityProfileId`, `ebookMetadataProfileId`, `audiobookMonitorExisting`, …) over the legacy ones.
-- Root folders: `GET /api/v1/rootfolder`, each has `folderType` (**1 = audiobook, 2 = eBook, 3 = mixed**) and per-media defaults. Only offer folders compatible with the requested format.
-- Never monitor a whole author for a one-book request: add the author with "monitor existing: none/selected", then monitor and search only the requested book (`PUT /api/v1/book/monitor`, `POST /api/v1/command {"name":"BookSearch","bookIds":[…]}`).
-- Audiobook lookup by ASIN: `GET /api/v1/book/lookup?term=az:<ASIN>&mediaType=audiobook`.
+- JSON is camelCase and enums are **camelCase strings** (`"specificBook"`, `"audiobook"`), webhook event types included (`"download"`, not `"Download"`).
+- **Request a book with `POST /api/v1/book/import`** (the endpoint Chaptarr intends for automation): `{ foreignBookId, foreignAuthorId, authorName, mediaType, rootFolder, qualityProfileId, metadataProfileId, authorMonitoring: { monitor: "none", searchForMissing: true } }`. It adds the author if needed, monitors **only the requested book on the requested media side** (an audiobook request never initializes or touches the eBook side), and searches just that book. `monitor: "none"` is about the author's other books, not the requested one. Don't hand-build author payloads with `POST /author`: copying a looked-up author can initialize the other format, and with "sync monitoring across formats" its sibling then gets monitored too.
+- Responses: 201 `{ id }`; **202** `{ pendingId, message }` when the author's metadata isn't ready (Chaptarr keeps the request and searches later: treat as submitted); 400 validation errors; **409** ambiguous provider ID (candidates in the body); **422** the metadata server declared the work not importable (show the reason, don't retry automatically); 503 temporary.
+- **Provider IDs are the durable identity, local row ids are not** (they change on metadata repair/merge). IDs are prefixed: `az:` (Amazon/Audible ASIN), `hc:`, `gr:`, `ol:`, `gb:`. Store the provider ID; a local book id is only a hint.
+- `GET /api/v1/book/lookup?term=az:<ASIN>&mediaType=audiobook|ebook`: the local copies when Chaptarr has the book (id > 0, `statistics.bookFileCount`, `hasFiles`), else the metadata server's results (id 0) with `foreignBookId` and `author.foreignAuthorId`. Used both to request (provider IDs) and to check availability (files).
+- Book rows are per media type (`mediaType: "audiobook" | "ebook"`), possibly several copies per format.
+- Root folders: `GET /api/v1/rootfolder`, `folderType` **0 = mixed, 1 = audiobook, 2 = eBook**. An explicit `rootFolder` must exist, support the format and have both profiles, else Chaptarr returns a validation error (it never silently picks another root). Only offer compatible folders.
+- Legacy shared fields (`rootFolderPath`, `qualityProfileId`) on author/book writes need a media scope (`?mediaType=`), otherwise Chaptarr infers it or returns 400.
 - Chaptarr may pick a foreign-language edition if its metadata profile allows all languages: show the edition/language it resolved, don't assume.
-- Webhook (Settings → Connect → Webhook, POST): token in the URL query, compared in constant time; on import events, run the availability check for the affected request instead of trusting the payload.
-- Chaptarr can be slow (free-space checks on network shares, its own metadata service): use generous per-call timeouts (status/health 15 s, profiles and author list 30 s, an author's books 40 s, root folders and lookups 60 s, author add 90 s). The connection Test also shows `GET /api/v1/health` warnings, which often explain slowness or failed adds.
-- Reference implementation for payload shapes: Stackarr `stackarr/chaptarr.py` (MIT), including the media-scope fix (katalyst88/stackarr#6).
+- Webhook (Settings → Connect → Webhook, POST): token in the URL query, compared in constant time. Import payload: `{ eventType: "download", author: { id }, book: { id }, bookFiles }`. Re-check availability with Chaptarr instead of trusting the payload.
+- Chaptarr can be slow (free-space checks on network shares, its own metadata service): use generous per-call timeouts (status/health 15 s, profiles 30 s, root folders and lookups 60 s, book import 90 s). The connection Test also shows `GET /api/v1/health` warnings, which often explain slowness or failed adds.
+- Stackarr (`stackarr/chaptarr.py`, MIT) is a useful field-tested client, but it predates `book/import`.
 
 ### Audiobookshelf (audiobook availability, podcasts)
 

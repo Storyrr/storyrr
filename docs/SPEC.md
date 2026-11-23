@@ -44,8 +44,8 @@ Shown when the database has no user.
    - Kavita: URL + auth key (optional, eBook availability).
    - Metadata: Audible region (default `fr`), Hardcover token (optional).
 3. Defaults: default target per format (from the live lists):
-   - audiobook → a Chaptarr root folder with `folderType` 1 or 3;
-   - eBook → a Chaptarr root folder with `folderType` 2 or 3;
+   - audiobook → a Chaptarr root folder with `folderType` 1 (audiobook) or 0 (mixed);
+   - eBook → a Chaptarr root folder with `folderType` 2 (eBook) or 0 (mixed);
    - podcast → an Audiobookshelf podcast library (+ folder).
 4. Done → home.
 
