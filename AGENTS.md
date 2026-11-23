@@ -90,10 +90,11 @@ src/
 │   ├── auth/               # better-auth: config.ts (createAuth factory), index.ts (app instance), middleware.ts (requireUser / requireAdmin)
 │   ├── settings/           # typed settings (defineSetting + Valibot), secrets sealed with AES-256-GCM (key: HKDF of BETTER_AUTH_SECRET)
 │   ├── setup.ts            # first-run wizard (creates the first admin)
-│   ├── services/           # one client per external service: chaptarr, audiobookshelf, kavita, audible, hardcover, itunes
+│   ├── services/           # one client per external service (audible, chaptarr, audiobookshelf so far; kavita, hardcover, itunes next), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # one module per media type: search/details/request/availability
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from Audiobookshelf
+│   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   └── jobs/               # croner scheduler started by src/server.ts: library-sync (15 min), submit-approved (5 min)
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template
