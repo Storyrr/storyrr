@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "skills": {
+    "drizzle": {
+      "source": "./node_modules/drizzle-kit/skills",
+      "sourceType": "local",
+      "computedHash": "c91331769b0cf9a9f5592d9ea5cf0998fdfcd81c4ed1fb0d8784ada819a797e9"
+    },
+    "shadcn": {
+      "source": "shadcn-ui/ui",
+      "commit": "055aa6b7837b1808456a24beb4c97a677864aa82",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
+    },
+    "valibot": {
+      "source": "open-circle/agent-skills",
+      "commit": "ea150d8fc3a856801256308b3a83ed79cb3ff3a4",
+      "sourceType": "github",
+      "skillPath": "skills/valibot/SKILL.md",
+      "computedHash": "5792dc3f1fe0d09b69be700a75b3ea643ce7ed97fba659082f5da2f7f024ea12"
+    }
+  }
+}

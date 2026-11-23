@@ -1,0 +1,204 @@
+# AGENTS.md
+
+**Storyrr**: a self-hosted request manager for **audiobooks, eBooks (incl. manga/comics) and podcasts**, in the spirit of Seerr (Overseerr/Jellyseerr) but for the book side of a homelab. Users search, request, and see when it's available; admins approve and choose where it lands.
+
+Product spec: [docs/SPEC.md](docs/SPEC.md). GitHub: `Storyrr/storyrr`.
+
+This file is the single source of agent instructions for every tool: `CLAUDE.md` is a symlink to it. TanStack Intent manages the block delimited by `intent-skills` comments in the _Agent skills_ section: edit around it, not inside it.
+
+## Language
+
+- Code, comments, commits, docs, issues: **English**.
+- UI is English-first but **i18n-ready from day one**: no hard-coded user-facing string anywhere, everything goes through the message catalog (see i18n below). French is the first translation planned.
+
+## Stack (decided)
+
+| Concern                   | Choice                                                                                                                                                                               | Notes                                                                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework                 | **TanStack Start** (React 19) + TanStack Router (file routes)                                                                                                                        | Pages, SSR, server functions, server routes                                                                                                                                                                                                                                   |
+| Runtime                   | **Node.js** (≥ 22) in dev and production                                                                                                                                             | `better-sqlite3` is a native Node addon and is **not supported by Bun**. Never run the app with `bun --bun`.                                                                                                                                                                  |
+| Package manager / scripts | **Bun** (`bun install`, `bun run <script>`, `bunx`)                                                                                                                                  | Scripts invoke Node-based tools (Vite, drizzle-kit, Vitest)                                                                                                                                                                                                                   |
+| Build / server            | Vite + **Nitro** (`nitro/vite`), Node server output                                                                                                                                  | `bun run build` → `node .output/server/index.mjs`                                                                                                                                                                                                                             |
+| Client data               | **TanStack Query** (v5) with the official Router/Start SSR integration (`@tanstack/react-router-ssr-query`)                                                                          | Server functions as `queryFn`/`mutationFn`; loaders prefetch with `ensureQueryData`; components use `useSuspenseQuery`                                                                                                                                                        |
+| DB                        | **SQLite** via **Drizzle ORM 1.0 RC** (`drizzle-orm/better-sqlite3`) + `drizzle-kit` migrations (`./drizzle`)                                                                        | One file in the data volume. Drizzle 1.0 is still RC: check its changelog when the lockfile moves to a newer RC. Load the Drizzle skill.                                                                                                                                      |
+| Auth                      | **better-auth** (1.7) + Drizzle adapter (`better-auth/adapters/drizzle`), `admin` plugin (`better-auth/plugins`), `tanstackStartCookies` (`better-auth/tanstack-start`, last plugin) | Invite-only; generic OIDC later                                                                                                                                                                                                                                               |
+| Validation                | **Valibot** (v1, Standard Schema)                                                                                                                                                    | Server function inputs, env, external API responses, forms. Chosen over zod for client bundle size (zod still sits in `node_modules` as a better-auth dependency: never import it). Drizzle table schemas → Valibot via the separate `drizzle-valibot` package if needed.     |
+| UI components             | **shadcn/ui** with the official **React Aria** base (`shadcn init --base aria`, preset `aria-nova`, Lucide icons, Geist font)                                                        | Components copied into `src/components/ui/` and added with `bunx --bun shadcn@latest add <name>`. Class merging via shadcn's `cn` package (re-exported by `#/lib/utils`). No Radix.                                                                                           |
+| Styling                   | **Tailwind CSS** v4                                                                                                                                                                  | Dark-first, mobile-friendly; design tokens via CSS variables (shadcn theming)                                                                                                                                                                                                 |
+| Forms                     | **TanStack Form** + Valibot                                                                                                                                                          | Same Valibot schemas as the server functions they submit to (Standard Schema validators)                                                                                                                                                                                      |
+| i18n                      | **Paraglide JS** (inlang)                                                                                                                                                            | TanStack maintains a Start + Paraglide example (`examples/react/start-i18n-paraglide`)                                                                                                                                                                                        |
+| Tests                     | **Vitest** (unit/integration, runs on Node so the real SQLite driver works); Playwright later for E2E                                                                                | Integrations tested against fakes + recorded fixtures                                                                                                                                                                                                                         |
+| Lint / format             | **oxlint** (type-aware: `typeAware` + `typeCheck`, via `oxlint-tsgolint`) + **oxfmt** (Oxc)                                                                                          | oxlint also reports TypeScript errors, so there is no separate `tsc` step (the `typescript` package stays for editors). Pin exact versions (oxfmt and tsgolint are pre-1.0). Agent skill folders (`.claude/`, `.agents/`) are excluded from lint, format and `tsconfig.json`. |
+| Delivery                  | Docker image on GHCR via GitHub Actions                                                                                                                                              | Single container, single port                                                                                                                                                                                                                                                 |
+
+**No TanStack DB in v1 (deliberate).** It is a client-side reactive store (live queries over local collections, sync engines), still beta/RC. Storyrr's data is small and server-owned; TanStack Query covers caching, polling and optimistic updates. If a live-updating view is needed later, TanStack DB can be added on top of TanStack Query collections for that view only.
+
+**No Elysia (deliberate).** TanStack Start covers everything v1 needs: server functions for the UI, server routes for webhooks / health / auth. Business logic lives in framework-agnostic modules (`src/server/**`), so a public REST API (e.g. Elysia mounted on a `/api/v1/$` server route) can be added later without moving code.
+
+### Verify against installed versions before relying on them
+
+Docs disagree or move fast on these (checked 2026-11-23); the installed package wins:
+
+- Server function validation: TanStack docs show `createServerFn(...).validator(schema)`, better-auth's TanStack page shows `.inputValidator(schema)`. Use what `@tanstack/react-start` exposes.
+- better-auth schema: generate the auth tables into our Drizzle schema (better-auth CLI `generate`), then migrate with **drizzle-kit only** (one migration history).
+- Disabling public email/password sign-up (expected: `emailAndPassword.disableSignUp`): confirm the option name.
+
+## Agent skills (read before coding)
+
+Libraries ship agent skills inside `node_modules` (TanStack Start/Router/Query/Form… use the **TanStack Intent** format). They are the up-to-date reference: **follow them over memory** when they disagree.
+
+- Setup (done; first run is interactive, so a human runs it):
+  ```bash
+  bun add -D -E @tanstack/intent             # kept in devDependencies (the hooks and the block below use the installed CLI)
+  bunx @tanstack/intent@latest install        # choose the packages/skills to allow (done: all); writes package.json#intent and the block below
+  bunx @tanstack/intent@latest hooks install  # Claude Code hook: load the matching skill before editing
+  ```
+- Load the most specific skill for the task before editing (e.g. server functions, server routes, middleware, SSR, data loading, auth guards). The Claude Code hook in `.claude/settings.json` enforces it.
+
+<!-- intent-skills:start -->
+
+## Skill Loading
+
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+
+- Run `bunx --no-install --package @tanstack/intent intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `bunx --no-install --package @tanstack/intent intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
+<!-- intent-skills:end -->
+
+- Other skills are installed with the `skills` CLI and pinned in `skills-lock.json` (committed): shadcn/ui (`bunx --bun skills add shadcn/ui`), Valibot (`open-circle/agent-skills`), Drizzle (shipped in `drizzle-kit`). Re-run `skills add` to update, and load the matching skill before working with that library.
+
+## Bootstrap: first tasks (the scaffold differs from the decided stack)
+
+The project was generated with `create-tanstack` (`.cta.json`: nitro, drizzle/sqlite, form, shadcn, better-auth, tanstack-query). Before building features:
+
+1. **Wire better-auth to the database.** `src/lib/auth.ts` has no `database` option, so it falls back to in-memory storage and loses users on restart. Recreate `src/db/schema.ts` (removed with the demo table; `drizzle.config.ts` points to it) with the better-auth tables (CLI `generate`), add the Drizzle adapter (`drizzleAdapter(db, { provider: "sqlite" })` from `better-auth/adapters/drizzle`), the `admin` plugin and invite-only sign-up, then `bun run db:generate`.
+2. ~~Swap the UI kit to React Aria~~ **done**: official shadcn aria base, Radix removed.
+3. **Add the remaining tooling:** Paraglide (Vite plugin + `paraglideMiddleware` in the server entry + `<html lang>`) and Vitest (+ a `test` script, appended to `check`). oxlint/oxfmt are **done** (pinned, configs in `.oxlintrc.json` / `.oxfmtrc.json`, scripts `format`, `lint`, `check`).
+4. ~~Clean the template~~ **done**: demo `todos` table and `pnpm` block removed; TanStack devtools are stripped from production builds by `@tanstack/devtools-vite` (`removeDevtoolsOnBuild`, default on).
+5. ~~Env~~ **done**: `src/server/env.ts` (server-only, Valibot, lazy `getEnv()`), `.env.example`; `*.db` and `/data/` git-ignored.
+6. Then follow the milestones in `docs/SPEC.md`.
+
+## Architecture
+
+Target layout (the scaffold's `src/db/` and `src/lib/auth.ts` move under `src/server/`; `src/integrations/` from the template keeps only client-side providers such as the Query provider):
+
+```
+src/
+├── routes/                 # TanStack file routes (pages + server routes)
+│   ├── __root.tsx          # <html lang={getLocale()}>, layout, providers
+│   ├── api/auth/$.ts       # better-auth handler (GET/POST → auth.handler(request))
+│   ├── api/webhooks/chaptarr.ts
+│   ├── api/health.ts
+│   └── …pages (search, media/$type/$id, requests, settings, users, setup)
+├── server/                 # framework-agnostic business logic, server-only
+│   ├── env.ts              # Valibot-validated env (getEnv())
+│   ├── db/                 # drizzle schema, client, migrations runner
+│   ├── auth.ts             # better-auth instance
+│   ├── services/           # one client per external service: chaptarr, audiobookshelf, kavita, audible, hardcover, itunes
+│   ├── sources/            # one module per media type: search/details/request/availability
+│   ├── requests/           # request lifecycle (state machine), policies
+│   └── jobs/               # scheduler + jobs (availability sync, cache refresh)
+├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
+├── integrations/           # client-side providers (TanStack Query, …) from the template
+├── components/             # app components; ui/ = shadcn-style React Aria primitives
+├── lib/                    # client-safe helpers (cn, auth client, query keys)
+└── paraglide/              # generated, git-ignored
+messages/                   # en.json (source), fr.json …
+```
+
+Rules:
+
+- Import alias: **`#/`** (package.json `imports`, e.g. `#/server/db`). Don't introduce a second alias.
+- **UI never talks to external services directly.** Pages call server functions → server functions call `src/server/**`. Server-only modules live under `src/server/` (or use the `*.server.ts` suffix) so they can't leak into the client bundle.
+- **Every server function that touches private data checks the session itself** (route `beforeLoad` guards are not enough). Use a shared `requireUser()` / `requireAdmin()` helper or function middleware.
+- **Background jobs:** TanStack Start has no documented startup/cron hook. Start an in-process scheduler (e.g. `croner`) from the custom server entry `src/server.ts` (singleton guard, so dev HMR doesn't start it twice). Jobs must be idempotent and safe to run concurrently with webhooks.
+- **Media sources share one interface** so adding a type never touches the request flow:
+  ```ts
+  interface MediaSource {
+    type: "audiobook" | "ebook" | "podcast";
+    search(query: string, opts): Promise<MediaResult[]>;
+    getDetails(externalId: string): Promise<MediaDetails>;
+    getRequestTargets(): Promise<RequestTarget[]>; // root folders/libraries the admin can pick
+    submit(request: RequestRecord): Promise<SubmitResult>; // hand to Chaptarr / Audiobookshelf
+    checkAvailability(requests: RequestRecord[]): Promise<AvailabilityUpdate[]>;
+  }
+  ```
+- External API clients validate responses with Valibot and never throw raw fetch errors at the UI: map them to typed results (`ok`, `retryable`, `auth_failed`, `not_found`, `rejected` with the upstream message).
+
+## Integrations: hard-won pitfalls
+
+These come from running Chaptarr, Audiobookshelf and Kavita together in production. Read before touching an integration.
+
+### Chaptarr (audiobooks + eBooks, Readarr v1 API shape)
+
+- Auth: `X-Api-Key` header. The API key can change after Chaptarr's first-run setup: surface 401s clearly ("re-check the API key"), never as a generic failure.
+- **Always send the write scope** on author writes: `POST /api/v1/author?mediaType=ebook|audiobook` and `PUT /api/v1/author/{id}?mediaType=…`. Chaptarr maps legacy single-format fields (`rootFolderPath`, `qualityProfileId`, `metadataProfileId`) onto that scope; without it, an eBook add is treated as audiobook and fails with _"Default audiobook root folder '/books' is not compatible with audiobook imports"_.
+- Prefer the **per-media fields** (`audiobookRootFolderPath`, `ebookRootFolderPath`, `audiobookQualityProfileId`, `ebookMetadataProfileId`, `audiobookMonitorExisting`, …) over the legacy ones.
+- Root folders: `GET /api/v1/rootfolder`, each has `folderType` (**1 = audiobook, 2 = eBook, 3 = mixed**) and per-media defaults. Only offer folders compatible with the requested format.
+- Never monitor a whole author for a one-book request: add the author with "monitor existing: none/selected", then monitor and search only the requested book (`PUT /api/v1/book/monitor`, `POST /api/v1/command {"name":"BookSearch","bookIds":[…]}`).
+- Audiobook lookup by ASIN: `GET /api/v1/book/lookup?term=az:<ASIN>&mediaType=audiobook`.
+- Chaptarr may pick a foreign-language edition if its metadata profile allows all languages: show the edition/language it resolved, don't assume.
+- Webhook (Settings → Connect → Webhook, POST): token in the URL query, compared in constant time; on import events, run the availability check for the affected request instead of trusting the payload.
+- Reference implementation for payload shapes: Stackarr `stackarr/chaptarr.py` (MIT), including the media-scope fix (katalyst88/stackarr#6).
+
+### Audiobookshelf (audiobook availability, podcasts)
+
+- Use an **API key** (Settings → API Keys, admin user) for server-to-server calls. Do **not** store user session tokens: on recent versions (2.26+) they expire quickly and break background calls with 401.
+- In Docker the server listens on **port 80 inside the container**, whatever port is published on the host.
+- **Ownership must be matched by ASIN.** Titles/authors in libraries are often wrong (narrator as author, "T01-…" folder-derived titles). Fall back to normalized title+author only when no ASIN exists, and treat that as "probably owned".
+- ABS proxies metadata providers (`/api/search/books?title=&author=&provider=audible.fr`) and podcast search: reuse instead of re-implementing where convenient.
+- Podcasts: requesting = creating the podcast in a podcast library from its RSS feed with auto-download enabled. Confirm the exact create endpoint/body against the installed ABS version.
+- The library's "metadata provider" setting matters (Google Books by default, Audible is far better for audiobooks).
+
+### Kavita (eBook availability)
+
+- Use a dedicated **Auth Key** (Settings → Account → Auth Keys / OPDS → + New), authenticate with `POST /api/Plugin/authenticate?apiKey=…&pluginName=Storyrr` to get a JWT, then query libraries/series.
+- Kavita libraries map 1:1 to Chaptarr eBook root folders (Books, Manga, Comics): use that to compute availability per folder.
+
+### Metadata
+
+- Audiobooks: Audible (FR/US/… region configurable) via ABS's provider proxy or Audnexus. ASIN is the primary key.
+- eBooks: Hardcover (GraphQL, personal token) and/or Open Library (no key). ISBN/Hardcover id as keys.
+- Podcasts: iTunes Search API (`media=podcast`), feed URL as key.
+- Cache metadata in SQLite with a TTL; never block a page on a slow provider (show cached + refresh in background).
+
+## Conventions
+
+- TypeScript `strict` (already on), no `any` at module boundaries. Env parsed once with Valibot (`getEnv()`), fail fast with a clear message.
+- Data fetching: one query-key factory per domain (`requestKeys.list(filters)`, `mediaKeys.detail(type, id)`, …); every mutation invalidates the keys it affects; optimistic updates for approve/deny/cancel with rollback on error; request statuses poll (`refetchInterval`) only while something is in flight.
+- Server-only code never imported from components. Secrets never reach the client or logs; logs redact tokens and API keys.
+- DB: every schema change is a drizzle-kit migration committed with the code (`./drizzle`); migrations run automatically at startup. `db:push` is for throwaway local experiments only.
+- Request status is a **state machine** (`pending → approved → submitted → available`, plus `denied`, `failed`, `cancelled`); all transitions go through one module, with a history row per transition.
+- i18n: user-facing text only through Paraglide messages (`m.some_key()`), keys in `messages/en.json` first. Dates, numbers, durations via `Intl`. No string concatenation for sentences.
+- UI: compose from the shared components in `src/components/ui/` (shadcn, React Aria base); add new ones with the shadcn CLI instead of hand-writing primitives, and load the shadcn skill (`bunx --bun skills add shadcn/ui`) before UI work. Don't hand-edit vendored components unless needed; lint exceptions for them live in `.oxlintrc.json` overrides. Forms always use TanStack Form with the Valibot schema of the target server function; show server-side validation errors on the matching fields.
+- Accessibility: rely on React Aria for focus management, keyboard interaction and ARIA; every input labelled; contrast checked in both themes.
+- Before pushing: `bun run check` must pass. It runs `oxfmt --check` then `oxlint --deny-warnings` (lint + type check), and `vitest run` once Vitest is added. Format with `bun run format` (oxfmt), never by hand-aligning code.
+- Config lives in the repo (`.oxlintrc.json`, oxfmt config): fix the code rather than disabling a rule; any disabled rule gets a comment explaining why.
+
+## Commits
+
+[Conventional Commits](https://www.conventionalcommits.org/), in English: `<type>(<optional scope>): <description>`, then an optional body and an optional footer, each after a blank line.
+
+- **Types:** `feat` (add, change or remove a user-facing feature), `fix` (bug fix), `refactor` (restructure without behavior change), `perf` (performance-only refactor), `style` (formatting only), `test`, `docs` (documentation only), `build` (tooling, dependencies, version), `ops` (CI/CD, Docker, deployment), `chore` (anything else: initial commit, `.gitignore`, …).
+- **Scopes** (optional, never an issue number): `requests`, `search`, `media`, `auth`, `users`, `settings`, `jobs`, `db`, `ui`, `i18n`, `chaptarr`, `audiobookshelf`, `kavita`, `metadata`, `podcasts`, `deps`.
+- **Description:** imperative present tense ("add", not "added"/"adds"; read it as "this commit will …"), lowercase first letter, no trailing period, concise.
+- **Body:** the motivation and how behavior differs from before, imperative tense.
+- **Footer:** issue references (`Closes #12`) and breaking changes.
+- **Breaking changes:** `!` before the `:` (`feat(api)!: remove status endpoint`) plus a `BREAKING CHANGE: <what changes and how to migrate>` footer when the description isn't enough. Changing a DB schema in a way that needs manual migration, an env variable, or a public route counts.
+- Merge and revert commits keep git's default messages. The initial commit is `chore: init`.
+- **Versioning** (SemVer, derived from commits): a breaking change bumps the major, a `feat` the minor, anything else the patch.
+- One logical change per commit; `bun run check` passes on every commit.
+
+Examples: `feat(requests): let admins pick the target root folder`, `fix(chaptarr): send the media write scope on author updates`, `build(deps): bump drizzle-orm to 1.0.0-rc.7`, `ops: publish the Docker image on tags`.
+
+## Deployment
+
+- Single Docker image (`ghcr.io/storyrr/storyrr`), multi-stage build (Bun to install/build, **Node** to run `.output/server/index.mjs`), runs as non-root, `/data` volume (SQLite DB + cache), `PORT` env, `GET /api/health` for the healthcheck. `better-sqlite3` is native: build it in the same base image family as the runtime.
+- Config: bootstrap values via env (base URL, auth secret, data dir); service connections are edited in the UI (stored encrypted at rest with a key derived from the auth secret).
+- Must work behind a reverse proxy / Cloudflare Tunnel: honor `X-Forwarded-*`, configurable base URL, secure cookies when served over HTTPS.
+- Typical homelab: same Docker network as Chaptarr / Audiobookshelf / Kavita, reached by container name and _internal_ port.
