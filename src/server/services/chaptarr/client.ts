@@ -106,7 +106,14 @@ export type SubmitBookOutcome =
   /** The book exists in Chaptarr, monitored, and its search was requested. */
   | { state: "added"; bookId: number; foreignBookId: string }
   /** Chaptarr queued the author until its metadata is ready; it will search then. */
-  | { state: "pending"; pendingId: number; foreignBookId: string };
+  | { state: "pending"; pendingId?: number; foreignBookId: string };
+
+/**
+ * `PendingBookRequestException.UserMessage` in Chaptarr. `POST /book/import`
+ * wraps that exception in a 400 ("Failed to import book: …") instead of the
+ * documented 202, so it is recognized by its text.
+ */
+const PENDING_MESSAGE = "The author and requested book are being prepared by the metadata server.";
 
 /**
  * Requests one book from Chaptarr in one media type, the way its API contract
@@ -136,7 +143,11 @@ export async function submitBook(
     metadataProfileId: input.metadataProfileId,
     authorMonitoring: { monitor: "none", searchForMissing: true },
   });
-  if (!imported.ok) return imported;
+  if (!imported.ok) {
+    return imported.error.kind === "rejected" && imported.error.message.includes(PENDING_MESSAGE)
+      ? ok({ state: "pending", foreignBookId })
+      : imported;
+  }
   const { id, pendingId } = imported.value;
   if (id !== undefined && id > 0) return ok({ state: "added", bookId: id, foreignBookId });
   if (pendingId !== undefined) return ok({ state: "pending", pendingId, foreignBookId });

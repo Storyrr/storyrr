@@ -60,6 +60,26 @@ describe("submitBook", () => {
     });
   });
 
+  it("treats the import endpoint's wrapped pending error as pending", async () => {
+    // What Chaptarr's POST /book/import actually returns when the author is still being prepared.
+    const chaptarr = fakeChaptarr({
+      importResponse: {
+        status: 400,
+        body: [
+          {
+            propertyName: "Import",
+            errorMessage:
+              "Failed to import book: The author and requested book are being prepared by the metadata server. Chaptarr saved your request and will add it automatically when it becomes available.",
+          },
+        ],
+      },
+    });
+    expect(await submitBook(createChaptarrClient(connection, chaptarr.fetch), input)).toEqual({
+      ok: true,
+      value: { state: "pending", foreignBookId: "hc:1" },
+    });
+  });
+
   it("reports unknown ASINs as not found without importing anything", async () => {
     const chaptarr = fakeChaptarr({ lookup: [] });
     const result = await submitBook(createChaptarrClient(connection, chaptarr.fetch), input);

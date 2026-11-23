@@ -87,7 +87,9 @@ async function submit(
       result.value.state === "added"
         ? { chaptarrBookId: result.value.bookId, chaptarrForeignBookId: result.value.foreignBookId }
         : {
-            chaptarrPendingId: result.value.pendingId,
+            ...(result.value.pendingId === undefined
+              ? {}
+              : { chaptarrPendingId: result.value.pendingId }),
             chaptarrForeignBookId: result.value.foreignBookId,
           },
   });
