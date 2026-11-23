@@ -40,7 +40,7 @@ This file is the single source of agent instructions for every tool: `CLAUDE.md`
 Docs disagree or move fast on these (checked 2026-11-23); the installed package wins:
 
 - Server function validation: `@tanstack/react-start` 1.169 exposes `createServerFn(...).validator(schema)` (no `.inputValidator`, despite better-auth's TanStack page).
-- better-auth schema: generate the auth tables into our Drizzle schema with the better-auth CLI (package `auth`, same version as `better-auth`: `bunx auth@<version> generate --config src/lib/auth.ts --output src/db/schema.ts`), then migrate with **drizzle-kit only** (one migration history). The 1.7 CLI still emits Drizzle 0.x `relations()`, which Drizzle 1.0 removed: delete them from the output and keep relations in `src/db/relations.ts` (`defineRelations`). The adapter (`better-auth/adapters/drizzle`) gets the tables through its `schema` option and needs no relations unless `experimental.joins` is enabled.
+- better-auth schema: generate the auth tables into our Drizzle schema with the better-auth CLI (package `auth`, same version as `better-auth`: `bunx auth@<version> generate --config src/server/auth.ts --output src/server/db/schema.ts`), then migrate with **drizzle-kit only** (one migration history). The 1.7 CLI still emits Drizzle 0.x `relations()`, which Drizzle 1.0 removed: delete them from the output and keep relations in `src/server/db/relations.ts` (`defineRelations`). The adapter (`better-auth/adapters/drizzle`) gets the tables through its `schema` option and needs no relations unless `experimental.joins` is enabled.
 - Disabling public email/password sign-up: `emailAndPassword.disableSignUp: true` (confirmed in better-auth 1.7). Admins create accounts through the `admin` plugin (`auth.api.createUser`).
 
 ## Agent skills (read before coding)
@@ -74,7 +74,7 @@ Before editing files for a substantial task:
 
 ## Architecture
 
-Target layout (the scaffold's `src/db/` and `src/lib/auth.ts` move under `src/server/`; `src/integrations/` from the template keeps only client-side providers such as the Query provider):
+Layout (`src/integrations/` from the template keeps only client-side providers such as the Query provider):
 
 ```
 src/

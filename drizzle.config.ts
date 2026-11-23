@@ -8,7 +8,7 @@ if (!url) throw new Error("DATABASE_URL is not set (see .env.example)");
 
 export default defineConfig({
   out: "./drizzle",
-  schema: "./src/db/schema.ts",
+  schema: "./src/server/db/schema.ts",
   dialect: "sqlite",
   dbCredentials: {
     url,
