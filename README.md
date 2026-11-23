@@ -53,6 +53,6 @@ bun run dev                  # http://localhost:3000
 | `bun run check`       | Message compile, format check, type-aware lint, tests (CI runs this) |
 | `bun run format`      | Format with oxfmt                                                    |
 | `bun run test`        | Vitest (use this, not `bun test`)                                    |
-| `bun run db:generate` | Generate a migration from `src/server/db/schema.ts`                  |
+| `bun run db:generate` | Generate a migration from `src/server/db/schema/`                    |
 
 Contributor and agent guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
