@@ -1,0 +1,83 @@
+{
+  "products": [
+    {
+      "asin": "B07Q44JYLF",
+      "title": "Dune - Livre premier et livre second",
+      "subtitle": "Dune 1",
+      "authors": [
+        {
+          "asin": "B000APO5OM",
+          "name": "Frank Herbert"
+        },
+        {
+          "asin": "B004N7285G",
+          "name": "Michel Demuth - traducteur"
+        }
+      ],
+      "narrators": [
+        {
+          "name": "Benjamin Jungers"
+        }
+      ],
+      "publisher_name": "Lizzie",
+      "release_date": "2019-04-11",
+      "runtime_length_min": 1080,
+      "language": "french",
+      "series": [
+        {
+          "asin": "B07R989K55",
+          "sequence": "1.1",
+          "title": "Dune",
+          "url": "/pd/Dune-Livre-Audio/B07R989K55"
+        }
+      ],
+      "product_images": {
+        "500": "https://m.media-amazon.com/images/I/41ZARrCWHRL._SL500_.jpg"
+      },
+      "format_type": "unabridged",
+      "content_delivery_type": "MultiPartBook",
+      "merchandising_summary": "<p>Le livre culte qui a inspiré le film de Denis Villeneuve. Il n'y a pas, dans tout l'Empire, de planète plus inhospitalière que Dune...</p>",
+      "publisher_summary": "<p><b>Le livre culte qui a inspiré le film de Denis Villeneuve</b></p> <p>Il n'y a pas, dans tout l'Empire, de planète plus inhospitalière que Dune. Partout des sables à perte de vue. Une seule richesse : l'épice de longue vie, née du désert, et que tout l'univers convoite.<br /> Quand Leto Atréides reçoit Dune en fief, il flaire le piège. Il aura besoin des guerriers Fremen qui, réfugiés au fond du désert, se sont adaptés à une vie très dure en préservant leur liberté, leurs coutumes et leur foi. Ils rêvent du prophète qui proclamera la guerre sainte et changera le cours de l'Histoire.<br /> Cependant les Révérendes Mères du Bene Gesserit poursuivent leur programme millénaire de sélection génétique : elles veulent créer un homme qui réunira tous les dons latents de l'espèce. Le Messie des Fremen est-il déjà né dans l'Empire ?<br /> <br /> <b>Ce titre contient le livre premier, </b><b><i>Dune</i></b><b> et le livre second, </b><b><i>Muad'Dib.</i></b><b> </b> <br /> <br /> <i>Motion Picture Artwork © 2021 Legendary and Warner Bros. Entertainment Inc. Tous droits réservés.</i></p>"
+    },
+    {
+      "asin": "B07R6TPKCG",
+      "title": "Dune - Livre troisième",
+      "subtitle": "Dune 1",
+      "authors": [
+        {
+          "asin": "B000APO5OM",
+          "name": "Frank Herbert"
+        },
+        {
+          "asin": "B004N7285G",
+          "name": "Michel Demuth - traducteur"
+        }
+      ],
+      "narrators": [
+        {
+          "name": "Benjamin Jungers"
+        }
+      ],
+      "publisher_name": "Lizzie",
+      "release_date": "2019-05-09",
+      "runtime_length_min": 419,
+      "language": "french",
+      "series": [
+        {
+          "asin": "B07R989K55",
+          "sequence": "1.2",
+          "title": "Dune",
+          "url": "/pd/Dune-Livre-Audio/B07R989K55"
+        }
+      ],
+      "product_images": {
+        "500": "https://m.media-amazon.com/images/I/41zAbN1lRlL._SL500_.jpg"
+      },
+      "format_type": "unabridged",
+      "content_delivery_type": "SinglePartBook",
+      "merchandising_summary": "<p>Le livre culte qui a inspiré le film de Denis Villeneuve. Paul Atréides vient d'avoir quinze ans. Les Révérendes Mères le surveillent...</p>",
+      "publisher_summary": "<b>Le livre culte qui a inspiré le film de Denis Villeneuve </b> <br /> <p>Paul Atréides vient d'avoir quinze ans. Les Révérendes Mères le surveillent : il est issu d'une lignée sélectionnée et a montré dès l'enfance des dons extraordinaires. Serait-il le surhomme prévu par leur programme génétique ?<br />Leto, le père de Paul, est parent de l'empereur ; celui-ci lui remet en fief Dune, la planète des sables, qui produit l'épice de longue vie. Les Harkonnen, ses vieux ennemis, lui tendront là un piège fatal. Paul fuit dans le désert auprès des Fremens, ces nomades aguerris par les épreuves et soutenu par une foi farouche. Une foi que le jeune homme va galvaniser pour préparer sa vengeance.<br />Mais le destin peut-il s'accomplir sans un effroyable carnage ? Les Révérendes Mères sélectionnent des lignées depuis des millénaires et le chaos qui s'annonce risque de mêler tous les sangs dans le désordre. Le Messie des Fremen a, dit-on, le pouvoir de lire l'avenir. Aura-t-il celui de l'éviter ?<br /> <br /> <b>Ce titre contient le livre troisième, <i>Le Prophète</i>.</b> <br /> <br /> <i>Motion Picture Artwork © 2021 Legendary and Warner Bros. Entertainment Inc. Tous droits réservés.</i> </p>"
+    }
+  ],
+  "total_results": 1673
+}

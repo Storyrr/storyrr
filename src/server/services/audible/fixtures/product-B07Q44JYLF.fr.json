@@ -1,0 +1,41 @@
+{
+  "product": {
+    "asin": "B07Q44JYLF",
+    "title": "Dune - Livre premier et livre second",
+    "subtitle": "Dune 1",
+    "authors": [
+      {
+        "asin": "B000APO5OM",
+        "name": "Frank Herbert"
+      },
+      {
+        "asin": "B004N7285G",
+        "name": "Michel Demuth - traducteur"
+      }
+    ],
+    "narrators": [
+      {
+        "name": "Benjamin Jungers"
+      }
+    ],
+    "publisher_name": "Lizzie",
+    "release_date": "2019-04-11",
+    "runtime_length_min": 1080,
+    "language": "french",
+    "series": [
+      {
+        "asin": "B07R989K55",
+        "sequence": "1.1",
+        "title": "Dune",
+        "url": "/pd/Dune-Livre-Audio/B07R989K55"
+      }
+    ],
+    "product_images": {
+      "500": "https://m.media-amazon.com/images/I/41ZARrCWHRL._SL500_.jpg"
+    },
+    "format_type": "unabridged",
+    "content_delivery_type": "MultiPartBook",
+    "merchandising_summary": "<p>Le livre culte qui a inspiré le film de Denis Villeneuve. Il n'y a pas, dans tout l'Empire, de planète plus inhospitalière que Dune...</p>",
+    "publisher_summary": "<p><b>Le livre culte qui a inspiré le film de Denis Villeneuve</b></p> <p>Il n'y a pas, dans tout l'Empire, de planète plus inhospitalière que Dune. Partout des sables à perte de vue. Une seule richesse : l'épice de longue vie, née du désert, et que tout l'univers convoite.<br /> Quand Leto Atréides reçoit Dune en fief, il flaire le piège. Il aura besoin des guerriers Fremen qui, réfugiés au fond du désert, se sont adaptés à une vie très dure en préservant leur liberté, leurs coutumes et leur foi. Ils rêvent du prophète qui proclamera la guerre sainte et changera le cours de l'Histoire.<br /> Cependant les Révérendes Mères du Bene Gesserit poursuivent leur programme millénaire de sélection génétique : elles veulent créer un homme qui réunira tous les dons latents de l'espèce. Le Messie des Fremen est-il déjà né dans l'Empire ?<br /> <br /> <b>Ce titre contient le livre premier, </b><b><i>Dune</i></b><b> et le livre second, </b><b><i>Muad'Dib.</i></b><b> </b> <br /> <br /> <i>Motion Picture Artwork © 2021 Legendary and Warner Bros. Entertainment Inc. Tous droits réservés.</i></p>"
+  }
+}
