@@ -32,3 +32,5 @@ export const yearOf = (isoDate: string | undefined) => isoDate?.slice(0, 4);
 export function formatList(items: readonly string[]): string {
   return new Intl.ListFormat(getLocale(), { type: "conjunction" }).format(items);
 }
+
+export const formatNumber = (value: number) => new Intl.NumberFormat(getLocale()).format(value);

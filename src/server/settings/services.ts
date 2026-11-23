@@ -1,8 +1,10 @@
 import "@tanstack/react-start/server-only";
 
-import type { ConnectionForm, ServiceName } from "#/lib/schemas/settings";
+import type { ChaptarrFormat, ConnectionForm, ServiceName } from "#/lib/schemas/settings";
 import { createAudiobookshelfClient } from "#/server/services/audiobookshelf/client";
 import { createChaptarrClient } from "#/server/services/chaptarr/client";
+import { createHardcoverClient } from "#/server/services/hardcover/client";
+import { createKavitaClient } from "#/server/services/kavita/client";
 import { FOLDER_TYPES } from "#/server/services/chaptarr/schemas";
 import type { FetchFn, ServiceError } from "#/server/services/result";
 
@@ -50,17 +52,29 @@ export async function testConnection(
       : [];
     return { ok: true, version: status.value.version, warnings };
   }
+  if (service === "kavita") {
+    const libraries = await createKavitaClient(connection, fetch).libraries();
+    return libraries.ok
+      ? { ok: true, libraries: libraries.value.length }
+      : { ok: false, error: libraries.error };
+  }
   const libraries = await createAudiobookshelfClient(connection, fetch).libraries();
   return libraries.ok
     ? { ok: true, libraries: libraries.value.length }
     : { ok: false, error: libraries.error };
 }
 
-/** Root folders that can receive audiobooks: Chaptarr's Audiobook (1) and Mixed (0) folders. */
-export function isAudiobookFolder(folderType: number | undefined): boolean {
-  return (
-    folderType === undefined ||
-    folderType === FOLDER_TYPES.audiobook ||
-    folderType === FOLDER_TYPES.mixed
-  );
+/** Root folders that can receive a format: Mixed (0) folders, plus Audiobook (1) or Ebook (2) ones. */
+export function isCompatibleFolder(
+  format: ChaptarrFormat,
+  folderType: number | undefined,
+): boolean {
+  if (folderType === undefined || folderType === FOLDER_TYPES.mixed) return true;
+  return folderType === (format === "audiobook" ? FOLDER_TYPES.audiobook : FOLDER_TYPES.ebook);
+}
+
+/** Checks a Hardcover token with a one-result search. */
+export async function testHardcoverToken(token: string, fetch: FetchFn): Promise<ConnectionTest> {
+  const result = await createHardcoverClient({ token, fetch }).search("dune", { limit: 1 });
+  return result.ok ? { ok: true } : { ok: false, error: result.error };
 }

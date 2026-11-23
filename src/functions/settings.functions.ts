@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import type * as v from "valibot";
 
 import {
-  AudiobookDefaultsSchema,
+  FormatInputSchema,
+  HardcoverTokenFormSchema,
   MetadataSettingsSchema,
+  SaveFormatDefaultsSchema,
   ServiceConnectionInputSchema,
 } from "#/lib/schemas/settings";
 import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
@@ -14,15 +16,17 @@ import { services } from "#/server/services";
 import type { ServiceError } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import {
-  audiobookDefaults,
   connectionSettings,
+  formatDefaults,
+  hardcoverToken,
   metadataSettings,
 } from "#/server/settings/definitions";
 import {
-  isAudiobookFolder,
+  isCompatibleFolder,
   MissingApiKeyError,
   resolveConnection,
   testConnection,
+  testHardcoverToken,
 } from "#/server/settings/services";
 import { getOrCreateWebhookToken } from "#/server/webhooks/chaptarr";
 
@@ -38,17 +42,24 @@ async function connectionSummary(service: keyof typeof connectionSettings) {
 export const getServiceSettings = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
   .handler(async () => {
-    const [chaptarr, audiobookshelf, metadata, defaults] = await Promise.all([
-      connectionSummary("chaptarr"),
-      connectionSummary("audiobookshelf"),
-      settings.get(metadataSettings),
-      settings.get(audiobookDefaults),
-    ]);
+    const [chaptarr, audiobookshelf, kavita, hardcover, metadata, audiobook, ebook] =
+      await Promise.all([
+        connectionSummary("chaptarr"),
+        connectionSummary("audiobookshelf"),
+        connectionSummary("kavita"),
+        settings.get(hardcoverToken),
+        settings.get(metadataSettings),
+        settings.get(formatDefaults.audiobook),
+        settings.get(formatDefaults.ebook),
+      ]);
     return {
       chaptarr,
       audiobookshelf,
+      kavita,
+      // Never send the token back: only whether one is stored.
+      hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
-      audiobookDefaults: defaults ?? null,
+      defaults: { audiobook: audiobook ?? null, ebook: ebook ?? null },
     };
   });
 
@@ -89,11 +100,33 @@ export const saveMetadataSettings = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const saveAudiobookDefaults = createServerFn({ method: "POST" })
+export const saveFormatDefaults = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
-  .validator(AudiobookDefaultsSchema)
+  .validator(SaveFormatDefaultsSchema)
   .handler(async ({ data }) => {
-    await settings.set(audiobookDefaults, data);
+    await settings.set(formatDefaults[data.format], data.defaults);
+    return { ok: true };
+  });
+
+async function resolveHardcoverToken(typed: string): Promise<string> {
+  const token = typed || (await settings.get(hardcoverToken));
+  if (!token) throw new Error(m.settings_api_key_required());
+  return token;
+}
+
+/** Tests the typed Hardcover token (blank: the stored one). Admin only. */
+export const testHardcover = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(HardcoverTokenFormSchema)
+  .handler(async ({ data }) =>
+    testHardcoverToken(await resolveHardcoverToken(data.token), globalFetch),
+  );
+
+export const saveHardcover = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(HardcoverTokenFormSchema)
+  .handler(async ({ data }) => {
+    await settings.set(hardcoverToken, await resolveHardcoverToken(data.token));
     return { ok: true };
   });
 
@@ -104,12 +137,14 @@ function optionsFailure(endpoint: string, error: ServiceError) {
 }
 
 /**
- * Audiobook-compatible root folders and the profiles, live from Chaptarr, for
- * the defaults form and the request modal. Admin only.
+ * The root folders compatible with a format (e.g. Books, Manga and Comics for
+ * eBooks) and the profiles, live from Chaptarr, for the defaults form and the
+ * request and approve dialogs. Admin only.
  */
-export const getChaptarrAudiobookOptions = createServerFn({ method: "GET" })
+export const getChaptarrOptions = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
-  .handler(async () => {
+  .validator(FormatInputSchema)
+  .handler(async ({ data }) => {
     const chaptarr = await services.chaptarr();
     if (!chaptarr) return { ok: false as const, reason: "not_configured" as const };
     const [folders, quality, metadata] = await Promise.all([
@@ -123,7 +158,7 @@ export const getChaptarrAudiobookOptions = createServerFn({ method: "GET" })
     return {
       ok: true as const,
       rootFolders: folders.value
-        .filter((folder) => isAudiobookFolder(folder.folderType))
+        .filter((folder) => isCompatibleFolder(data.format, folder.folderType))
         .map((folder) => ({ path: folder.path, name: folder.name ?? folder.path })),
       qualityProfiles: quality.value.map((p) => ({ id: p.id, name: p.name })),
       metadataProfiles: metadata.value.map((p) => ({ id: p.id, name: p.name })),

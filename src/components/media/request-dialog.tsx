@@ -21,17 +21,18 @@ import {
 } from "#/components/ui/dialog";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import { requestAudiobook } from "#/functions/requests.functions";
+import { requestMedia } from "#/functions/requests.functions";
 import { formatList } from "#/lib/format";
 import { mediaKeys } from "#/lib/queries/media";
 import { requestKeys } from "#/lib/queries/requests";
-import { chaptarrAudiobookOptionsQuery } from "#/lib/queries/settings";
+import { chaptarrOptionsQuery } from "#/lib/queries/settings";
+import type { SearchableType } from "#/lib/media-types";
 import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
-type Item = { externalId: string; title: string; authors: string[] };
+type Item = { type: SearchableType; externalId: string; title: string; authors: string[] };
 
-/** "Request" button and its confirmation dialog (Seerr-like), for one audiobook. */
+/** "Request" button and its confirmation dialog (Seerr-like), for one audiobook or eBook. */
 export function RequestDialog({ item, size }: { item: Item; size?: "sm" | "default" }) {
   const [open, setOpen] = useState(false);
   return (
@@ -47,10 +48,10 @@ export function RequestDialog({ item, size }: { item: Item; size?: "sm" | "defau
 function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
   const { user } = useRouteContext({ from: "/_authed" });
   const queryClient = useQueryClient();
-  const requestFn = useServerFn(requestAudiobook);
+  const requestFn = useServerFn(requestMedia);
   const request = useMutation({
     mutationFn: (data: { rootFolderPath?: string; qualityProfileId?: number }) =>
-      requestFn({ data: { asin: item.externalId, ...data } }),
+      requestFn({ data: { media: { type: item.type, id: item.externalId }, ...data } }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: mediaKeys.all }),
@@ -96,7 +97,7 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
           </Alert>
         ) : null}
         {user.isAdmin ? (
-          <AdvancedOptions>
+          <AdvancedOptions format={item.type}>
             {(options) => (
               <>
                 <form.Field name="rootFolderPath">
@@ -154,12 +155,15 @@ export type ChaptarrOptions = {
 
 /** Admins only: collapsed by default; empty fields mean "use the defaults". */
 export function AdvancedOptions({
+  format,
   children,
 }: {
+  /** Lists the root folders compatible with this format (e.g. Books, Manga, Comics for eBooks). */
+  format: SearchableType;
   children: (options: ChaptarrOptions) => React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const options = useQuery({ ...chaptarrAudiobookOptionsQuery(), enabled: expanded });
+  const options = useQuery({ ...chaptarrOptionsQuery(format), enabled: expanded });
 
   return (
     <Collapsible isExpanded={expanded} onExpandedChange={setExpanded}>

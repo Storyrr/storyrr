@@ -6,7 +6,7 @@ import { fakeFetch, json } from "#/server/services/test-utils";
 import { deriveSettingsKey } from "./crypto";
 import { chaptarrConnection } from "./definitions";
 import {
-  isAudiobookFolder,
+  isCompatibleFolder,
   MissingApiKeyError,
   resolveConnection,
   testConnection,
@@ -70,13 +70,16 @@ describe("testConnection", () => {
   });
 });
 
-describe("isAudiobookFolder", () => {
+describe("isCompatibleFolder", () => {
   it.each([
-    [0, true],
-    [1, true],
-    [2, false],
-    [undefined, true],
-  ])("folderType %s → %s", (folderType, expected) => {
-    expect(isAudiobookFolder(folderType)).toBe(expected);
+    ["audiobook", 0, true],
+    ["audiobook", 1, true],
+    ["audiobook", 2, false],
+    ["ebook", 0, true],
+    ["ebook", 1, false],
+    ["ebook", 2, true],
+    ["ebook", undefined, true],
+  ] as const)("%s in folder type %s → %s", (format, folderType, expected) => {
+    expect(isCompatibleFolder(format, folderType)).toBe(expected);
   });
 });

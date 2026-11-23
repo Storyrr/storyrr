@@ -29,6 +29,7 @@ import {
   type getRequests,
 } from "#/functions/requests.functions";
 import { formatDate, formatList } from "#/lib/format";
+import { isSearchableType } from "#/lib/media-types";
 import { describeRequestError } from "#/lib/request-errors";
 import { DenyReasonSchema } from "#/lib/schemas/requests";
 import { m } from "#/paraglide/messages.js";
@@ -53,16 +54,20 @@ export function RequestRow({ request }: { request: RequestListItem }) {
   return (
     <li className="flex flex-col gap-3 border-b py-4 last:border-b-0">
       <div className="flex gap-4">
-        <Cover src={request.media.coverUrl} className="size-16 shrink-0" />
+        <Cover src={request.media.coverUrl} type={request.media.type} className="w-16 shrink-0" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/media/$type/$id"
-              params={{ type: request.media.type, id: request.media.externalId }}
-              className="truncate font-medium hover:underline"
-            >
-              {request.media.title}
-            </Link>
+            {isSearchableType(request.media.type) ? (
+              <Link
+                to="/media/$type/$id"
+                params={{ type: request.media.type, id: request.media.externalId }}
+                className="truncate font-medium hover:underline"
+              >
+                {request.media.title}
+              </Link>
+            ) : (
+              <span className="truncate font-medium">{request.media.title}</span>
+            )}
             <RequestStatusBadge status={request.status} />
           </div>
           {request.media.authors.length > 0 ? (
@@ -182,7 +187,7 @@ function ApproveDialog({ request }: { request: RequestListItem }) {
             <FormError
               message={approve.error ? approve.error.message || m.error_generic() : null}
             />
-            <AdvancedOptions>
+            <AdvancedOptions format={request.format === "ebook" ? "ebook" : "audiobook"}>
               {(options) => (
                 <>
                   <form.Field name="rootFolderPath">

@@ -1,54 +1,52 @@
 import { createServerFn } from "@tanstack/react-start";
-import * as v from "valibot";
 
 import { availabilityFromRequest } from "#/lib/request-status";
-import { AsinSchema, SearchInputSchema } from "#/lib/schemas/requests";
+import { MediaRefSchema, SearchInputSchema } from "#/lib/schemas/requests";
 import { requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
-import { ownedAsins } from "#/server/library";
 import { activeRequestsByExternalId, isAutoApproved } from "#/server/requests/queries";
 import { services } from "#/server/services";
+import { mediaSources } from "#/server/sources";
 
-/** Audiobook search with each result's status for this library. Signed-in users. */
-export const searchAudiobooks = createServerFn({ method: "GET" })
+/** Search one media type, with each result's status for this library. Signed-in users. */
+export const searchMedia = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(SearchInputSchema)
   .handler(async ({ data }) => {
-    const audible = await services.audible();
-    const result = await audible.search(data.query);
+    const source = mediaSources[data.type];
+    const result = await source.search(services, data.query);
     if (!result.ok) return { ok: false as const, error: result.error };
-    const asins = result.value.map((item) => item.externalId);
-    const owned = ownedAsins(db, asins);
+    const owned = source.owned(db, result.value);
     const requests = activeRequestsByExternalId(db, {
-      source: "audible",
-      format: "audiobook",
-      externalIds: asins,
+      source: source.source,
+      format: source.type,
+      externalIds: result.value.map((item) => item.externalId),
     });
     return {
       ok: true as const,
       results: result.value.map((item) => ({
         ...item,
-        availability: owned.has(item.externalId.toUpperCase())
+        availability: owned.has(item.externalId)
           ? ("available" as const)
           : availabilityFromRequest(requests.get(item.externalId)?.status),
       })),
     };
   });
 
-/** One audiobook with its status, who requested it, and whether a request is auto-approved. */
-export const getAudiobook = createServerFn({ method: "GET" })
+/** One item with its status, who requested it, and whether a request is auto-approved. */
+export const getMedia = createServerFn({ method: "GET" })
   .middleware([requireUser])
-  .validator(v.object({ asin: AsinSchema }))
+  .validator(MediaRefSchema)
   .handler(async ({ data, context }) => {
-    const audible = await services.audible();
-    const result = await audible.getByAsin(data.asin);
+    const source = mediaSources[data.type];
+    const result = await source.getDetails(services, data.id);
     if (!result.ok) return { ok: false as const, error: result.error };
-    const owned = ownedAsins(db, [data.asin]).has(data.asin);
+    const owned = source.owned(db, [result.value]).has(result.value.externalId);
     const active = activeRequestsByExternalId(db, {
-      source: "audible",
-      format: "audiobook",
-      externalIds: [data.asin],
-    }).get(data.asin);
+      source: source.source,
+      format: source.type,
+      externalIds: [result.value.externalId],
+    }).get(result.value.externalId);
     const isAdmin = context.session.user.role === "admin";
     return {
       ok: true as const,

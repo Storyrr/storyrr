@@ -1,10 +1,21 @@
 import * as v from "valibot";
 
+import { SEARCHABLE_TYPES } from "#/lib/media-types";
 import { m } from "#/paraglide/messages.js";
 
 export const AsinSchema = v.pipe(v.string(), v.trim(), v.toUpperCase(), v.regex(/^[A-Z0-9]{10}$/));
 
+/** Hardcover book ids are positive integers. */
+export const HardcoverIdSchema = v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d{0,11}$/));
+
+/** A searchable media item: its type and its id at that type's provider. */
+export const MediaRefSchema = v.variant("type", [
+  v.object({ type: v.literal("audiobook"), id: AsinSchema }),
+  v.object({ type: v.literal("ebook"), id: HardcoverIdSchema }),
+]);
+
 export const SearchInputSchema = v.object({
+  type: v.picklist(SEARCHABLE_TYPES),
   query: v.pipe(v.string(), v.trim(), v.minLength(2), v.maxLength(200)),
 });
 
@@ -14,8 +25,8 @@ export const TargetOverrideSchema = v.object({
   qualityProfileId: v.optional(v.pipe(v.number(), v.integer())),
 });
 
-export const CreateAudiobookRequestSchema = v.object({
-  asin: AsinSchema,
+export const CreateRequestSchema = v.object({
+  media: MediaRefSchema,
   ...TargetOverrideSchema.entries,
 });
 

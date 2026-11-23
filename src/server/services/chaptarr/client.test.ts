@@ -7,7 +7,7 @@ import { book, fakeChaptarr, remoteBook } from "./fake";
 
 const connection = { url: "http://chaptarr:8789/", apiKey: "test-key" };
 const input: SubmitBookInput = {
-  asin: "B07Q44JYLF",
+  providerId: "az:B07Q44JYLF",
   media: "audiobook",
   rootFolderPath: "/audiobooks",
   qualityProfileId: 1,
@@ -39,7 +39,7 @@ describe("submitBook", () => {
     });
   });
 
-  it("falls back to the ASIN as provider ID when the lookup has none", async () => {
+  it("falls back to the requested provider ID when the lookup has none", async () => {
     const chaptarr = fakeChaptarr({ lookup: [{ ...remoteBook(), foreignBookId: null }] });
     await submitBook(createChaptarrClient(connection, chaptarr.fetch), input);
     expect(chaptarr.bodyOf("POST", "/api/v1/book/import")).toMatchObject({

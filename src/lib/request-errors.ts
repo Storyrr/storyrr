@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
-import type { ServiceName } from "#/lib/schemas/settings";
-import { serviceErrorMessage } from "#/lib/service-errors";
+import { EXTERNAL_SERVICES } from "#/lib/schemas/settings";
+import { serviceErrorMessage, serviceNames } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
 /**
@@ -11,8 +11,8 @@ import { m } from "#/paraglide/messages.js";
 export const RequestErrorSchema = v.variant("code", [
   v.object({
     code: v.literal("service"),
-    service: v.picklist(["chaptarr", "audiobookshelf"]),
-    kind: v.picklist(["retryable", "auth_failed", "not_found", "rejected"]),
+    service: v.picklist(EXTERNAL_SERVICES),
+    kind: v.picklist(["retryable", "auth_failed", "not_found", "rejected", "not_configured"]),
     message: v.string(),
     network: v.optional(v.picklist(["timeout", "unreachable"])),
     timeoutSeconds: v.optional(v.number()),
@@ -21,17 +21,15 @@ export const RequestErrorSchema = v.variant("code", [
     code: v.literal("not_configured"),
     service: v.picklist(["chaptarr", "audiobookshelf"]),
   }),
-  v.object({ code: v.literal("defaults_missing") }),
+  v.object({
+    code: v.literal("defaults_missing"),
+    format: v.optional(v.picklist(["audiobook", "ebook"]), "audiobook"),
+  }),
   v.object({ code: v.literal("unsupported") }),
 ]);
 export type RequestError = v.InferOutput<typeof RequestErrorSchema>;
 
 export const encodeRequestError = (error: RequestError) => JSON.stringify(error);
-
-const serviceNames: Record<ServiceName, () => string> = {
-  chaptarr: m.service_chaptarr,
-  audiobookshelf: m.service_audiobookshelf,
-};
 
 /** A readable explanation of a stored request error (older free-text values are shown as is). */
 export function describeRequestError(stored: string | null | undefined): string | null {
@@ -51,7 +49,9 @@ export function describeRequestError(stored: string | null | undefined): string 
     case "not_configured":
       return m.request_error_not_configured({ service: serviceNames[error.service]() });
     case "defaults_missing":
-      return m.request_error_defaults_missing();
+      return error.format === "ebook"
+        ? m.request_error_ebook_defaults_missing()
+        : m.request_error_defaults_missing();
     default:
       return m.request_error_unsupported();
   }

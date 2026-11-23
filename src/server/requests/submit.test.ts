@@ -7,7 +7,11 @@ import { libraryItem, media, request, user } from "#/server/db/schema";
 import { createServices } from "#/server/services/factory";
 import { book, fakeChaptarr } from "#/server/services/chaptarr/fake";
 import { deriveSettingsKey } from "#/server/settings/crypto";
-import { audiobookDefaults, chaptarrConnection } from "#/server/settings/definitions";
+import {
+  audiobookDefaults,
+  chaptarrConnection,
+  ebookDefaults,
+} from "#/server/settings/definitions";
 import { createSettingsStore, type SettingsStore } from "#/server/settings/store";
 
 import { checkAvailability } from "./availability";
@@ -126,5 +130,74 @@ describe("checkAvailability", () => {
     expect(await checkAvailability(d)).toEqual([]);
     d.chaptarr.state.lookup = [book(42, "audiobook", 1)];
     expect(await checkAvailability(d, { actor: "webhook" })).toEqual([requestId]);
+  });
+});
+
+async function ebookRequest() {
+  await settings.set(ebookDefaults, {
+    rootFolderPath: "/books",
+    qualityProfileId: 3,
+    metadataProfileId: 4,
+  });
+  const [row] = await db
+    .insert(media)
+    .values({
+      type: "ebook",
+      source: "hardcover",
+      externalId: "312460",
+      title: "Dune",
+      fetchedAt: new Date(),
+    })
+    .returning({ id: media.id });
+  return createRequest(db, {
+    mediaId: row.id,
+    userId: "alice",
+    format: "ebook",
+    target: { service: "chaptarr", rootFolderPath: "/manga" },
+    autoApprove: true,
+  }).requestId;
+}
+
+describe("eBooks", () => {
+  it("sends an eBook to Chaptarr by its Hardcover id, with the eBook defaults", async () => {
+    const id = await ebookRequest();
+    const d = deps(fakeChaptarr({ lookup: [{ ...book(0, "ebook"), foreignBookId: "hc:312460" }] }));
+    expect(await submitRequest(d, id)).toBe("submitted");
+    expect(d.chaptarr.calls("GET", "/api/v1/book/lookup")[0]?.url.searchParams.get("term")).toBe(
+      "hc:312460",
+    );
+    expect(d.chaptarr.bodyOf("POST", "/api/v1/book/import")).toMatchObject({
+      foreignBookId: "hc:312460",
+      mediaType: "ebook",
+      rootFolder: "/manga",
+      qualityProfileId: 3,
+      metadataProfileId: 4,
+    });
+  });
+
+  it("explains missing eBook defaults", async () => {
+    const id = await ebookRequest();
+    await settings.remove(ebookDefaults);
+    expect(await submitRequest(deps(), id)).toBe("failed");
+    expect(describeRequestError(statusOf(id)?.lastError)).toMatch(/for eBooks/);
+  });
+
+  it("turns available once Kavita holds a series with that title", async () => {
+    const id = await ebookRequest();
+    const d = deps(fakeChaptarr({ lookup: [{ ...book(0, "ebook"), foreignBookId: "hc:312460" }] }));
+    await submitRequest(d, id);
+    d.chaptarr.state.lookup = [];
+    expect(await checkAvailability(d)).toEqual([]);
+    await db.insert(libraryItem).values({
+      backend: "kavita",
+      itemId: "7#0",
+      libraryId: "1",
+      externalId: null,
+      matchKey: "dune",
+      title: "Dune",
+      author: "",
+      syncedAt: new Date(),
+    });
+    expect(await checkAvailability(d)).toEqual([id]);
   });
 });

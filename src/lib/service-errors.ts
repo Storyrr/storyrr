@@ -1,21 +1,24 @@
-import type { ServiceName } from "#/lib/schemas/settings";
+import type { ExternalService } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
 
 /** Mirrors the server's ServiceError (client-safe). */
 export type ServiceErrorLike = {
-  kind: "retryable" | "auth_failed" | "not_found" | "rejected";
+  kind: "retryable" | "auth_failed" | "not_found" | "rejected" | "not_configured";
   message: string;
   network?: "timeout" | "unreachable";
   timeoutSeconds?: number;
 };
 
-const serviceNames: Record<ServiceName, () => string> = {
+export const serviceNames: Record<ExternalService, () => string> = {
   chaptarr: m.service_chaptarr,
   audiobookshelf: m.service_audiobookshelf,
+  kavita: m.service_kavita,
+  hardcover: m.service_hardcover,
+  audible: m.service_audible,
 };
 
 /** A user-facing explanation of a failed call to an external service. */
-export function serviceErrorMessage(service: ServiceName, error: ServiceErrorLike): string {
+export function serviceErrorMessage(service: ExternalService, error: ServiceErrorLike): string {
   const name = serviceNames[service]();
   const messages: Record<ServiceErrorLike["kind"], () => string> = {
     auth_failed: () => m.service_error_auth_failed({ service: name }),
@@ -28,6 +31,7 @@ export function serviceErrorMessage(service: ServiceName, error: ServiceErrorLik
       return m.service_error_retryable({ service: name, message: error.message });
     },
     rejected: () => m.service_error_rejected({ service: name, message: error.message }),
+    not_configured: () => m.request_error_not_configured({ service: name }),
   };
   return messages[error.kind]();
 }

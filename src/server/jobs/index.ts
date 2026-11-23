@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 import { Cron } from "croner";
 
 import { db } from "#/server/db";
-import { syncAudiobookshelf } from "#/server/library";
+import { syncAudiobookshelf, syncKavita } from "#/server/library";
 import { checkAvailability } from "#/server/requests/availability";
 import { submitApproved } from "#/server/requests/submit";
 import { services } from "#/server/services";
@@ -13,16 +13,24 @@ export type JobName = "library-sync" | "submit-approved";
 type JobRun = { startedAt: Date; finishedAt?: Date; error?: string };
 
 const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
-  /** Refresh the ownership index, then promote requests whose book arrived. */
+  /** Refresh the ownership index (Audiobookshelf, Kavita), then promote requests whose book arrived. */
   "library-sync": {
     pattern: "*/15 * * * *",
     run: async () => {
+      // Each library is synced on its own: one being down doesn't block the other.
+      const failures: string[] = [];
       const abs = await services.audiobookshelf();
       if (abs) {
         const synced = await syncAudiobookshelf(db, abs);
-        if (!synced.ok) throw new Error(`Audiobookshelf sync: ${synced.error.message}`);
+        if (!synced.ok) failures.push(`Audiobookshelf sync: ${synced.error.message}`);
+      }
+      const kavita = await services.kavita();
+      if (kavita) {
+        const synced = await syncKavita(db, kavita);
+        if (!synced.ok) failures.push(`Kavita sync: ${synced.error.message}`);
       }
       await checkAvailability({ db, services });
+      if (failures.length > 0) throw new Error(failures.join("; "));
     },
   },
   /** Safety net: approvals submit right away, this retries any left behind (e.g. after a restart). */

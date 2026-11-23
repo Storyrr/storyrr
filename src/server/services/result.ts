@@ -12,7 +12,9 @@ export type ServiceErrorKind =
   | "auth_failed"
   | "not_found"
   /** The service refused the request (4xx) or answered something unexpected. */
-  | "rejected";
+  | "rejected"
+  /** The service isn't set up in Storyrr (no URL / key / token). */
+  | "not_configured";
 
 export type ServiceError = {
   kind: ServiceErrorKind;

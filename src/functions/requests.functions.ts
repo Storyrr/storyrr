@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import {
   ApproveRequestSchema,
-  CreateAudiobookRequestSchema,
+  CreateRequestSchema,
   DenyRequestSchema,
   ListRequestsSchema,
   RequestIdSchema,
@@ -30,7 +30,8 @@ import {
 } from "#/server/requests/transitions";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
-import { audiobookDefaults } from "#/server/settings/definitions";
+import { formatDefaults } from "#/server/settings/definitions";
+import { mediaSources } from "#/server/sources";
 
 /** Submission can take a while (Chaptarr refreshes the author): never block the caller on it. */
 function submitInBackground(requestId: string) {
@@ -58,34 +59,41 @@ function notFound(): never {
 }
 
 /**
- * Requests an audiobook. Admins may pick the target folder and quality profile;
- * everyone else gets the defaults. Signed-in users.
+ * Requests an audiobook or an eBook. Admins may pick the target folder and
+ * quality profile; everyone else gets the format's defaults. Signed-in users.
  */
-export const requestAudiobook = createServerFn({ method: "POST" })
+export const requestMedia = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(CreateAudiobookRequestSchema)
+  .validator(CreateRequestSchema)
   .handler(async ({ data, context }) => {
     const { user } = context.session;
     const isAdmin = user.role === "admin";
-    const defaults = await settings.get(audiobookDefaults);
+    const format = data.media.type;
+    const defaults = await settings.get(formatDefaults[format]);
     const rootFolderPath = (isAdmin ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
-    if (!rootFolderPath) throw new Error(m.request_error_defaults_missing());
+    if (!rootFolderPath) {
+      throw new Error(
+        format === "ebook"
+          ? m.request_error_ebook_defaults_missing()
+          : m.request_error_defaults_missing(),
+      );
+    }
 
-    const audible = await services.audible();
-    const details = await audible.getByAsin(data.asin);
+    const details = await mediaSources[format].getDetails(services, data.media.id);
     if (!details.ok) throw new Error(details.error.message);
 
     const mediaId = upsertMedia(db, details.value);
     const result = createRequest(db, {
       mediaId,
       userId: user.id,
-      format: "audiobook",
+      format,
       target: { service: "chaptarr", rootFolderPath },
       qualityProfileId: isAdmin ? (data.qualityProfileId ?? null) : null,
       autoApprove: isAutoApproved(db, user.id, isAdmin),
     });
-    if (result.kind === "created" && result.status === "approved")
+    if (result.kind === "created" && result.status === "approved") {
       submitInBackground(result.requestId);
+    }
     return result;
   });
 

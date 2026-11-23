@@ -15,14 +15,36 @@ import {
 } from "#/components/ui/card";
 import { FieldGroup } from "#/components/ui/field";
 import { Skeleton } from "#/components/ui/skeleton";
-import { saveAudiobookDefaults } from "#/functions/settings.functions";
-import { chaptarrAudiobookOptionsQuery, settingsKeys } from "#/lib/queries/settings";
-import { AudiobookDefaultsSchema, type AudiobookDefaults } from "#/lib/schemas/settings";
+import { saveFormatDefaults } from "#/functions/settings.functions";
+import { chaptarrOptionsQuery, settingsKeys } from "#/lib/queries/settings";
+import {
+  FormatDefaultsSchema,
+  type ChaptarrFormat,
+  type FormatDefaults,
+} from "#/lib/schemas/settings";
 import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
-export function AudiobookDefaultsCard({ current }: { current: AudiobookDefaults | null }) {
-  const options = useQuery(chaptarrAudiobookOptionsQuery());
+const copy: Record<ChaptarrFormat, { title: () => string; description: () => string }> = {
+  audiobook: {
+    title: m.settings_audiobook_defaults_title,
+    description: m.settings_audiobook_defaults_description,
+  },
+  ebook: {
+    title: m.settings_ebook_defaults_title,
+    description: m.settings_ebook_defaults_description,
+  },
+};
+
+/** Default root folder and Chaptarr profiles for one format. */
+export function FormatDefaultsCard({
+  format,
+  current,
+}: {
+  format: ChaptarrFormat;
+  current: FormatDefaults | null;
+}) {
+  const options = useQuery(chaptarrOptionsQuery(format));
 
   let body: React.ReactNode;
   if (options.isPending) {
@@ -32,16 +54,16 @@ export function AudiobookDefaultsCard({ current }: { current: AudiobookDefaults 
   } else if (!options.data.ok) {
     body = <FormError message={chaptarrOptionsErrorMessage(options.data)} />;
   } else {
-    body = <DefaultsForm current={current} options={options.data} />;
+    body = <DefaultsForm format={format} current={current} options={options.data} />;
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2>{m.settings_audiobook_defaults_title()}</h2>
+          <h2>{copy[format].title()}</h2>
         </CardTitle>
-        <CardDescription>{m.settings_audiobook_defaults_description()}</CardDescription>
+        <CardDescription>{copy[format].description()}</CardDescription>
       </CardHeader>
       <CardContent>{body}</CardContent>
     </Card>
@@ -58,16 +80,18 @@ const idOptions = (items: { id: number; name: string }[]) =>
   items.map((item) => ({ id: String(item.id), label: item.name }));
 
 function DefaultsForm({
+  format,
   current,
   options,
 }: {
-  current: AudiobookDefaults | null;
+  format: ChaptarrFormat;
+  current: FormatDefaults | null;
   options: Options;
 }) {
   const queryClient = useQueryClient();
-  const saveFn = useServerFn(saveAudiobookDefaults);
+  const saveFn = useServerFn(saveFormatDefaults);
   const save = useMutation({
-    mutationFn: (data: AudiobookDefaults) => saveFn({ data }),
+    mutationFn: (defaults: FormatDefaults) => saveFn({ data: { format, defaults } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.services() }),
   });
   const form = useForm({
@@ -77,7 +101,7 @@ function DefaultsForm({
       metadataProfileId:
         current?.metadataProfileId ?? options.metadataProfiles[0]?.id ?? Number.NaN,
     },
-    validators: { onSubmit: AudiobookDefaultsSchema },
+    validators: { onSubmit: FormatDefaultsSchema },
     onSubmit: async ({ value }) => {
       await save.mutateAsync(value).catch(() => undefined);
     },

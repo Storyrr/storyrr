@@ -32,6 +32,7 @@ const copy: Record<ServiceName, { title: () => string; description: () => string
     title: m.service_audiobookshelf,
     description: m.service_audiobookshelf_description,
   },
+  kavita: { title: m.service_kavita, description: m.service_kavita_description },
 };
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
@@ -62,7 +63,9 @@ export function ConnectionCard({
                 m.test_ok_chaptarr({ version: result.version ?? "" }),
                 ...(result.warnings ?? []).map((warning) => m.test_chaptarr_warning({ warning })),
               ].join(" ")
-            : m.test_ok_audiobookshelf({ count: result.libraries ?? 0 }),
+            : service === "kavita"
+              ? m.test_ok_kavita({ count: result.libraries ?? 0 })
+              : m.test_ok_audiobookshelf({ count: result.libraries ?? 0 }),
       });
     },
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),

@@ -5,7 +5,8 @@ import { encodeRequestError, type RequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
 import type { AppDatabase } from "#/server/db/client";
 import { media, request } from "#/server/db/schema";
-import { audiobookDefaults } from "#/server/settings/definitions";
+import { formatDefaults } from "#/server/settings/definitions";
+import { chaptarrProviderId } from "#/server/sources";
 import type { SettingsStore } from "#/server/settings/store";
 import type { Services } from "#/server/services/factory";
 import { submitBook } from "#/server/services/chaptarr/client";
@@ -65,11 +66,13 @@ async function submit(
 
   const chaptarr = await services.chaptarr();
   if (!chaptarr) return failWith({ code: "not_configured", service: "chaptarr" });
-  const defaults = await settings.get(audiobookDefaults);
-  if (!defaults) return failWith({ code: "defaults_missing" });
+  const providerId = chaptarrProviderId(row.media.source, row.media.externalId);
+  if (!providerId) return failWith({ code: "unsupported" });
+  const defaults = await settings.get(formatDefaults[format]);
+  if (!defaults) return failWith({ code: "defaults_missing", format });
 
   const result = await submitBook(chaptarr, {
-    asin: row.media.externalId,
+    providerId,
     media: format,
     rootFolderPath: target.rootFolderPath,
     qualityProfileId: qualityProfileId ?? defaults.qualityProfileId,

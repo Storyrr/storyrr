@@ -94,7 +94,8 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
 export type ChaptarrClient = ReturnType<typeof createChaptarrClient>;
 
 export type SubmitBookInput = {
-  asin: string;
+  /** Provider ID Chaptarr resolves: `az:<ASIN>` for audiobooks, `hc:<id>` for Hardcover books. */
+  providerId: string;
   media: ChaptarrMedia;
   rootFolderPath: string;
   qualityProfileId: number;
@@ -109,7 +110,7 @@ export type SubmitBookOutcome =
 
 /**
  * Requests one book from Chaptarr in one media type, the way its API contract
- * intends: look the ASIN up for its provider IDs, then `POST /book/import`, which
+ * intends: look the provider ID up for the author's, then `POST /book/import`, which
  * adds the author if needed, monitors only this book on this media side (never
  * the other format, never the rest of the bibliography) and searches for it.
  */
@@ -117,14 +118,14 @@ export async function submitBook(
   client: ChaptarrClient,
   input: SubmitBookInput,
 ): Promise<ServiceResult<SubmitBookOutcome>> {
-  const lookup = await client.lookup(`az:${input.asin}`, input.media);
+  const lookup = await client.lookup(input.providerId, input.media);
   if (!lookup.ok) return lookup;
   const found = lookup.value.find((book) => book.author?.foreignAuthorId);
   const foreignAuthorId = found?.author?.foreignAuthorId;
   if (!found || !foreignAuthorId)
-    return fail("not_found", `Chaptarr found no book for ASIN ${input.asin}`);
+    return fail("not_found", `Chaptarr found no book for ${input.providerId}`);
 
-  const foreignBookId = found.foreignBookId || `az:${input.asin}`;
+  const foreignBookId = found.foreignBookId || input.providerId;
   const imported = await client.importBook({
     foreignBookId,
     foreignAuthorId,

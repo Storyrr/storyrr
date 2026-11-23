@@ -1,7 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
 
+import type { ChaptarrFormat } from "#/lib/schemas/settings";
+
 import {
-  getChaptarrAudiobookOptions,
+  getChaptarrOptions,
   getChaptarrWebhookUrl,
   getServiceSettings,
 } from "#/functions/settings.functions";
@@ -9,17 +11,18 @@ import {
 export const settingsKeys = {
   all: ["settings"] as const,
   services: () => [...settingsKeys.all, "services"] as const,
-  chaptarrAudiobookOptions: () => [...settingsKeys.all, "chaptarr", "audiobook-options"] as const,
+  chaptarrOptions: (format: ChaptarrFormat) =>
+    [...settingsKeys.all, "chaptarr", "options", format] as const,
   chaptarrWebhook: () => [...settingsKeys.all, "chaptarr", "webhook"] as const,
 };
 
 export const serviceSettingsQuery = () =>
   queryOptions({ queryKey: settingsKeys.services(), queryFn: () => getServiceSettings() });
 
-export const chaptarrAudiobookOptionsQuery = () =>
+export const chaptarrOptionsQuery = (format: ChaptarrFormat) =>
   queryOptions({
-    queryKey: settingsKeys.chaptarrAudiobookOptions(),
-    queryFn: () => getChaptarrAudiobookOptions(),
+    queryKey: settingsKeys.chaptarrOptions(format),
+    queryFn: () => getChaptarrOptions({ data: { format } }),
     staleTime: 60_000,
   });
 
