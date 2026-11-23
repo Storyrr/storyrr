@@ -21,6 +21,7 @@
       // Their interaction patterns are intentional and React Aria handles keyboard/ARIA:
       // the input group forwards clicks to its input, the select search field autofocuses.
       // Fix upstream rather than editing these files.
+      // The dropdown menu spells out React Aria's default generic arguments.
       "files": ["src/components/ui/**"],
       "rules": {
         "jsx-a11y/click-events-have-key-events": "off",
@@ -28,7 +29,8 @@
         "jsx-a11y/prefer-tag-over-role": "off",
         "jsx-a11y/no-autofocus": "off",
         "eslint/no-shadow": "off",
-        "typescript/no-unsafe-type-assertion": "off"
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/no-unnecessary-type-arguments": "off"
       }
     }
   ],
