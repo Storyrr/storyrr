@@ -18,7 +18,7 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { saveAudiobookDefaults } from "#/functions/settings.functions";
 import { chaptarrAudiobookOptionsQuery, settingsKeys } from "#/lib/queries/settings";
 import { AudiobookDefaultsSchema, type AudiobookDefaults } from "#/lib/schemas/settings";
-import { serviceErrorMessage } from "#/lib/service-errors";
+import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
 export function AudiobookDefaultsCard({ current }: { current: AudiobookDefaults | null }) {
@@ -30,15 +30,7 @@ export function AudiobookDefaultsCard({ current }: { current: AudiobookDefaults 
   } else if (options.isError) {
     body = <FormError message={options.error.message || m.error_generic()} />;
   } else if (!options.data.ok) {
-    body = (
-      <FormError
-        message={
-          options.data.reason === "not_configured"
-            ? m.settings_audiobook_defaults_needs_chaptarr()
-            : serviceErrorMessage("chaptarr", options.data.error)
-        }
-      />
-    );
+    body = <FormError message={chaptarrOptionsErrorMessage(options.data)} />;
   } else {
     body = <DefaultsForm current={current} options={options.data} />;
   }

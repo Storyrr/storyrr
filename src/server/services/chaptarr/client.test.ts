@@ -160,3 +160,17 @@ describe("hasBookFile", () => {
     });
   });
 });
+
+describe("rootFolders", () => {
+  it("accepts numeric and named folder types", async () => {
+    const { fetch } = fakeFetch(() =>
+      json([
+        { id: 1, path: "/audiobooks", name: "Audiobooks", folderType: 1 },
+        { id: 2, path: "/books", name: "Books", folderType: "ebook" },
+        { id: 3, path: "/all", name: null, folderType: null },
+      ]),
+    );
+    const result = await createChaptarrClient(connection, fetch).rootFolders();
+    expect(result.ok && result.value.map((f) => f.folderType)).toEqual([1, 2, undefined]);
+  });
+});

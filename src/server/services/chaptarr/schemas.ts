@@ -17,12 +17,29 @@ export const SystemStatusSchema = v.looseObject({
 /** 1 = audiobook, 2 = eBook, 3 = mixed (AGENTS.md › Chaptarr). */
 export const FOLDER_TYPES = { audiobook: 1, ebook: 2, mixed: 3 } as const;
 
+const FOLDER_TYPE_NAMES: Record<string, number | undefined> = {
+  audiobook: 1,
+  audiobooks: 1,
+  ebook: 2,
+  ebooks: 2,
+  mixed: 3,
+  both: 3,
+};
+
 // UNVERIFIED: field names beyond id/path/name/folderType (per-media defaults are not read yet).
 export const RootFolderSchema = v.looseObject({
   id: v.number(),
   path: v.string(),
   name: v.optional(v.nullable(v.string())),
-  folderType: v.optional(v.number()),
+  // UNVERIFIED: documented as 1/2/3; also accept names in case the API sends the enum as a string.
+  folderType: v.optional(
+    v.pipe(
+      v.nullable(v.union([v.number(), v.string()])),
+      v.transform((value) =>
+        typeof value === "string" ? FOLDER_TYPE_NAMES[value.toLowerCase()] : (value ?? undefined),
+      ),
+    ),
+  ),
   freeSpace: v.optional(v.nullable(v.number())),
 });
 export type RootFolder = v.InferOutput<typeof RootFolderSchema>;

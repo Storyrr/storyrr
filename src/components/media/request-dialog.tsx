@@ -26,6 +26,7 @@ import { formatList } from "#/lib/format";
 import { mediaKeys } from "#/lib/queries/media";
 import { requestKeys } from "#/lib/queries/requests";
 import { chaptarrAudiobookOptionsQuery } from "#/lib/queries/settings";
+import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
 type Item = { externalId: string; title: string; authors: string[] };
@@ -170,7 +171,7 @@ export function AdvancedOptions({
         <FieldGroup className="pt-4">
           {expanded && options.isPending ? <Spinner /> : null}
           {options.data && !options.data.ok ? (
-            <FormError message={m.request_options_unavailable()} />
+            <FormError message={chaptarrOptionsErrorMessage(options.data)} />
           ) : null}
           {options.data?.ok ? children(options.data) : null}
         </FieldGroup>

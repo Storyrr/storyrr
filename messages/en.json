@@ -87,7 +87,6 @@
   "request_auto_approved_info": "This request will be approved automatically.",
   "request_advanced_options": "Advanced options",
   "request_default_hint": "Leave empty to use the default.",
-  "request_options_unavailable": "Couldn't load folders and profiles from Chaptarr.",
   "search_label": "Search audiobooks",
   "search_placeholder": "Title, author, narrator…",
   "search_prompt_title": "Find something to listen to",

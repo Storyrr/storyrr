@@ -11,6 +11,7 @@ import { m } from "#/paraglide/messages.js";
 import { requireAdmin } from "#/server/auth/middleware";
 import { getEnv } from "#/server/env";
 import { services } from "#/server/services";
+import type { ServiceError } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import {
   audiobookDefaults,
@@ -96,6 +97,12 @@ export const saveAudiobookDefaults = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Logs which Chaptarr call failed (message only: keys never reach logs) and reports it. */
+function optionsFailure(endpoint: string, error: ServiceError) {
+  console.warn(`[chaptarr] GET /api/v1/${endpoint} failed (${error.kind}): ${error.message}`);
+  return { ok: false as const, reason: "error" as const, error };
+}
+
 /**
  * Audiobook-compatible root folders and the profiles, live from Chaptarr, for
  * the defaults form and the request modal. Admin only.
@@ -110,10 +117,9 @@ export const getChaptarrAudiobookOptions = createServerFn({ method: "GET" })
       chaptarr.qualityProfiles(),
       chaptarr.metadataProfiles(),
     ]);
-    if (!folders.ok) return { ok: false as const, reason: "error" as const, error: folders.error };
-    if (!quality.ok) return { ok: false as const, reason: "error" as const, error: quality.error };
-    if (!metadata.ok)
-      return { ok: false as const, reason: "error" as const, error: metadata.error };
+    if (!folders.ok) return optionsFailure("rootfolder", folders.error);
+    if (!quality.ok) return optionsFailure("qualityprofile", quality.error);
+    if (!metadata.ok) return optionsFailure("metadataprofile", metadata.error);
     return {
       ok: true as const,
       rootFolders: folders.value

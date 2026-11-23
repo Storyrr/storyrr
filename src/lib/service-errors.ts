@@ -23,3 +23,12 @@ export function serviceErrorMessage(service: ServiceName, error: ServiceErrorLik
   };
   return messages[error.kind]();
 }
+
+/** Why Chaptarr's folders and profiles couldn't be listed (not connected, or the call failed). */
+export function chaptarrOptionsErrorMessage(
+  failure: { reason: "not_configured" } | { reason: "error"; error: ServiceErrorLike },
+): string {
+  return failure.reason === "not_configured"
+    ? m.settings_audiobook_defaults_needs_chaptarr()
+    : serviceErrorMessage("chaptarr", failure.error);
+}
