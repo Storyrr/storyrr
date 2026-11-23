@@ -14,3 +14,8 @@ export function fakeFetch(
 }
 
 export const json = (body: unknown, status = 200) => Response.json(body, { status });
+
+/** The JSON body a fake received (requests are always sent with string bodies). */
+export function jsonBody(init: RequestInit | undefined): unknown {
+  return typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+}
