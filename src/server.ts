@@ -1,6 +1,10 @@
 import handler from "@tanstack/react-start/server-entry";
 
 import { paraglideMiddleware } from "./paraglide/server.js";
+import { startScheduler } from "./server/jobs";
+
+// Background jobs (library sync, submissions, availability) run in-process.
+startScheduler();
 
 /**
  * Custom server entry: Paraglide resolves the request's locale (cookie, then

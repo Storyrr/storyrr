@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import * as v from "valibot";
-
 import { fakeFetch, json, jsonBody } from "#/server/services/test-utils";
 
 import {
@@ -11,7 +9,7 @@ import {
   submitBook,
   type SubmitBookInput,
 } from "./client";
-import { AuthorSchema, type Author, type Book } from "./schemas";
+import { book, fakeChaptarr } from "./fake";
 
 const connection = { url: "http://chaptarr:8789/", apiKey: "test-key" };
 const input: SubmitBookInput = {
@@ -23,56 +21,7 @@ const input: SubmitBookInput = {
   metadataProfileId: 2,
 };
 
-const book = (id: number, mediaType: string, asin = "", files = 0): Book => ({
-  id,
-  title: "Dune",
-  mediaType,
-  asin,
-  audibleASIN: asin,
-  statistics: { bookFileCount: files },
-});
-
 const bodyOf = (call: { init: RequestInit | undefined } | undefined) => jsonBody(call?.init);
-
-/** Just enough of Chaptarr's API for the handoff (UNVERIFIED shapes, after Stackarr's fakes). */
-function fakeChaptarr({ authors = [] as Author[], booksAfterRefresh = 1 } = {}) {
-  const books: Record<number, Book[]> = {};
-  let bookListings = 0;
-  const fake = fakeFetch(async (url, init) => {
-    const method = init?.method ?? "GET";
-    const path = url.pathname;
-    const body = jsonBody(init);
-    if (method === "GET" && path === "/api/v1/book/lookup") {
-      return json([
-        {
-          title: "Dune",
-          foreignBookId: "fb1",
-          author: { authorName: "Frank Herbert", foreignAuthorId: "fa1" },
-        },
-      ]);
-    }
-    if (method === "GET" && path === "/api/v1/author") return json(authors);
-    if (method === "POST" && path === "/api/v1/author") {
-      const created = { ...v.parse(AuthorSchema, body), id: 100 };
-      authors.push(created);
-      books[100] = [book(10, "audiobook", "B07Q44JYLF"), book(11, "ebook")];
-      return json(created, 201);
-    }
-    const put = /^\/api\/v1\/author\/(\d+)$/.exec(path);
-    if (method === "PUT" && put) return json(body, 202);
-    if (method === "GET" && path === "/api/v1/book") {
-      bookListings++;
-      const id = Number(url.searchParams.get("authorId"));
-      return json(bookListings < booksAfterRefresh ? [] : (books[id] ?? []));
-    }
-    if (method === "PUT" && path === "/api/v1/book/monitor") return json([], 202);
-    if (method === "POST" && path === "/api/v1/command") return json({ id: 1 }, 201);
-    return json({ message: "not found" }, 404);
-  });
-  const calls = (method: string, path: string) =>
-    fake.calls.filter((c) => (c.init?.method ?? "GET") === method && c.url.pathname === path);
-  return { ...fake, books, calls, bodyOf };
-}
 
 const noSleep = () => Promise.resolve();
 
@@ -90,7 +39,7 @@ describe("submitBook", () => {
     const [add] = chaptarr.calls("POST", "/api/v1/author");
     expect(add?.url.searchParams.get("mediaType")).toBe("audiobook");
     expect(add?.init?.headers).toMatchObject({ "X-Api-Key": "test-key" });
-    expect(chaptarr.bodyOf(add)).toMatchObject({
+    expect(bodyOf(add)).toMatchObject({
       foreignAuthorId: "fa1",
       audiobookRootFolderPath: "/audiobooks",
       audiobookQualityProfileId: 1,
@@ -102,11 +51,11 @@ describe("submitBook", () => {
 
     // Waited for the async refresh, then touched only book 10.
     expect(chaptarr.calls("GET", "/api/v1/book")).toHaveLength(2);
-    expect(chaptarr.bodyOf(chaptarr.calls("PUT", "/api/v1/book/monitor")[0])).toEqual({
+    expect(bodyOf(chaptarr.calls("PUT", "/api/v1/book/monitor")[0])).toEqual({
       bookIds: [10],
       monitored: true,
     });
-    expect(chaptarr.bodyOf(chaptarr.calls("POST", "/api/v1/command")[0])).toEqual({
+    expect(bodyOf(chaptarr.calls("POST", "/api/v1/command")[0])).toEqual({
       name: "BookSearch",
       bookIds: [10],
     });
@@ -133,7 +82,7 @@ describe("submitBook", () => {
     expect(chaptarr.calls("POST", "/api/v1/author")).toHaveLength(0);
     const [update] = chaptarr.calls("PUT", "/api/v1/author/7");
     expect(update?.url.searchParams.get("mediaType")).toBe("audiobook");
-    expect(chaptarr.bodyOf(update)).toMatchObject({
+    expect(bodyOf(update)).toMatchObject({
       ebookMonitorExisting: 2,
       audiobookMonitorExisting: 2,
       audiobookRootFolderPath: "/audiobooks",

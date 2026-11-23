@@ -93,7 +93,8 @@ src/
 │   ├── services/           # one client per external service: chaptarr, audiobookshelf, kavita, audible, hardcover, itunes
 │   ├── sources/            # one module per media type: search/details/request/availability
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
-│   └── jobs/               # scheduler + jobs (availability sync, cache refresh)
+│   ├── library/            # ownership index (library_item) synced from Audiobookshelf
+│   └── jobs/               # croner scheduler started by src/server.ts: library-sync (15 min), submit-approved (5 min)
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template
 ├── components/             # app components; ui/ = shadcn-style React Aria primitives
