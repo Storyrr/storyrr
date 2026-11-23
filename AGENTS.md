@@ -193,12 +193,13 @@ Examples: `feat(requests): let admins pick the target root folder`, `fix(chaptar
 
 ## Releases
 
-Managed by [release-please](https://github.com/googleapis/release-please) (to be set up with the first CI workflow, milestone 1):
+Managed by [release-please](https://github.com/googleapis/release-please) in `.github/workflows/release.yml`; `.github/workflows/ci.yml` runs `bun run check` and a Docker build on every PR and push to `main`:
 
 - On every push to `main`, release-please opens or updates a **release PR** with the next version, the `CHANGELOG.md` update and the `version` bump in `package.json`. Merging it creates the `vX.Y.Z` tag and the GitHub Release with generated notes. Never bump versions or edit `CHANGELOG.md` by hand.
 - Config in the repo: `release-please-config.json` (release type `node`, `bump-minor-pre-major: true`, changelog sections: Features, Bug Fixes, Performance, Reverts visible; refactor/docs/test/build/ops/style/chore hidden) and `.release-please-manifest.json` (current version).
 - **Pitfall:** a tag or release created with the default `GITHUB_TOKEN` does **not** trigger other workflows. Build and push the Docker image **in the same workflow**, in a job that runs only when the release-please step reports `release_created` (or use a GitHub App token). A separate `on: push: tags` workflow would never run.
-- Image tags: `X.Y.Z`, `X.Y`, `latest` on GHCR (`ghcr.io/storyrr/storyrr`). The app shows its version (from `package.json`) in Settings → About.
+- Repository settings it needs: Settings → Actions → General → Workflow permissions → **Allow GitHub Actions to create and approve pull requests**. Release PRs opened with `GITHUB_TOKEN` don't trigger CI either: their content (version + changelog) is generated, the code was already checked on `main`.
+- Image tags: `X.Y.Z`, `X.Y`, `latest` on GHCR (`ghcr.io/storyrr/storyrr`), for `linux/amd64` and `linux/arm64`. The app shows its version (from `package.json`) in Settings → About.
 
 ## Deployment
 
