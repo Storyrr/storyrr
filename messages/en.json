@@ -167,5 +167,6 @@
   "media_languages": "Languages",
   "language_label": "Language",
   "language_en": "English",
-  "language_fr": "Français"
+  "language_fr": "Français",
+  "status_waiting_for_chaptarr": "Waiting for Chaptarr"
 }

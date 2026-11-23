@@ -19,13 +19,21 @@ export const remoteBook = (): Book => ({ ...book(0, "audiobook"), statistics: nu
 export function fakeChaptarr({
   lookup = [remoteBook()],
   importResponse = { status: 201, body: { id: 42 } },
-}: { lookup?: Book[]; importResponse?: { status: number; body: unknown } } = {}) {
-  const state = { lookup, importResponse };
+  metadataProfiles = [] as { id: number; name: string; allowedLanguages?: string }[],
+}: {
+  lookup?: Book[];
+  importResponse?: { status: number; body: unknown };
+  metadataProfiles?: { id: number; name: string; allowedLanguages?: string }[];
+} = {}) {
+  const state = { lookup, importResponse, metadataProfiles };
   const fake = fakeFetch((url, init) => {
     const method = init?.method ?? "GET";
     if (method === "GET" && url.pathname === "/api/v1/book/lookup") {
       const media = url.searchParams.get("mediaType");
       return json(state.lookup.filter((b) => !media || b.mediaType === media));
+    }
+    if (method === "GET" && url.pathname === "/api/v1/metadataprofile") {
+      return json(state.metadataProfiles);
     }
     if (method === "POST" && url.pathname === "/api/v1/book/import") {
       return json(state.importResponse.body, state.importResponse.status);

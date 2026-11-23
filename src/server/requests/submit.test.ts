@@ -15,7 +15,9 @@ import {
 import { createSettingsStore, type SettingsStore } from "#/server/settings/store";
 
 import { checkAvailability } from "./availability";
-import { submitApproved, submitRequest } from "./submit";
+import { clearLanguagePolicyCache } from "./language-policy";
+import { listRequests } from "./queries";
+import { failStuckRequests, submitApproved, submitRequest } from "./submit";
 import { createRequest } from "./transitions";
 
 let db: AppDatabase;
@@ -34,6 +36,7 @@ function deps(chaptarr = fakeChaptarr()) {
 const statusOf = (id: string) => db.select().from(request).where(eq(request.id, id)).get();
 
 beforeEach(async () => {
+  clearLanguagePolicyCache();
   db = createDatabase(":memory:");
   settings = createSettingsStore(db, deriveSettingsKey("x".repeat(32)));
   await settings.set(chaptarrConnection, { url: "http://chaptarr:8789", apiKey: "k" });
@@ -146,6 +149,8 @@ async function ebookRequest() {
       source: "hardcover",
       externalId: "312460",
       title: "Dune",
+      // As upsertMedia stores it: the provider item, languages included.
+      metadata: { languages: ["eng"] },
       fetchedAt: new Date(),
     })
     .returning({ id: media.id });
@@ -199,5 +204,36 @@ describe("eBooks", () => {
       syncedAt: new Date(),
     });
     expect(await checkAvailability(d)).toEqual([id]);
+  });
+});
+
+describe("languages Chaptarr accepts", () => {
+  const frenchOnly = [{ id: 4, name: "Ebook Default", allowedLanguages: "fre,fra" }];
+
+  it("refuses to send a work its metadata profile filters out, with the reason", async () => {
+    const id = await ebookRequest();
+    const d = deps(fakeChaptarr({ metadataProfiles: frenchOnly }));
+    expect(await submitRequest(d, id)).toBe("failed");
+    expect(d.chaptarr.calls("POST", "/api/v1/book/import")).toHaveLength(0);
+    expect(describeRequestError(statusOf(id)?.lastError)).toMatch(/only accepts books in French/);
+  });
+
+  it("marks a request Chaptarr only queued as waiting, and fails it once its language is refused", async () => {
+    const id = await ebookRequest();
+    const pending = fakeChaptarr({
+      lookup: [{ ...book(0, "ebook"), foreignBookId: "hc:312460" }],
+      importResponse: { status: 202, body: { pendingId: 1 } },
+    });
+    expect(await submitRequest(deps(pending), id)).toBe("submitted");
+    expect(listRequests(db, { filter: "all" }).find((r) => r.id === id)?.waitingForChaptarr).toBe(
+      true,
+    );
+
+    // Later, Chaptarr's profile turns out to be French-only.
+    clearLanguagePolicyCache();
+    expect(await failStuckRequests(deps(fakeChaptarr({ metadataProfiles: frenchOnly })))).toEqual([
+      id,
+    ]);
+    expect(statusOf(id)?.status).toBe("failed");
   });
 });

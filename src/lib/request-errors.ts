@@ -2,6 +2,8 @@ import * as v from "valibot";
 
 import { EXTERNAL_SERVICES } from "#/lib/schemas/settings";
 import { serviceErrorMessage, serviceNames } from "#/lib/service-errors";
+import { formatList } from "#/lib/format";
+import { languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
 
 /**
@@ -26,6 +28,8 @@ export const RequestErrorSchema = v.variant("code", [
     format: v.optional(v.picklist(["audiobook", "ebook"]), "audiobook"),
   }),
   v.object({ code: v.literal("unsupported") }),
+  /** Chaptarr's metadata profile filters out every language the work exists in. */
+  v.object({ code: v.literal("language_not_accepted"), languages: v.array(v.string()) }),
 ]);
 export type RequestError = v.InferOutput<typeof RequestErrorSchema>;
 
@@ -52,6 +56,10 @@ export function describeRequestError(stored: string | null | undefined): string 
       return error.format === "ebook"
         ? m.request_error_ebook_defaults_missing()
         : m.request_error_defaults_missing();
+    case "language_not_accepted":
+      return m.request_language_not_accepted({
+        languages: formatList(error.languages.map(languageName)),
+      });
     default:
       return m.request_error_unsupported();
   }

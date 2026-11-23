@@ -22,6 +22,17 @@ const variants: Record<RequestStatus, "default" | "secondary" | "outline" | "des
   cancelled: "outline",
 };
 
-export function RequestStatusBadge({ status }: { status: RequestStatus }) {
-  return <Badge variant={variants[status]}>{statusLabels[status]()}</Badge>;
+export function RequestStatusBadge({
+  status,
+  waitingForChaptarr = false,
+}: {
+  status: RequestStatus;
+  /** Sent, but Chaptarr only queued it until the author's metadata is ready. */
+  waitingForChaptarr?: boolean;
+}) {
+  return (
+    <Badge variant={variants[status]}>
+      {waitingForChaptarr ? m.status_waiting_for_chaptarr() : statusLabels[status]()}
+    </Badge>
+  );
 }

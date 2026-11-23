@@ -106,6 +106,7 @@ export function listRequests(
       target: request.target,
       qualityProfileId: request.qualityProfileId,
       lastError: request.lastError,
+      backendRef: request.backendRef,
       createdAt: request.createdAt,
       updatedAt: request.updatedAt,
       requester: { id: user.id, name: user.name },
@@ -138,7 +139,11 @@ export function listRequests(
       desc(request.createdAt),
     )
     .all();
-  return rows;
+  // Sent, but Chaptarr only queued it (author metadata not ready): not downloading yet.
+  return rows.map(({ backendRef, ...row }) => ({
+    ...row,
+    waitingForChaptarr: row.status === "submitted" && backendRef?.chaptarrBookId === undefined,
+  }));
 }
 
 export type RequestListItem = ReturnType<typeof listRequests>[number];

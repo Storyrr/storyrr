@@ -4,7 +4,7 @@ import { Cron } from "croner";
 import { db } from "#/server/db";
 import { syncAudiobookshelf, syncKavita } from "#/server/library";
 import { checkAvailability } from "#/server/requests/availability";
-import { submitApproved } from "#/server/requests/submit";
+import { failStuckRequests, submitApproved } from "#/server/requests/submit";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
 
@@ -30,6 +30,7 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
         if (!synced.ok) failures.push(`Kavita sync: ${synced.error.message}`);
       }
       await checkAvailability({ db, services });
+      await failStuckRequests({ db, services, settings });
       if (failures.length > 0) throw new Error(failures.join("; "));
     },
   },

@@ -30,7 +30,8 @@ export const ACTIVE_REQUEST_STATUSES = [
 export const REQUEST_TRANSITIONS: Readonly<Record<RequestStatus, readonly RequestStatus[]>> = {
   pending: ["approved", "denied", "cancelled"],
   approved: ["submitted", "failed", "cancelled"],
-  submitted: ["available", "failed"],
+  // Admins can give up on a request Chaptarr never fulfils (cleanup in Chaptarr stays manual).
+  submitted: ["available", "failed", "cancelled"],
   // Retry: back to approved, then submitted again. Admins can also give up.
   failed: ["approved", "cancelled"],
   available: [],

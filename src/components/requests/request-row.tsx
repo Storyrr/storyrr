@@ -49,7 +49,8 @@ export function RequestRow({ request }: { request: RequestListItem }) {
   const error = cancel.error ?? retry.error;
   const failure = request.status === "failed" ? describeRequestError(request.lastError) : null;
   const canCancel =
-    request.status === "pending" && (user.isAdmin || request.requester.id === user.id);
+    (request.status === "pending" && (user.isAdmin || request.requester.id === user.id)) ||
+    (request.status === "submitted" && user.isAdmin);
 
   return (
     <li className="flex flex-col gap-3 border-b py-4 last:border-b-0">
@@ -68,7 +69,10 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             ) : (
               <span className="truncate font-medium">{request.media.title}</span>
             )}
-            <RequestStatusBadge status={request.status} />
+            <RequestStatusBadge
+              status={request.status}
+              waitingForChaptarr={request.waitingForChaptarr}
+            />
           </div>
           {request.media.authors.length > 0 ? (
             <p className="truncate text-sm text-muted-foreground">
