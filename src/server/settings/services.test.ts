@@ -72,9 +72,9 @@ describe("testConnection", () => {
 
 describe("isAudiobookFolder", () => {
   it.each([
+    [0, true],
     [1, true],
     [2, false],
-    [3, true],
     [undefined, true],
   ])("folderType %s → %s", (folderType, expected) => {
     expect(isAudiobookFolder(folderType)).toBe(expected);

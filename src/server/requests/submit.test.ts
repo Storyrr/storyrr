@@ -5,7 +5,7 @@ import { describeRequestError } from "#/lib/request-errors";
 import { createDatabase, type AppDatabase } from "#/server/db/client";
 import { libraryItem, media, request, user } from "#/server/db/schema";
 import { createServices } from "#/server/services/factory";
-import { fakeChaptarr } from "#/server/services/chaptarr/fake";
+import { book, fakeChaptarr } from "#/server/services/chaptarr/fake";
 import { deriveSettingsKey } from "#/server/settings/crypto";
 import { audiobookDefaults, chaptarrConnection } from "#/server/settings/definitions";
 import { createSettingsStore, type SettingsStore } from "#/server/settings/store";
@@ -18,14 +18,11 @@ let db: AppDatabase;
 let settings: SettingsStore;
 let requestId: string;
 
-const noSleep = { sleep: () => Promise.resolve() };
-
 function deps(chaptarr = fakeChaptarr()) {
   return {
     db,
     settings,
     services: createServices(settings, chaptarr.fetch),
-    chaptarrOptions: noSleep,
     chaptarr,
   };
 }
@@ -67,10 +64,14 @@ describe("submitRequest", () => {
     expect(await submitRequest(d, requestId)).toBe("submitted");
     expect(statusOf(requestId)).toMatchObject({
       status: "submitted",
-      backendRef: { chaptarrAuthorId: 100, chaptarrBookId: 10 },
+      backendRef: { chaptarrBookId: 42, chaptarrForeignBookId: "hc:1" },
     });
-    const [add] = d.chaptarr.calls("POST", "/api/v1/author");
-    expect(add?.init?.body).toContain('"audiobookRootFolderPath":"/audiobooks-fr"');
+    expect(d.chaptarr.bodyOf("POST", "/api/v1/book/import")).toMatchObject({
+      mediaType: "audiobook",
+      rootFolder: "/audiobooks-fr",
+      qualityProfileId: 1,
+      metadataProfileId: 2,
+    });
   });
 
   it("fails with an explainable reason when Chaptarr isn't configured", async () => {
@@ -95,7 +96,7 @@ describe("submitRequest", () => {
     const d = deps();
     expect(await submitApproved(d)).toBe(1);
     expect(await submitRequest(d, requestId)).toBe("skipped");
-    expect(d.chaptarr.calls("POST", "/api/v1/command")).toHaveLength(1);
+    expect(d.chaptarr.calls("POST", "/api/v1/book/import")).toHaveLength(1);
   });
 });
 
@@ -121,8 +122,9 @@ describe("checkAvailability", () => {
   it("also trusts Chaptarr's imported files", async () => {
     const d = deps();
     await submitRequest(d, requestId);
-    const book = d.chaptarr.books[100]?.find((b) => b.id === 10);
-    if (book) book.statistics = { bookFileCount: 1 };
+    d.chaptarr.state.lookup = [book(42, "ebook", 1), book(42, "audiobook", 0)];
+    expect(await checkAvailability(d)).toEqual([]);
+    d.chaptarr.state.lookup = [book(42, "audiobook", 1)];
     expect(await checkAvailability(d, { actor: "webhook" })).toEqual([requestId]);
   });
 });

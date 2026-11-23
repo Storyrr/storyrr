@@ -8,7 +8,7 @@ import { media, request } from "#/server/db/schema";
 import { audiobookDefaults } from "#/server/settings/definitions";
 import type { SettingsStore } from "#/server/settings/store";
 import type { Services } from "#/server/services/factory";
-import { submitBook, type SubmitOptions } from "#/server/services/chaptarr/client";
+import { submitBook } from "#/server/services/chaptarr/client";
 
 import { transitionRequest } from "./transitions";
 
@@ -16,7 +16,6 @@ export type SubmitDeps = {
   db: AppDatabase;
   services: Services;
   settings: SettingsStore;
-  chaptarrOptions?: SubmitOptions;
 };
 
 // One process: this set is enough to keep the job and an approval from
@@ -42,7 +41,7 @@ export async function submitRequest(
 
 /** The request's new status, or "skipped" when it wasn't (or no longer) approved. */
 async function submit(
-  { db, services, settings, chaptarrOptions }: SubmitDeps,
+  { db, services, settings }: SubmitDeps,
   requestId: string,
 ): Promise<RequestStatus | "skipped"> {
   const row = db
@@ -69,24 +68,25 @@ async function submit(
   const defaults = await settings.get(audiobookDefaults);
   if (!defaults) return failWith({ code: "defaults_missing" });
 
-  const result = await submitBook(
-    chaptarr,
-    {
-      asin: row.media.externalId,
-      title: row.media.title,
-      media: format,
-      rootFolderPath: target.rootFolderPath,
-      qualityProfileId: qualityProfileId ?? defaults.qualityProfileId,
-      metadataProfileId: defaults.metadataProfileId,
-    },
-    chaptarrOptions,
-  );
+  const result = await submitBook(chaptarr, {
+    asin: row.media.externalId,
+    media: format,
+    rootFolderPath: target.rootFolderPath,
+    qualityProfileId: qualityProfileId ?? defaults.qualityProfileId,
+    metadataProfileId: defaults.metadataProfileId,
+  });
   if (!result.ok) return failWith({ code: "service", service: "chaptarr", ...result.error });
 
   return transitionRequest(db, requestId, {
     to: "submitted",
     actor: "system",
-    backendRef: { chaptarrAuthorId: result.value.authorId, chaptarrBookId: result.value.bookId },
+    backendRef:
+      result.value.state === "added"
+        ? { chaptarrBookId: result.value.bookId, chaptarrForeignBookId: result.value.foreignBookId }
+        : {
+            chaptarrPendingId: result.value.pendingId,
+            chaptarrForeignBookId: result.value.foreignBookId,
+          },
   });
 }
 

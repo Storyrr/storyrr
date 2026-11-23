@@ -31,8 +31,8 @@ export async function isValidWebhookToken(
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-// UNVERIFIED: Readarr-style webhook payload ({ eventType, author: { id }, books: [{ id }] });
-// only used to narrow which requests to re-check.
+// Chaptarr's webhook body (NzbDrone.Core/Notifications/Webhook): camelCase, the event type as a
+// camelCase string ("download" on import). Only used to narrow which requests to re-check.
 const PayloadSchema = v.looseObject({
   eventType: v.optional(v.string()),
   author: v.optional(v.looseObject({ id: v.optional(v.number()) })),
@@ -41,7 +41,7 @@ const PayloadSchema = v.looseObject({
 });
 
 /** Events after which a book file may have appeared. */
-const IMPORT_EVENTS = new Set(["Download", "BookFileImport", "Upgrade", "Rename"]);
+const IMPORT_EVENTS = new Set(["download", "rename", "retag"]);
 
 /**
  * Handles a webhook call: on import-like events, re-checks the affected
@@ -53,13 +53,13 @@ export async function handleChaptarrWebhook(
 ): Promise<{ checked: boolean; available: string[] }> {
   const parsed = v.safeParse(PayloadSchema, body);
   const payload = parsed.success ? parsed.output : {};
-  if (payload.eventType && !IMPORT_EVENTS.has(payload.eventType))
+  if (payload.eventType && !IMPORT_EVENTS.has(payload.eventType.toLowerCase())) {
     return { checked: false, available: [] };
+  }
 
   const bookIds = [payload.book?.id, ...(payload.books ?? []).map((b) => b.id)].filter(
     (id): id is number => typeof id === "number",
   );
-  const authorId = payload.author?.id;
   const submitted = deps.db
     .select({ id: request.id, backendRef: request.backendRef })
     .from(request)
@@ -68,9 +68,8 @@ export async function handleChaptarrWebhook(
   const affected = submitted
     .filter(
       (row) =>
-        (typeof row.backendRef?.chaptarrBookId === "number" &&
-          bookIds.includes(row.backendRef.chaptarrBookId)) ||
-        (authorId !== undefined && row.backendRef?.chaptarrAuthorId === authorId),
+        typeof row.backendRef?.chaptarrBookId === "number" &&
+        bookIds.includes(row.backendRef.chaptarrBookId),
     )
     .map((row) => row.id);
 

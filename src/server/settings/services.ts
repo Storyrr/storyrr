@@ -56,7 +56,7 @@ export async function testConnection(
     : { ok: false, error: libraries.error };
 }
 
-/** Root folders that can receive audiobooks (Chaptarr folderType 1 or 3; untyped folders are kept). */
+/** Root folders that can receive audiobooks: Chaptarr's Audiobook (1) and Mixed (0) folders. */
 export function isAudiobookFolder(folderType: number | undefined): boolean {
   return (
     folderType === undefined ||

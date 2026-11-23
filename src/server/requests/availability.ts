@@ -46,10 +46,9 @@ export async function checkAvailability(
 
   for (const row of rows) {
     let present = owned.has(row.asin.toUpperCase());
-    const authorId = row.backendRef?.chaptarrAuthorId;
-    const bookId = row.backendRef?.chaptarrBookId;
-    if (!present && chaptarr && typeof authorId === "number" && typeof bookId === "number") {
-      const file = await hasBookFile(chaptarr, { authorId, bookId });
+    if (!present && chaptarr && row.format !== "podcast") {
+      // By provider ID: Chaptarr's local row ids aren't durable.
+      const file = await hasBookFile(chaptarr, { term: `az:${row.asin}`, media: row.format });
       present = file.ok && file.value;
     }
     if (present) {

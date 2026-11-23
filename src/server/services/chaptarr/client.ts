@@ -5,23 +5,34 @@ import type { FetchFn, ServiceResult } from "#/server/services/result";
 import { fail, ok, requestJson } from "#/server/services/result";
 
 import {
-  AuthorSchema,
-  BookLookupSchema,
-  HealthItemSchema,
+  BookImportResponseSchema,
   BookSchema,
+  HealthItemSchema,
   ProfileSchema,
   RootFolderSchema,
   SystemStatusSchema,
-  type Author,
   type Book,
 } from "./schemas";
 
 export type ChaptarrConnection = { url: string; apiKey: string };
 export type ChaptarrMedia = "audiobook" | "ebook";
 
-/** Chaptarr's per-media "monitor existing books": 0 none, 1 all, 2 selected (Stackarr). */
-const MONITOR_EXISTING_NONE = 0;
-const MONITOR_EXISTING_SELECTED = 2;
+/** Body of `POST /book/import` (Chaptarr's request-one-book endpoint for automation). */
+export type BookImportRequest = {
+  foreignBookId: string;
+  foreignAuthorId: string;
+  authorName?: string;
+  mediaType: ChaptarrMedia;
+  rootFolder: string;
+  qualityProfileId: number;
+  metadataProfileId: number;
+  authorMonitoring: {
+    /** The author's other books: "none" keeps them unmonitored; the requested book is monitored anyway. */
+    monitor: "none";
+    /** Search for exactly this book (delayed until the author's metadata is ready if needed). */
+    searchForMissing: boolean;
+  };
+};
 
 /** Thin typed wrapper over Chaptarr's /api/v1. Never throws: every call returns a ServiceResult. */
 export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch: FetchFn) {
@@ -60,46 +71,23 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
     status: () => call("GET", "/system/status", SystemStatusSchema, { timeoutMs: 15_000 }),
     /** Chaptarr's own warnings (e.g. its metadata service is down). */
     health: () => call("GET", "/health", v.array(HealthItemSchema), { timeoutMs: 15_000 }),
-    // Readarr-style apps compute free space per root folder, which is slow on network shares.
+    // Chaptarr computes free space per root folder, which is slow on network shares.
     rootFolders: () => call("GET", "/rootfolder", v.array(RootFolderSchema), { timeoutMs: 60_000 }),
     qualityProfiles: () =>
       call("GET", "/qualityprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
     metadataProfiles: () =>
       call("GET", "/metadataprofile", v.array(ProfileSchema), { timeoutMs: 30_000 }),
-    authors: () => call("GET", "/author", v.array(AuthorSchema), { timeoutMs: 30_000 }),
-    booksByAuthor: (authorId: number) =>
-      call("GET", "/book", v.array(BookSchema), {
-        query: { authorId: String(authorId) },
-        timeoutMs: 40_000,
-      }),
-    lookupByAsin: (asin: string, media: ChaptarrMedia) =>
-      call("GET", "/book/lookup", v.array(BookLookupSchema), {
-        query: { term: `az:${asin}`, mediaType: media },
+    /**
+     * Books by provider ID (e.g. `az:<ASIN>`) in one media type: the local copies
+     * if Chaptarr has them, else the metadata server's results.
+     */
+    lookup: (term: string, media: ChaptarrMedia) =>
+      call("GET", "/book/lookup", v.array(BookSchema), {
+        query: { term, mediaType: media },
         timeoutMs: 60_000,
       }),
-    /** Author writes always carry the media scope (AGENTS.md › Chaptarr). */
-    addAuthor: (author: Author, media: ChaptarrMedia) =>
-      call("POST", "/author", AuthorSchema, {
-        query: { mediaType: media },
-        body: author,
-        timeoutMs: 90_000,
-      }),
-    updateAuthor: (author: Author & { id: number }, media: ChaptarrMedia) =>
-      call("PUT", `/author/${author.id}`, AuthorSchema, {
-        query: { mediaType: media },
-        body: author,
-        timeoutMs: 30_000,
-      }),
-    monitorBooks: (bookIds: number[]) =>
-      call("PUT", "/book/monitor", v.unknown(), {
-        body: { bookIds, monitored: true },
-        timeoutMs: 30_000,
-      }),
-    searchBooks: (bookIds: number[]) =>
-      call("POST", "/command", v.unknown(), {
-        body: { name: "BookSearch", bookIds },
-        timeoutMs: 20_000,
-      }),
+    importBook: (body: BookImportRequest) =>
+      call("POST", "/book/import", BookImportResponseSchema, { body, timeoutMs: 90_000 }),
   };
 }
 
@@ -107,149 +95,61 @@ export type ChaptarrClient = ReturnType<typeof createChaptarrClient>;
 
 export type SubmitBookInput = {
   asin: string;
-  title: string;
   media: ChaptarrMedia;
   rootFolderPath: string;
   qualityProfileId: number;
   metadataProfileId: number;
 };
 
-export type SubmitBookOutcome = { authorId: number; bookId: number; authorName: string };
-
-export type SubmitOptions = {
-  /** Books appear after Chaptarr's async author refresh: how many times to look, and how long to wait. */
-  attempts?: number;
-  delayMs?: number;
-  sleep?: (ms: number) => Promise<void>;
-};
+export type SubmitBookOutcome =
+  /** The book exists in Chaptarr, monitored, and its search was requested. */
+  | { state: "added"; bookId: number; foreignBookId: string }
+  /** Chaptarr queued the author until its metadata is ready; it will search then. */
+  | { state: "pending"; pendingId: number; foreignBookId: string };
 
 /**
- * Hands one book to Chaptarr: resolve it by ASIN, make sure its author exists
- * and is monitored for this media (selected books only, never the whole
- * bibliography), then monitor and search just that book.
+ * Requests one book from Chaptarr in one media type, the way its API contract
+ * intends: look the ASIN up for its provider IDs, then `POST /book/import`, which
+ * adds the author if needed, monitors only this book on this media side (never
+ * the other format, never the rest of the bibliography) and searches for it.
  */
 export async function submitBook(
   client: ChaptarrClient,
   input: SubmitBookInput,
-  { attempts = 8, delayMs = 2000, sleep = defaultSleep }: SubmitOptions = {},
 ): Promise<ServiceResult<SubmitBookOutcome>> {
-  const lookup = await client.lookupByAsin(input.asin, input.media);
+  const lookup = await client.lookup(`az:${input.asin}`, input.media);
   if (!lookup.ok) return lookup;
   const found = lookup.value.find((book) => book.author?.foreignAuthorId);
-  if (!found?.author) return fail("not_found", `Chaptarr found no book for ASIN ${input.asin}`);
+  const foreignAuthorId = found?.author?.foreignAuthorId;
+  if (!found || !foreignAuthorId)
+    return fail("not_found", `Chaptarr found no book for ASIN ${input.asin}`);
 
-  const existingAuthors = await client.authors();
-  if (!existingAuthors.ok) return existingAuthors;
-  let author = existingAuthors.value.find(
-    (a) => a.foreignAuthorId === found.author?.foreignAuthorId,
-  );
-
-  if (!author) {
-    const added = await client.addAuthor(newAuthorPayload(found.author, input), input.media);
-    if (!added.ok) return added;
-    author = added.value;
-  } else {
-    const updated = await ensureMonitoredFor(client, author, input);
-    if (!updated.ok) return updated;
-  }
-  const authorId = author.id;
-  if (authorId === undefined) return fail("rejected", "Chaptarr returned an author without an id");
-
-  let book: Book | undefined;
-  for (let attempt = 0; attempt < attempts && !book; attempt++) {
-    if (attempt > 0) await sleep(delayMs);
-    const books = await client.booksByAuthor(authorId);
-    if (!books.ok) return books;
-    book = matchBook(books.value, input, found.foreignBookId ?? undefined);
-  }
-  if (!book) {
-    return fail("not_found", `Chaptarr added the author but doesn't list "${input.title}" yet`);
-  }
-
-  const monitored = await client.monitorBooks([book.id]);
-  if (!monitored.ok) return monitored;
-  const searched = await client.searchBooks([book.id]);
-  if (!searched.ok) return searched;
-  return ok({ authorId, bookId: book.id, authorName: author.authorName ?? "" });
-}
-
-function newAuthorPayload(author: Author, input: SubmitBookInput): Author {
-  const audiobook = input.media === "audiobook";
-  const prefix = input.media;
-  // UNVERIFIED: per-media field names follow Stackarr; the legacy fields are mapped by Chaptarr
-  // onto the `mediaType` write scope.
-  return {
-    ...author,
-    monitored: true,
-    monitorNewItems: "none",
-    rootFolderPath: input.rootFolderPath,
+  const foreignBookId = found.foreignBookId || `az:${input.asin}`;
+  const imported = await client.importBook({
+    foreignBookId,
+    foreignAuthorId,
+    authorName: found.author?.authorName ?? undefined,
+    mediaType: input.media,
+    rootFolder: input.rootFolderPath,
     qualityProfileId: input.qualityProfileId,
     metadataProfileId: input.metadataProfileId,
-    [`${prefix}RootFolderPath`]: input.rootFolderPath,
-    [`${prefix}QualityProfileId`]: input.qualityProfileId,
-    [`${prefix}MetadataProfileId`]: input.metadataProfileId,
-    audiobookMonitorExisting: audiobook ? MONITOR_EXISTING_SELECTED : MONITOR_EXISTING_NONE,
-    ebookMonitorExisting: audiobook ? MONITOR_EXISTING_NONE : MONITOR_EXISTING_SELECTED,
-    audiobookMonitored: audiobook,
-    ebookMonitored: !audiobook,
-    audiobookMonitorNewItems: "none",
-    ebookMonitorNewItems: "none",
-    addOptions: { monitor: "none", booksToMonitor: [], searchForMissingBooks: false },
-  };
+    authorMonitoring: { monitor: "none", searchForMissing: true },
+  });
+  if (!imported.ok) return imported;
+  const { id, pendingId } = imported.value;
+  if (id !== undefined && id > 0) return ok({ state: "added", bookId: id, foreignBookId });
+  if (pendingId !== undefined) return ok({ state: "pending", pendingId, foreignBookId });
+  return fail("rejected", "Chaptarr accepted the book without returning its id");
 }
 
-/** An author first added for the other format lacks this media's folder and profiles. */
-async function ensureMonitoredFor(
-  client: ChaptarrClient,
-  author: Author,
-  input: SubmitBookInput,
-): Promise<ServiceResult<unknown>> {
-  if (author.id === undefined) return ok(undefined);
-  const prefix = input.media;
-  const next: Author & { id: number } = { ...author, id: author.id, monitored: true };
-  if (!author[`${prefix}MonitorExisting`]) {
-    next[`${prefix}MonitorExisting`] = MONITOR_EXISTING_SELECTED;
-    next[`${prefix}MonitorNewItems`] = "none";
-    next[`${prefix}Monitored`] = true;
-  }
-  next[`${prefix}QualityProfileId`] ??= input.qualityProfileId;
-  next[`${prefix}MetadataProfileId`] ??= input.metadataProfileId;
-  next[`${prefix}RootFolderPath`] = input.rootFolderPath;
-  const changed = Object.keys(next).some((key) => next[key] !== author[key]);
-  return changed ? client.updateAuthor(next, input.media) : ok(undefined);
-}
-
-const normalize = (text: string | null | undefined) =>
-  (text ?? "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-
-/** The author's row for this book and media: ASIN first, then foreign id, then exact title. */
-export function matchBook(
-  books: Book[],
-  { asin, title, media }: Pick<SubmitBookInput, "asin" | "title" | "media">,
-  foreignBookId?: string,
-): Book | undefined {
-  const split = books.some((b) => b.mediaType);
-  const rows = split ? books.filter((b) => b.mediaType === media) : books;
-  const wanted = asin.toUpperCase();
-  return (
-    rows.find((b) => [b.asin, b.audibleASIN].some((a) => a?.toUpperCase() === wanted)) ??
-    (foreignBookId ? rows.find((b) => b.foreignBookId === foreignBookId) : undefined) ??
-    rows.find((b) => normalize(b.title) === normalize(title))
-  );
-}
-
-/** Whether Chaptarr has imported a file for this book (availability check). */
+/** Whether Chaptarr holds a file for this book in this media type (by provider ID, which is durable). */
 export async function hasBookFile(
   client: ChaptarrClient,
-  { authorId, bookId }: { authorId: number; bookId: number },
+  { term, media }: { term: string; media: ChaptarrMedia },
 ): Promise<ServiceResult<boolean>> {
-  const books = await client.booksByAuthor(authorId);
+  const books = await client.lookup(term, media);
   if (!books.ok) return books;
-  const book = books.value.find((b) => b.id === bookId);
-  return ok((book?.statistics?.bookFileCount ?? 0) > 0);
+  return ok(books.value.some((book) => book.id > 0 && hasFile(book)));
 }
 
-const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const hasFile = (book: Book) => book.hasFiles === true || (book.statistics?.bookFileCount ?? 0) > 0;
