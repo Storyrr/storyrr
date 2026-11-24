@@ -1,0 +1,1 @@
+ALTER TABLE `user_preference` ADD `kavita_user` text;

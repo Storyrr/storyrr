@@ -127,3 +127,12 @@ export const vapidKeys = defineSetting({
   schema: v.object({ publicKey: v.string(), privateKey: v.string() }),
   secret: true,
 });
+
+const ServerSignInSchema = v.object({ enabled: v.boolean(), allowNew: v.boolean() });
+
+/** Sign in with Audiobookshelf / Kavita accounts, per server (off by default). */
+export const mediaServerSignIn = defineSetting({
+  key: "auth.media-servers",
+  schema: v.object({ audiobookshelf: ServerSignInSchema, kavita: ServerSignInSchema }),
+  secret: false,
+});

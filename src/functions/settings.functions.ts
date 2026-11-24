@@ -28,6 +28,7 @@ import {
   formatDefaults,
   hardcoverToken,
   librarySelection,
+  mediaServerSignIn,
   metadataSettings,
   userSettings,
 } from "#/server/settings/definitions";
@@ -356,3 +357,30 @@ export const getLogs = createServerFn({ method: "GET" })
     }),
   )
   .handler(({ data }) => readLogs(data));
+
+const ServerSignInSchema = v.object({ enabled: v.boolean(), allowNew: v.boolean() });
+
+/** Sign in with Audiobookshelf / Kavita: per server, on and whether new accounts are created. */
+export const getMediaServerSignIn = createServerFn({ method: "GET" })
+  .middleware([requireSettings])
+  .handler(
+    async () =>
+      (await settings.get(mediaServerSignIn)) ?? {
+        audiobookshelf: { enabled: false, allowNew: false },
+        kavita: { enabled: false, allowNew: false },
+      },
+  );
+
+export const saveMediaServerSignIn = createServerFn({ method: "POST" })
+  .middleware([requireSettings])
+  .validator(
+    v.object({ server: v.picklist(["audiobookshelf", "kavita"]), value: ServerSignInSchema }),
+  )
+  .handler(async ({ data }) => {
+    const current = (await settings.get(mediaServerSignIn)) ?? {
+      audiobookshelf: { enabled: false, allowNew: false },
+      kavita: { enabled: false, allowNew: false },
+    };
+    await settings.set(mediaServerSignIn, { ...current, [data.server]: data.value });
+    return { ok: true };
+  });

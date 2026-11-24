@@ -127,7 +127,10 @@ export const userPreference = sqliteTable("user_preference", {
   /** Granted permissions (`#/lib/permissions`); null uses the defaults from Settings → Users. */
   permissions: text("permissions", { mode: "json" }).$type<AssignablePermission[]>(),
   locale: text("locale"),
+  /** Linked Audiobookshelf account (sign in with Audiobookshelf). */
   absUserId: text("abs_user_id"),
+  /** Linked Kavita account, by lowercased username (Kavita's login answer has no id). */
+  kavitaUser: text("kavita_user"),
   /** Per-user override of the global request limits; null uses the global ones. */
   requestLimits: text("request_limits", { mode: "json" }).$type<RequestLimits>(),
   /** Personal notification channels and events; null uses the defaults (email, every event). */

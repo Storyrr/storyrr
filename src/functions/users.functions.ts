@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
+import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
+import * as v from "valibot";
 
 import {
   CreateUserSchema,
@@ -10,10 +12,14 @@ import {
   SetRoleSchema,
   UserIdSchema,
 } from "#/lib/schemas/users";
+import { MEDIA_SERVERS, type MediaServer } from "#/lib/media-server-login";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { banAccount, removeAccount, unbanAccount, updateAccount } from "#/server/auth/accounts";
 import { requireAdmin, requirePermission } from "#/server/auth/middleware";
+import { linkAccount, linkedUserId, placeholderEmail } from "#/server/auth/media-server";
+import { services } from "#/server/services";
+import { fail, ok } from "#/server/services/result";
 import { db } from "#/server/db";
 import { user } from "#/server/db/schema";
 import { setUserPermissions } from "#/server/permissions";
@@ -110,3 +116,76 @@ export const setUserLimits = createServerFn({ method: "POST" })
     setUserRequestLimits(db, data.userId, data.requestLimits);
     return { ok: true };
   });
+
+const ServerSchema = v.object({ server: v.picklist(MEDIA_SERVERS) });
+
+/** A media server's accounts, with whether each already has a Storyrr account. User managers. */
+export const getImportableUsers = createServerFn({ method: "GET" })
+  .middleware([requireManageUsers])
+  .validator(ServerSchema)
+  .handler(async ({ data }) => {
+    const accounts = await serverAccounts(data.server);
+    if (!accounts.ok) return { ok: false as const, error: accounts.error };
+    return {
+      ok: true as const,
+      users: accounts.value.map((a) => ({
+        ...a,
+        imported: linkedUserId(db, data.server, a.key) !== null,
+      })),
+    };
+  });
+
+/**
+ * Creates Storyrr accounts for media-server accounts, linked to them, with the
+ * default permissions. They sign in with their media-server password.
+ */
+export const importUsers = createServerFn({ method: "POST" })
+  .middleware([requireManageUsers])
+  .validator(
+    v.object({
+      ...ServerSchema.entries,
+      keys: v.pipe(v.array(v.pipe(v.string(), v.nonEmpty())), v.minLength(1), v.maxLength(200)),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const accounts = await serverAccounts(data.server);
+    if (!accounts.ok) throw new Error(accounts.error.message);
+    let imported = 0;
+    for (const account of accounts.value.filter((a) => data.keys.includes(a.key))) {
+      if (linkedUserId(db, data.server, account.key)) continue;
+      const { user: created } = await auth.api.createUser({
+        body: {
+          name: account.name,
+          email: account.email ?? placeholderEmail(data.server, account.key),
+          // Unusable: they sign in through the media server (or reset it by email).
+          password: randomBytes(24).toString("base64url"),
+          role: "user",
+        },
+      });
+      linkAccount(db, data.server, created.id, account.key);
+      imported++;
+    }
+    return { imported };
+  });
+
+/** A media server's accounts, keyed like sign-in links (ABS id, Kavita lowercased username). */
+async function serverAccounts(server: MediaServer) {
+  if (server === "audiobookshelf") {
+    const abs = await services.audiobookshelf();
+    if (!abs) return fail("not_configured", "Audiobookshelf is not configured");
+    const result = await abs.users();
+    if (!result.ok) return result;
+    return ok(result.value.map((u) => ({ key: u.id, name: u.username, email: u.email ?? null })));
+  }
+  const kavita = await services.kavita();
+  if (!kavita) return fail("not_configured", "Kavita is not configured");
+  const result = await kavita.users();
+  if (!result.ok) return result;
+  return ok(
+    result.value.map((u) => ({
+      key: u.username.toLowerCase(),
+      name: u.username,
+      email: u.email ?? null,
+    })),
+  );
+}

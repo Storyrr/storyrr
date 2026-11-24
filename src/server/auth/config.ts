@@ -7,10 +7,16 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type { AppDatabase } from "#/server/db/client";
 import * as schema from "#/server/db/schema";
 import type { Env } from "#/server/env";
+import type { MediaServerSignInInput } from "#/lib/media-server-login";
+
+import type { MediaServerResolution } from "./media-server";
+import { mediaServerSignInPlugin } from "./media-server-plugin";
 
 export type AuthHooks = {
   /** Emails a password reset link (Storyrr sends it through the Email notification agent). */
   sendResetPassword?: (data: { email: string; name: string; url: string }) => Promise<void>;
+  /** Sign in with Audiobookshelf / Kavita accounts. */
+  resolveMediaServerSignIn?: (input: MediaServerSignInInput) => Promise<MediaServerResolution>;
 };
 
 export function createAuth(
@@ -18,7 +24,7 @@ export function createAuth(
   env: Pick<Env, "BETTER_AUTH_URL" | "BETTER_AUTH_SECRET">,
   hooks: AuthHooks = {},
 ) {
-  const { sendResetPassword } = hooks;
+  const { sendResetPassword, resolveMediaServerSignIn } = hooks;
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
@@ -43,7 +49,11 @@ export function createAuth(
         : {}),
     },
     // tanstackStartCookies must stay the last plugin.
-    plugins: [admin(), tanstackStartCookies()],
+    plugins: [
+      admin(),
+      ...(resolveMediaServerSignIn ? [mediaServerSignInPlugin(resolveMediaServerSignIn)] : []),
+      tanstackStartCookies(),
+    ],
   });
 }
 

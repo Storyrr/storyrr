@@ -14,6 +14,7 @@ import type { SortDescriptor } from "react-aria-components";
 import { FormError } from "#/components/form/form-error";
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { CreateUserDialog } from "#/components/users/create-user-dialog";
+import { ImportUsersDialog } from "#/components/users/import-users-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button, buttonVariants } from "#/components/ui/button";
 import {
@@ -116,6 +117,7 @@ function UsersPage() {
         <h1 className="text-3xl font-semibold">{m.users_title()}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <CreateUserDialog />
+          <ImportUsersDialog />
           <Label htmlFor={searchId} className="sr-only">
             {m.users_search()}
           </Label>

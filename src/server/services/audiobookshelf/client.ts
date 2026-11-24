@@ -48,6 +48,19 @@ export type AbsItem = {
 
 export type AbsConnection = { url: string; apiKey: string };
 
+// UNVERIFIED: login and user list shapes follow advplyr/audiobookshelf's Auth.js and
+// UserController (POST /login → { user }, GET /api/users → { users }), not a recording.
+const AbsUserSchema = v.looseObject({
+  id: v.string(),
+  username: v.string(),
+  email: v.optional(v.nullable(v.string())),
+  type: v.optional(v.string()),
+  isActive: v.optional(v.boolean()),
+});
+export type AbsUser = v.InferOutput<typeof AbsUserSchema>;
+const AbsLoginSchema = v.looseObject({ user: AbsUserSchema });
+const AbsUsersSchema = v.looseObject({ users: v.array(AbsUserSchema) });
+
 const PAGE_SIZE = 200;
 /** Safety cap: 40,000 items per library. */
 const MAX_PAGES = 200;
@@ -116,6 +129,29 @@ export function createAudiobookshelfClient({ url, apiKey }: AbsConnection, fetch
         if (result.value.results.length < PAGE_SIZE) break;
       }
       return ok(items);
+    },
+
+    /** Checks a user's own credentials (sign in with Audiobookshelf); no API key involved. */
+    login: async (username: string, password: string): Promise<ServiceResult<AbsUser>> => {
+      const result = await requestJson({
+        fetch,
+        service: "Audiobookshelf",
+        url: new URL(`${base}/login`),
+        schema: AbsLoginSchema,
+        timeoutMs: 15_000,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        },
+      });
+      return result.ok ? ok(result.value.user) : result;
+    },
+
+    /** The server's accounts (import users); needs an admin API key. */
+    users: async (): Promise<ServiceResult<AbsUser[]>> => {
+      const result = await call("GET", "/api/users", AbsUsersSchema);
+      return result.ok ? ok(result.value.users) : result;
     },
 
     /** All audiobook items across book libraries, but the excluded ones. */

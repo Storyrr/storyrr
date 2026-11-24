@@ -126,6 +126,12 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - **Profile:** avatar, name, email, role, member since; request counts (total, audiobooks, eBooks, available) and recent requests.
 - **Settings** (the user's own, tabs): **General** (display name, email read-only, display language: browser default or a fixed locale, stored per user and applied on any device), **Password** (current + new; signs out other sessions), **Permissions** (read-only: role, auto-approval, request limits left). Linked accounts and notifications come with those features.
 
+### 4.8e Sign in with Audiobookshelf / Kavita (decided 2026-11-24)
+
+- Per server (Settings → Audiobookshelf / Kavita → Sign-in): on/off, and whether unknown accounts get a Storyrr account (off by default: only imported or matching accounts sign in).
+- The sign-in page then offers Storyrr account / Audiobookshelf / Kavita. Credentials are checked by the server (`POST /login`, `POST /api/Account/login`); the Storyrr account is found by link (ABS user id, Kavita username), else by email (then linked), else created with the default permissions when allowed. A better-auth plugin (`/api/auth/sign-in/media-server`) opens the session; bans apply.
+- Users → Import users: lists a server's accounts and creates linked Storyrr accounts for the selected ones.
+
 ### 4.8d Forgot password (decided 2026-11-24)
 
 When the Email notification agent is set up, the sign-in page offers "Forgot password?": an email with a one-time link valid for an hour (better-auth's reset flow, sent through the agent's SMTP server, in the visitor's language), leading to a page to choose a new password; other sessions are signed out. The form answers the same whether the address has an account or not.

@@ -17,18 +17,21 @@ import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
 import { ConnectionForm } from "./connection-form";
+import { MediaServerSignInSection } from "./media-server-sign-in";
 import { SettingsSection } from "./settings-section";
 
 const copy: Record<
   LibraryService,
-  { title: () => string; description: () => string; libraries: () => string }
+  { name: () => string; title: () => string; description: () => string; libraries: () => string }
 > = {
   audiobookshelf: {
+    name: m.service_audiobookshelf,
     title: m.settings_audiobookshelf_title,
     description: m.service_audiobookshelf_description,
     libraries: m.settings_audiobookshelf_libraries_description,
   },
   kavita: {
+    name: m.service_kavita,
     title: m.settings_kavita_title,
     description: m.service_kavita_description,
     libraries: m.settings_kavita_libraries_description,
@@ -47,6 +50,7 @@ export function LibraryServerSettings({ service }: { service: LibraryService }) 
       {current ? (
         <Libraries key={current.url} service={service} description={copy[service].libraries()} />
       ) : null}
+      {current ? <MediaServerSignInSection server={service} name={copy[service].name()} /> : null}
     </div>
   );
 }

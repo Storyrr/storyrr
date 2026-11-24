@@ -26,6 +26,15 @@ const SeriesSchema = v.looseObject({
 });
 
 export type KavitaSeries = { seriesId: number; libraryId: number; names: string[] };
+
+// UNVERIFIED: login and user shapes follow Kareadita/Kavita's AccountController
+// (POST /api/Account/login → UserDto) and UsersController (GET /api/Users), not a recording.
+const KavitaUserSchema = v.looseObject({
+  id: v.optional(v.number()),
+  username: v.string(),
+  email: v.optional(v.nullable(v.string())),
+});
+export type KavitaUser = v.InferOutput<typeof KavitaUserSchema>;
 export type KavitaConnection = { url: string; apiKey: string };
 
 const PAGE_SIZE = 500;
@@ -89,6 +98,24 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
   }
 
   return {
+    /** Checks a user's own credentials (sign in with Kavita); no Auth Key involved. */
+    login: async (username: string, password: string): Promise<ServiceResult<KavitaUser>> =>
+      requestJson({
+        fetch,
+        service: "Kavita",
+        url: new URL(`${base}/api/Account/login`),
+        schema: KavitaUserSchema,
+        timeoutMs: 15_000,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        },
+      }),
+
+    /** The server's accounts (import users); the Auth Key's user must be an admin. */
+    users: () => call("GET", "/api/Users", v.array(KavitaUserSchema)),
+
     /** Also the connection test: authenticates with the Auth Key. */
     libraries: () => call("GET", "/api/Library/libraries", v.array(LibrarySchema)),
 

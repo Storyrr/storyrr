@@ -1,11 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 
+import { MEDIA_SERVERS, type MediaServer } from "#/lib/media-server-login";
 import type { Permission } from "#/lib/permissions";
 import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { passwordResetAvailable } from "#/server/auth/password-reset";
+import { mediaServerSignIn } from "#/server/settings/definitions";
 import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
 import { permissionsOf } from "#/server/permissions";
@@ -52,6 +54,8 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
     appUrl: getEnv().BETTER_AUTH_URL,
     /** "Forgot password?" works (email is set up). */
     passwordReset: await passwordResetAvailable(),
+    /** Media servers whose accounts can sign in. */
+    mediaServerSignIn: await enabledMediaServerSignIns(),
   };
 });
 
@@ -70,3 +74,8 @@ export const completeSetup = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+async function enabledMediaServerSignIns(): Promise<MediaServer[]> {
+  const config = await settings.get(mediaServerSignIn);
+  return MEDIA_SERVERS.filter((server) => config?.[server].enabled);
+}
