@@ -115,16 +115,21 @@ const MessageBodySchema = v.union([
 
 /** Best-effort upstream error text (Servarr-style `message` or validation errors). */
 async function upstreamMessage(response: Response): Promise<string | undefined> {
+  let text: string;
   try {
-    const text = await response.text();
+    text = (await response.text()).trim();
+  } catch {
+    return undefined;
+  }
+  try {
     const parsed = v.safeParse(MessageBodySchema, JSON.parse(text));
     if (parsed.success) {
       return Array.isArray(parsed.output)
         ? parsed.output.map((e) => e.errorMessage).join("; ")
         : parsed.output.message;
     }
-    return text.trim().slice(0, 300) || undefined;
   } catch {
-    return undefined;
+    // Not JSON: some services (Audiobookshelf) answer errors in plain text.
   }
+  return text.slice(0, 300) || undefined;
 }

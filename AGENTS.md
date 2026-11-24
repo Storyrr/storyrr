@@ -155,7 +155,8 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 - In Docker the server listens on **port 80 inside the container**, whatever port is published on the host.
 - **Ownership must be matched by ASIN.** Titles/authors in libraries are often wrong (narrator as author, "T01-…" folder-derived titles). Fall back to normalized title+author only when no ASIN exists, and treat that as "probably owned".
 - ABS proxies metadata providers (`/api/search/books?title=&author=&provider=audible.fr`) and podcast search: reuse instead of re-implementing where convenient.
-- Podcasts: requesting = creating the podcast in a podcast library from its RSS feed with auto-download enabled. Confirm the exact create endpoint/body against the installed ABS version.
+- Source of truth: [advplyr/audiobookshelf](https://github.com/advplyr/audiobookshelf) (`server/controllers`, models' `toOldJSON*`). Errors come back as **plain text** bodies (e.g. 400 `Podcast already exists`).
+- Podcasts: requesting = `POST /api/podcasts` `{ libraryId, folderId, path, media: { metadata: { title, author, description, feedUrl, imageUrl, itunesId, itunesPageUrl, genres, language, explicit }, autoDownloadEpisodes: true } }`, admin key only. `path` must be inside the folder: `<folder fullPath>/<sanitizeFilename(title)>` as ABS's own client does. `POST /api/podcasts/feed { rssFeed }` parses the feed (description, language). Podcast items expose `media.metadata.feedUrl`: ownership is matched by normalized feed URL.
 - The library's "metadata provider" setting matters (Google Books by default, Audible is far better for audiobooks).
 
 ### Kavita (eBook availability)
