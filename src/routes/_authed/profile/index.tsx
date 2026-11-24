@@ -9,6 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "#/components/ui/ca
 import { accountQuery } from "#/lib/queries/profile";
 import { requestsQuery } from "#/lib/queries/requests";
 import type { RequestQuota } from "#/lib/requests";
+import { useImageUrl } from "#/lib/images";
 import { m } from "#/paraglide/messages.js";
 
 const RECENT = 20;
@@ -44,6 +45,7 @@ function QuotaCard({ label, quota }: { label: string; quota: RequestQuota }) {
 }
 
 function ProfilePage() {
+  const imageUrl = useImageUrl();
   const { data: account } = useSuspenseQuery(accountQuery());
   const { data: all } = useSuspenseQuery(
     requestsQuery({ scope: "mine", filter: "all", sort: "added" }),
@@ -62,7 +64,7 @@ function ProfilePage() {
           className="pointer-events-none absolute -inset-x-4 -top-6 -z-10 h-80 overflow-hidden md:-inset-x-8"
         >
           <img
-            src={backdrop}
+            src={imageUrl(backdrop)}
             alt=""
             className="size-full scale-110 object-cover opacity-30 blur-md"
           />

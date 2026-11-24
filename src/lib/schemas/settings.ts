@@ -124,3 +124,26 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   defaultPermissions: [...DEFAULT_PERMISSIONS],
   requestLimits: DEFAULT_REQUEST_LIMITS,
 };
+
+/** Settings → Network. */
+export const NetworkSettingsSchema = v.object({
+  /** http(s)://[user:pass@]host:port for Storyrr's outbound calls; empty: none. */
+  proxyUrl: v.pipe(
+    v.string(),
+    v.trim(),
+    v.check(
+      (value) => value === "" || /^https?:\/\/[^\s]+$/i.test(value),
+      () => m.validation_url(),
+    ),
+  ),
+  /** Hosts reached directly, comma-separated (e.g. chaptarr, *.lan). */
+  noProxy: v.pipe(v.string(), v.trim(), v.maxLength(1000)),
+  /** Serve covers through Storyrr, cached on disk. */
+  imageCache: v.boolean(),
+});
+export type NetworkSettings = v.InferOutput<typeof NetworkSettingsSchema>;
+export const DEFAULT_NETWORK_SETTINGS: NetworkSettings = {
+  proxyUrl: "",
+  noProxy: "",
+  imageCache: false,
+};

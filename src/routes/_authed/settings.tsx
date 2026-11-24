@@ -21,6 +21,7 @@ const TABS = [
   { to: "/settings/services", label: m.settings_tab_services },
   { to: "/settings/audiobookshelf", label: m.service_audiobookshelf },
   { to: "/settings/kavita", label: m.service_kavita },
+  { to: "/settings/network", label: m.settings_tab_network },
   { to: "/settings/notifications", label: m.settings_tab_notifications },
   { to: "/settings/metadata", label: m.settings_tab_metadata },
   { to: "/settings/jobs", label: m.settings_tab_jobs },

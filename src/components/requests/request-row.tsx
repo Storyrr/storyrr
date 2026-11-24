@@ -35,6 +35,7 @@ import { describeRequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
 import { DenyReasonSchema } from "#/lib/schemas/requests";
 import { can } from "#/lib/permissions";
+import { useImageUrl } from "#/lib/images";
 import { m } from "#/paraglide/messages.js";
 
 import { DeleteRequestButton, RemoveFromChaptarrButton } from "./request-admin-actions";
@@ -49,6 +50,7 @@ const SENT_STATUSES: readonly RequestStatus[] = ["submitted", "available", "fail
 
 /** One request as a Seerr-like card: cover backdrop, details, status and the actions allowed. */
 export function RequestRow({ request }: { request: RequestListItem }) {
+  const imageUrl = useImageUrl();
   const { user } = useRouteContext({ from: "/_authed" });
   const cancelFn = useServerFn(cancelRequest);
   const retryFn = useServerFn(retryRequest);
@@ -67,7 +69,7 @@ export function RequestRow({ request }: { request: RequestListItem }) {
     <li className="relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-4">
       {request.media.coverUrl ? (
         <img
-          src={request.media.coverUrl}
+          src={imageUrl(request.media.coverUrl)}
           alt=""
           loading="lazy"
           className="pointer-events-none absolute inset-0 size-full scale-110 object-cover opacity-25 blur-sm"

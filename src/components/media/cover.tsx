@@ -1,3 +1,4 @@
+import { useImageUrl } from "#/lib/images";
 import { BookAudioIcon, BookOpenIcon } from "lucide-react";
 
 import { cn } from "#/lib/utils";
@@ -12,6 +13,7 @@ export function Cover({
   type?: "audiobook" | "ebook";
   className?: string;
 }) {
+  const imageUrl = useImageUrl();
   return (
     // Audiobook covers are square, book covers portrait.
     <div
@@ -22,7 +24,7 @@ export function Cover({
       )}
     >
       {src ? (
-        <img src={src} alt="" loading="lazy" className="size-full object-cover" />
+        <img src={imageUrl(src)} alt="" loading="lazy" className="size-full object-cover" />
       ) : (
         <div className="flex size-full items-center justify-center text-muted-foreground">
           {type === "ebook" ? <BookOpenIcon /> : <BookAudioIcon />}

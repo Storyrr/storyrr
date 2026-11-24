@@ -23,6 +23,7 @@ import { Route as AuthedSearchRouteImport } from './routes/_authed/search'
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiImagesRouteImport } from './routes/api/images'
 import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
 import { Route as AuthedIssuesIdRouteImport } from './routes/_authed/issues/$id'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -33,6 +34,7 @@ import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/sett
 import { Route as AuthedSettingsJobsRouteImport } from './routes/_authed/settings/jobs'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
 import { Route as AuthedSettingsMetadataRouteImport } from './routes/_authed/settings/metadata'
+import { Route as AuthedSettingsNetworkRouteImport } from './routes/_authed/settings/network'
 import { Route as AuthedSettingsNotificationsRouteImport } from './routes/_authed/settings/notifications'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settings/users'
@@ -122,6 +124,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImagesRoute = ApiImagesRouteImport.update({
+  id: '/api/images',
+  path: '/api/images',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedIssuesIndexRoute = AuthedIssuesIndexRouteImport.update({
   id: '/issues/',
   path: '/issues/',
@@ -171,6 +178,11 @@ const AuthedSettingsKavitaRoute = AuthedSettingsKavitaRouteImport.update({
 const AuthedSettingsMetadataRoute = AuthedSettingsMetadataRouteImport.update({
   id: '/metadata',
   path: '/metadata',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsNetworkRoute = AuthedSettingsNetworkRouteImport.update({
+  id: '/network',
+  path: '/network',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsNotificationsRoute =
@@ -294,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthedSettingsRouteWithChildren
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images': typeof ApiImagesRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/settings/about': typeof AuthedSettingsAboutRoute
@@ -302,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/settings/network': typeof AuthedSettingsNetworkRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
@@ -337,6 +351,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthedSettingsRouteWithChildren
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images': typeof ApiImagesRoute
   '/': typeof AuthedIndexRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
@@ -346,6 +361,7 @@ export interface FileRoutesByTo {
   '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/settings/network': typeof AuthedSettingsNetworkRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
@@ -383,6 +399,7 @@ export interface FileRoutesById {
   '/_authed/settings': typeof AuthedSettingsRouteWithChildren
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images': typeof ApiImagesRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/issues/$id': typeof AuthedIssuesIdRoute
   '/_authed/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
@@ -392,6 +409,7 @@ export interface FileRoutesById {
   '/_authed/settings/jobs': typeof AuthedSettingsJobsRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/_authed/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/_authed/settings/network': typeof AuthedSettingsNetworkRoute
   '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/_authed/settings/users': typeof AuthedSettingsUsersRoute
@@ -430,6 +448,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/welcome'
     | '/api/health'
+    | '/api/images'
     | '/issues/$id'
     | '/profile/settings'
     | '/settings/about'
@@ -438,6 +457,7 @@ export interface FileRouteTypes {
     | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/metadata'
+    | '/settings/network'
     | '/settings/notifications'
     | '/settings/services'
     | '/settings/users'
@@ -473,6 +493,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/welcome'
     | '/api/health'
+    | '/api/images'
     | '/'
     | '/issues/$id'
     | '/profile/settings'
@@ -482,6 +503,7 @@ export interface FileRouteTypes {
     | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/metadata'
+    | '/settings/network'
     | '/settings/notifications'
     | '/settings/services'
     | '/settings/users'
@@ -518,6 +540,7 @@ export interface FileRouteTypes {
     | '/_authed/settings'
     | '/_authed/welcome'
     | '/api/health'
+    | '/api/images'
     | '/_authed/'
     | '/_authed/issues/$id'
     | '/_authed/profile/settings'
@@ -527,6 +550,7 @@ export interface FileRouteTypes {
     | '/_authed/settings/jobs'
     | '/_authed/settings/kavita'
     | '/_authed/settings/metadata'
+    | '/_authed/settings/network'
     | '/_authed/settings/notifications'
     | '/_authed/settings/services'
     | '/_authed/settings/users'
@@ -557,6 +581,7 @@ export interface RootRouteChildren {
   SetupRoute: typeof SetupRoute
   SignInRoute: typeof SignInRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiImagesRoute: typeof ApiImagesRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiWebhooksChaptarrRoute: typeof ApiWebhooksChaptarrRoute
 }
@@ -661,6 +686,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/images': {
+      id: '/api/images'
+      path: '/api/images'
+      fullPath: '/api/images'
+      preLoaderRoute: typeof ApiImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/issues/': {
       id: '/_authed/issues/'
       path: '/issues'
@@ -729,6 +761,13 @@ declare module '@tanstack/react-router' {
       path: '/metadata'
       fullPath: '/settings/metadata'
       preLoaderRoute: typeof AuthedSettingsMetadataRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/network': {
+      id: '/_authed/settings/network'
+      path: '/network'
+      fullPath: '/settings/network'
+      preLoaderRoute: typeof AuthedSettingsNetworkRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     '/_authed/settings/notifications': {
@@ -889,6 +928,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsJobsRoute: typeof AuthedSettingsJobsRoute
   AuthedSettingsKavitaRoute: typeof AuthedSettingsKavitaRoute
   AuthedSettingsMetadataRoute: typeof AuthedSettingsMetadataRoute
+  AuthedSettingsNetworkRoute: typeof AuthedSettingsNetworkRoute
   AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRouteWithChildren
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
   AuthedSettingsUsersRoute: typeof AuthedSettingsUsersRoute
@@ -901,6 +941,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsJobsRoute: AuthedSettingsJobsRoute,
   AuthedSettingsKavitaRoute: AuthedSettingsKavitaRoute,
   AuthedSettingsMetadataRoute: AuthedSettingsMetadataRoute,
+  AuthedSettingsNetworkRoute: AuthedSettingsNetworkRoute,
   AuthedSettingsNotificationsRoute:
     AuthedSettingsNotificationsRouteWithChildren,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
@@ -1004,6 +1045,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupRoute: SetupRoute,
   SignInRoute: SignInRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiImagesRoute: ApiImagesRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiWebhooksChaptarrRoute: ApiWebhooksChaptarrRoute,
 }

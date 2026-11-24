@@ -3,6 +3,7 @@ import { MediaCard } from "#/components/media/media-card";
 import type { MediaSummary } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { MediaAvailability } from "#/lib/request-status";
+import { useImageUrl } from "#/lib/images";
 import { m } from "#/paraglide/messages.js";
 
 type Annotated = MediaSummary & { availability: MediaAvailability; accepted: boolean | null };
@@ -30,12 +31,13 @@ export function CollectionPage({
   /** Series pages: each work's volume number under its card. */
   showVolumes?: boolean;
 }) {
+  const cachedUrl = useImageUrl();
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
         {imageUrl ? (
           <img
-            src={imageUrl}
+            src={cachedUrl(imageUrl)}
             alt=""
             className="size-32 shrink-0 rounded-full border object-cover shadow-md"
           />

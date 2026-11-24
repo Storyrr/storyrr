@@ -5,6 +5,7 @@ import { Cover } from "#/components/media/cover";
 import { RequestStatusBadge } from "#/components/requests/request-status-badge";
 import { yearOf } from "#/lib/format";
 import type { MediaType, RequestStatus } from "#/lib/requests";
+import { useImageUrl } from "#/lib/images";
 import { m } from "#/paraglide/messages.js";
 
 export type RequestCardItem = {
@@ -22,6 +23,7 @@ export type RequestCardItem = {
 
 /** Seerr-like request card: the cover blurred behind, year, title, requester, status. */
 export function RequestCard({ request }: { request: RequestCardItem }) {
+  const imageUrl = useImageUrl();
   const year = yearOf(request.media.releaseDate ?? undefined);
   return (
     <Link
@@ -31,7 +33,7 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
     >
       {request.media.coverUrl ? (
         <img
-          src={request.media.coverUrl}
+          src={imageUrl(request.media.coverUrl)}
           alt=""
           loading="lazy"
           className="absolute inset-0 size-full scale-110 object-cover opacity-25 blur-sm"

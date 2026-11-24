@@ -154,6 +154,7 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **Services:** one Chaptarr server (decided: Chaptarr serves both formats), shown as a card (address, default folder and profile per format) with Edit (connection + defaults per format, in a dialog) and Delete, or an "Add a Chaptarr server" box; the webhook URL below.
 - **Audiobookshelf / Kavita** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
 - **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
+- **Network:** an outbound HTTP(S) proxy for Storyrr's calls (with hosts reached directly), and an optional cover cache: covers served by Storyrr from the data folder (30 days), signed-in users only, provider image hosts only.
 - Later: health of each connection.
 
 ### 4.9b Polish (decided 2026-11-24)

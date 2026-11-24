@@ -609,5 +609,19 @@
   "account_warning_email_description": "Votre compte n’a pas encore d’e-mail : les réinitialisations de mot de passe et les notifications par e-mail ne peuvent pas vous parvenir.",
   "account_warning_email_action": "L’ajouter dans vos paramètres",
   "profile_email_own_description": "Pour vous connecter, réinitialiser votre mot de passe et recevoir les notifications par e-mail.",
-  "profile_email_taken": "Un autre compte utilise déjà cet e-mail."
+  "profile_email_taken": "Un autre compte utilise déjà cet e-mail.",
+  "settings_tab_network": "Réseau",
+  "network_proxy_title": "Proxy sortant",
+  "network_proxy_description": "Pour les réseaux où Storyrr doit passer par un proxy pour joindre Audible, Hardcover ou les services de notification.",
+  "network_proxy_url": "URL du proxy",
+  "network_proxy_url_description": "http:// ou https://, avec utilisateur:motdepasse@ si besoin. Vide : pas de proxy. Les notifications push et l’e-mail ne l’utilisent pas.",
+  "network_no_proxy": "Joindre directement",
+  "network_no_proxy_description": "Hôtes qui évitent le proxy, séparés par des virgules (votre Chaptarr, Audiobookshelf et Kavita, en général). Un point initial couvre tout un domaine.",
+  "network_images_title": "Couvertures",
+  "network_images_description": "Les couvertures viennent d’Audible, d’Amazon et de Hardcover.",
+  "network_image_cache": "Mettre en cache les couvertures",
+  "network_image_cache_description": "Storyrr télécharge chaque couverture une fois, la garde 30 jours dans le dossier de données et la sert lui-même : pages plus rapides, et les navigateurs ne contactent pas les fournisseurs.",
+  "network_cache_size": "Taille du cache",
+  "network_cache_files": "{count} couvertures",
+  "network_clear_cache": "Vider le cache"
 }

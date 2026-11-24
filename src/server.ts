@@ -5,11 +5,14 @@ import { db } from "./server/db";
 import { getEnv } from "./server/env";
 import { startScheduler } from "./server/jobs";
 import { installLogCapture } from "./server/logs";
+import { applyProxy, getNetworkSettings } from "./server/network";
 import { startNotifications } from "./server/notifications";
 import { settings } from "./server/settings";
 
 // Server logs are also kept in memory for Settings → Jobs & logs.
 installLogCapture();
+// Outbound calls go through the proxy from Settings → Network, if any.
+void getNetworkSettings(settings).then(applyProxy);
 // Background jobs (library sync, submissions, availability) run in-process.
 startScheduler();
 // Notifications follow request and issue changes.

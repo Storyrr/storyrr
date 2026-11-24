@@ -609,5 +609,19 @@
   "account_warning_email_description": "Your account has no email yet, so password resets and email notifications can't reach you.",
   "account_warning_email_action": "Add it in your settings",
   "profile_email_own_description": "Used to sign in, reset your password and receive email notifications.",
-  "profile_email_taken": "Another account already uses this email."
+  "profile_email_taken": "Another account already uses this email.",
+  "settings_tab_network": "Network",
+  "network_proxy_title": "Outbound proxy",
+  "network_proxy_description": "For networks where Storyrr must go through a proxy to reach Audible, Hardcover or notification services.",
+  "network_proxy_url": "Proxy URL",
+  "network_proxy_url_description": "http:// or https://, with user:password@ if needed. Empty: no proxy. Push notifications and email don't use it.",
+  "network_no_proxy": "Reach directly",
+  "network_no_proxy_description": "Hosts that skip the proxy, comma-separated (your Chaptarr, Audiobookshelf and Kavita, usually). A leading dot covers a whole domain.",
+  "network_images_title": "Covers",
+  "network_images_description": "Covers come from Audible, Amazon and Hardcover.",
+  "network_image_cache": "Cache covers",
+  "network_image_cache_description": "Storyrr downloads each cover once, keeps it for 30 days in the data folder and serves it itself: faster pages, and browsers don't contact the providers.",
+  "network_cache_size": "Cache size",
+  "network_cache_files": "{count} covers",
+  "network_clear_cache": "Clear the cache"
 }

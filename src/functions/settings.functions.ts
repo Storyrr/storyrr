@@ -7,6 +7,7 @@ import {
   HardcoverTokenFormSchema,
   RevealSecretSchema,
   LibraryServiceInputSchema,
+  NetworkSettingsSchema,
   MetadataSettingsSchema,
   SaveFormatDefaultsSchema,
   SaveLibrarySelectionSchema,
@@ -29,6 +30,7 @@ import {
   hardcoverToken,
   librarySelection,
   mediaServerSignIn,
+  networkSettings,
   metadataSettings,
   userSettings,
 } from "#/server/settings/definitions";
@@ -39,6 +41,13 @@ import { compareVersions } from "#/lib/version";
 import { db } from "#/server/db";
 import { listJobs, runJob } from "#/server/jobs";
 import { readLogs } from "#/server/logs";
+import {
+  applyProxy,
+  clearImageCache,
+  getNetworkSettings,
+  imageCacheDir,
+  imageCacheStats,
+} from "#/server/network";
 import { media, request } from "#/server/db/schema";
 import { latestReleases, REPOSITORY_URL } from "#/server/releases";
 import { APP_VERSION } from "#/server/version";
@@ -382,5 +391,29 @@ export const saveMediaServerSignIn = createServerFn({ method: "POST" })
       kavita: { enabled: false, allowNew: false },
     };
     await settings.set(mediaServerSignIn, { ...current, [data.server]: data.value });
+    return { ok: true };
+  });
+
+/** Settings → Network: proxy, image cache and its size. Manage settings. */
+export const getNetwork = createServerFn({ method: "GET" })
+  .middleware([requireSettings])
+  .handler(async () => ({
+    settings: await getNetworkSettings(settings),
+    cache: await imageCacheStats(imageCacheDir(getEnv().DATABASE_URL)),
+  }));
+
+export const saveNetwork = createServerFn({ method: "POST" })
+  .middleware([requireSettings])
+  .validator(NetworkSettingsSchema)
+  .handler(async ({ data }) => {
+    await settings.set(networkSettings, data);
+    applyProxy(data);
+    return { ok: true };
+  });
+
+export const clearImages = createServerFn({ method: "POST" })
+  .middleware([requireSettings])
+  .handler(async () => {
+    await clearImageCache(imageCacheDir(getEnv().DATABASE_URL));
     return { ok: true };
   });

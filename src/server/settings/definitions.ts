@@ -3,6 +3,7 @@ import * as v from "valibot";
 
 import {
   FormatDefaultsSchema,
+  NetworkSettingsSchema,
   LibrarySelectionSchema,
   MetadataSettingsSchema,
   UserSettingsSchema,
@@ -134,5 +135,12 @@ const ServerSignInSchema = v.object({ enabled: v.boolean(), allowNew: v.boolean(
 export const mediaServerSignIn = defineSetting({
   key: "auth.media-servers",
   schema: v.object({ audiobookshelf: ServerSignInSchema, kavita: ServerSignInSchema }),
+  secret: false,
+});
+
+/** Settings → Network: outbound proxy and the cover image cache. */
+export const networkSettings = defineSetting({
+  key: "network",
+  schema: NetworkSettingsSchema,
   secret: false,
 });

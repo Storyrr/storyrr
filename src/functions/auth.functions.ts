@@ -7,6 +7,7 @@ import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { passwordResetAvailable } from "#/server/auth/password-reset";
+import { getNetworkSettings } from "#/server/network";
 import { mediaServerSignIn } from "#/server/settings/definitions";
 import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
@@ -56,6 +57,8 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
     passwordReset: await passwordResetAvailable(),
     /** Media servers whose accounts can sign in. */
     mediaServerSignIn: await enabledMediaServerSignIns(),
+    /** Covers go through Storyrr's image cache (signed-in pages only). */
+    imageCache: session ? (await getNetworkSettings(settings)).imageCache : false,
   };
 });
 
