@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 import { Cron } from "croner";
 
 import { db } from "#/server/db";
-import { syncAudiobookshelf, syncKavita } from "#/server/library";
+import { syncLibrary } from "#/server/library/sync";
 import { checkAvailability } from "#/server/requests/availability";
 import { failStuckRequests, submitApproved } from "#/server/requests/submit";
 import { services } from "#/server/services";
@@ -19,15 +19,13 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
     run: async () => {
       // Each library is synced on its own: one being down doesn't block the other.
       const failures: string[] = [];
-      const abs = await services.audiobookshelf();
-      if (abs) {
-        const synced = await syncAudiobookshelf(db, abs);
-        if (!synced.ok) failures.push(`Audiobookshelf sync: ${synced.error.message}`);
-      }
-      const kavita = await services.kavita();
-      if (kavita) {
-        const synced = await syncKavita(db, kavita);
-        if (!synced.ok) failures.push(`Kavita sync: ${synced.error.message}`);
+      for (const [service, label] of [
+        ["audiobookshelf", "Audiobookshelf"],
+        ["kavita", "Kavita"],
+      ] as const) {
+        const synced = await syncLibrary({ db, services, settings }, service);
+        if (!synced.ok && synced.error.kind !== "not_configured")
+          failures.push(`${label} sync: ${synced.error.message}`);
       }
       await checkAvailability({ db, services });
       await failStuckRequests({ db, services, settings });

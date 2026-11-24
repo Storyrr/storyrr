@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { ACTIVE_REQUEST_STATUSES, MEDIA_TYPES, REQUEST_STATUSES } from "#/lib/requests";
+import type { RequestLimits } from "#/lib/schemas/settings";
 
 import { user } from "./auth";
 
@@ -124,4 +125,6 @@ export const userPreference = sqliteTable("user_preference", {
   autoApprove: integer("auto_approve", { mode: "boolean" }).notNull().default(false),
   locale: text("locale"),
   absUserId: text("abs_user_id"),
+  /** Per-user override of the global request limits; null uses the global ones. */
+  requestLimits: text("request_limits", { mode: "json" }).$type<RequestLimits>(),
 });

@@ -6,14 +6,7 @@ import { useState } from "react";
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
+import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { saveServiceConnection, testServiceConnection } from "#/functions/settings.functions";
@@ -26,23 +19,19 @@ import {
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
-const copy: Record<ServiceName, { title: () => string; description: () => string }> = {
-  chaptarr: { title: m.service_chaptarr, description: m.service_chaptarr_description },
-  audiobookshelf: {
-    title: m.service_audiobookshelf,
-    description: m.service_audiobookshelf_description,
-  },
-  kavita: { title: m.service_kavita, description: m.service_kavita_description },
-};
-
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
-export function ConnectionCard({
+/** URL + API key of a service, with Test and Save (a blank key keeps the stored one). */
+export function ConnectionForm({
   service,
   current,
+  layout = "stacked",
+  onSaved,
 }: {
   service: ServiceName;
   current: { url: string; hasApiKey: boolean } | null;
+  layout?: "stacked" | "row";
+  onSaved?: () => void;
 }) {
   const queryClient = useQueryClient();
   const testFn = useServerFn(testServiceConnection);
@@ -77,6 +66,7 @@ export function ConnectionCard({
     onSuccess: async () => {
       setFeedback({ tone: "success", message: m.action_saved() });
       await queryClient.invalidateQueries({ queryKey: settingsKeys.all });
+      onSaved?.();
     },
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),
   });
@@ -95,68 +85,68 @@ export function ConnectionCard({
     test.mutate(form.state.values);
   };
 
+  const buttons = (
+    <>
+      <Button variant="outline" isDisabled={test.isPending} onPress={() => void runTest()}>
+        {test.isPending ? <Spinner data-icon="inline-start" /> : null}
+        {m.action_test()}
+      </Button>
+      <Button type="submit" isDisabled={save.isPending}>
+        {save.isPending ? <Spinner data-icon="inline-start" /> : null}
+        {m.action_save()}
+      </Button>
+    </>
+  );
+
   return (
-    <Card>
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-        className="flex flex-col gap-6"
-      >
-        <CardHeader>
-          <CardTitle>
-            <h2>{copy[service].title()}</h2>
-          </CardTitle>
-          <CardDescription>{copy[service].description()}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
-            {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
-            <form.Field name="url">
-              {(field) => (
-                <TextField
-                  label={m.field_url()}
-                  name={field.name}
-                  type="text"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-            <form.Field name="apiKey">
-              {(field) => (
-                <TextField
-                  label={m.field_api_key()}
-                  description={current?.hasApiKey ? m.field_api_key_saved() : undefined}
-                  name={field.name}
-                  type="password"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-          </FieldGroup>
-        </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="outline" isDisabled={test.isPending} onPress={() => void runTest()}>
-            {test.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {m.action_test()}
-          </Button>
-          <Button type="submit" isDisabled={save.isPending}>
-            {save.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {m.action_save()}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.handleSubmit();
+      }}
+      className="flex flex-col gap-6"
+    >
+      <FieldGroup>
+        {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
+        {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
+        <form.Field name="url">
+          {(field) => (
+            <TextField
+              label={m.field_url()}
+              layout={layout}
+              name={field.name}
+              type="text"
+              autoComplete="off"
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              errors={field.state.meta.errors}
+            />
+          )}
+        </form.Field>
+        <form.Field name="apiKey">
+          {(field) => (
+            <TextField
+              label={m.field_api_key()}
+              layout={layout}
+              description={current?.hasApiKey ? m.field_api_key_saved() : undefined}
+              name={field.name}
+              type="password"
+              autoComplete="off"
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              errors={field.state.meta.errors}
+            />
+          )}
+        </form.Field>
+      </FieldGroup>
+      {layout === "row" ? (
+        <SettingsActions>{buttons}</SettingsActions>
+      ) : (
+        <div className="flex justify-end gap-2">{buttons}</div>
+      )}
+    </form>
   );
 }

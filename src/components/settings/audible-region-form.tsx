@@ -6,14 +6,7 @@ import * as v from "valibot";
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
 import { Button } from "#/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
+import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { saveMetadataSettings } from "#/functions/settings.functions";
 import { AUDIBLE_REGION_CODES, type AudibleRegion } from "#/lib/audible-regions";
@@ -37,7 +30,8 @@ const regionNames: Record<AudibleRegion, () => string> = {
 const isRegion = (value: string | null): value is AudibleRegion =>
   v.is(v.picklist(AUDIBLE_REGION_CODES), value);
 
-export function MetadataCard({ current }: { current: MetadataSettings }) {
+/** Audible marketplace used for audiobook search and Discover. */
+export function AudibleRegionForm({ current }: { current: MetadataSettings }) {
   const queryClient = useQueryClient();
   const saveFn = useServerFn(saveMetadataSettings);
   const save = useMutation({
@@ -53,49 +47,41 @@ export function MetadataCard({ current }: { current: MetadataSettings }) {
   });
 
   return (
-    <Card>
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-        className="flex flex-col gap-6"
-      >
-        <CardHeader>
-          <CardTitle>
-            <h2>{m.settings_metadata_title()}</h2>
-          </CardTitle>
-          <CardDescription>{m.settings_metadata_description()}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <FormError message={save.error ? save.error.message || m.error_generic() : null} />
-            <form.Field name="audibleRegion">
-              {(field) => (
-                <SelectField
-                  label={m.field_audible_region()}
-                  options={AUDIBLE_REGION_CODES.map((code) => ({
-                    id: code,
-                    label: regionNames[code](),
-                  }))}
-                  value={field.state.value}
-                  onChange={(value) => {
-                    if (isRegion(value)) field.handleChange(value);
-                  }}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-          </FieldGroup>
-        </CardContent>
-        <CardFooter className="justify-end">
-          <Button type="submit" isDisabled={save.isPending}>
-            {save.isSuccess ? m.action_saved() : m.action_save()}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.handleSubmit();
+      }}
+      className="flex flex-col gap-6"
+    >
+      <FieldGroup>
+        <FormError message={save.error ? save.error.message || m.error_generic() : null} />
+        <form.Field name="audibleRegion">
+          {(field) => (
+            <SelectField
+              label={m.field_audible_region()}
+              layout="row"
+              description={m.settings_metadata_description()}
+              options={AUDIBLE_REGION_CODES.map((code) => ({
+                id: code,
+                label: regionNames[code](),
+              }))}
+              value={field.state.value}
+              onChange={(value) => {
+                if (isRegion(value)) field.handleChange(value);
+              }}
+              onBlur={field.handleBlur}
+              errors={field.state.meta.errors}
+            />
+          )}
+        </form.Field>
+      </FieldGroup>
+      <SettingsActions>
+        <Button type="submit" isDisabled={save.isPending}>
+          {save.isSuccess ? m.action_saved() : m.action_save()}
+        </Button>
+      </SettingsActions>
+    </form>
   );
 }

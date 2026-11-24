@@ -1,5 +1,8 @@
 import { useId } from "react";
 
+import { SETTINGS_ROW } from "#/components/settings/settings-section";
+import { cn } from "#/lib/utils";
+
 import { Field, FieldDescription, FieldError, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 
@@ -15,6 +18,8 @@ type TextFieldProps = {
   name: string;
   autoComplete?: string;
   disabled?: boolean;
+  /** "row": label left, input right (settings pages). */
+  layout?: "stacked" | "row";
 };
 
 /** A labelled text input bound to a TanStack Form field. */
@@ -29,12 +34,18 @@ export function TextField({
   name,
   autoComplete,
   disabled,
+  layout = "stacked",
 }: TextFieldProps) {
+  const row = layout === "row";
   const id = useId();
   const descriptionId = `${id}-description`;
   const invalid = errors.length > 0;
   return (
-    <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+    <Field
+      data-invalid={invalid || undefined}
+      data-disabled={disabled || undefined}
+      className={row ? cn(SETTINGS_ROW, "md:items-center") : undefined}
+    >
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         id={id}
@@ -48,8 +59,12 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
       />
-      {description ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
-      <FieldError errors={[...errors]} />
+      {description ? (
+        <FieldDescription id={descriptionId} className={row ? "md:col-start-2" : undefined}>
+          {description}
+        </FieldDescription>
+      ) : null}
+      <FieldError errors={[...errors]} className={row ? "md:col-start-2" : undefined} />
     </Field>
   );
 }

@@ -1,7 +1,12 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
-import { FormatDefaultsSchema, MetadataSettingsSchema } from "#/lib/schemas/settings";
+import {
+  FormatDefaultsSchema,
+  LibrarySelectionSchema,
+  MetadataSettingsSchema,
+  UserSettingsSchema,
+} from "#/lib/schemas/settings";
 
 import { defineSetting } from "./store";
 
@@ -67,3 +72,20 @@ export const chaptarrWebhookToken = defineSetting({
   schema: v.pipe(v.string(), v.minLength(32)),
   secret: true,
 });
+
+/** Settings → Users: auto-approval default for new accounts, global request limits. */
+export const userSettings = defineSetting({
+  key: "users",
+  schema: UserSettingsSchema,
+  secret: false,
+});
+
+/** Libraries left out of the availability index, per media server. */
+export const librarySelection = {
+  audiobookshelf: defineSetting({
+    key: "libraries.audiobookshelf",
+    schema: LibrarySelectionSchema,
+    secret: false,
+  }),
+  kavita: defineSetting({ key: "libraries.kavita", schema: LibrarySelectionSchema, secret: false }),
+} as const;

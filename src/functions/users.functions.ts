@@ -5,6 +5,7 @@ import {
   CreateUserSchema,
   SetAutoApproveSchema,
   SetBannedSchema,
+  SetRequestLimitsSchema,
   SetRoleSchema,
   UserIdSchema,
 } from "#/lib/schemas/users";
@@ -12,6 +13,7 @@ import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { requireAdmin } from "#/server/auth/middleware";
 import { db } from "#/server/db";
+import { setUserRequestLimits } from "#/server/requests/quota";
 import { listUsers, setAutoApprove } from "#/server/users";
 
 /** Admins can't lock themselves out: no demoting, banning or deleting one's own account. */
@@ -78,5 +80,14 @@ export const deleteUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     refuseSelf(data.userId, context.session.user.id);
     await auth.api.removeUser({ body: { userId: data.userId }, headers: getRequestHeaders() });
+    return { ok: true };
+  });
+
+/** Per-user request limits (null: the global ones from Settings → Users). Admin only. */
+export const setUserLimits = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(SetRequestLimitsSchema)
+  .handler(({ data }) => {
+    setUserRequestLimits(db, data.userId, data.requestLimits);
     return { ok: true };
   });

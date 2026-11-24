@@ -5,14 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
 import { Button } from "#/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
 import { FieldGroup } from "#/components/ui/field";
 import { Skeleton } from "#/components/ui/skeleton";
 import { saveFormatDefaults } from "#/functions/settings.functions";
@@ -36,8 +28,8 @@ const copy: Record<ChaptarrFormat, { title: () => string; description: () => str
   },
 };
 
-/** Default root folder and Chaptarr profiles for one format. */
-export function FormatDefaultsCard({
+/** Default root folder and Chaptarr profiles for one format (in the Chaptarr dialog). */
+export function FormatDefaultsForm({
   format,
   current,
 }: {
@@ -58,15 +50,13 @@ export function FormatDefaultsCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>{copy[format].title()}</h2>
-        </CardTitle>
-        <CardDescription>{copy[format].description()}</CardDescription>
-      </CardHeader>
-      <CardContent>{body}</CardContent>
-    </Card>
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h3 className="font-medium">{copy[format].title()}</h3>
+        <p className="text-sm text-muted-foreground">{copy[format].description()}</p>
+      </div>
+      {body}
+    </section>
   );
 }
 
@@ -92,7 +82,7 @@ function DefaultsForm({
   const saveFn = useServerFn(saveFormatDefaults);
   const save = useMutation({
     mutationFn: (defaults: FormatDefaults) => saveFn({ data: { format, defaults } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.services() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.all }),
   });
   const form = useForm({
     defaultValues: {
@@ -155,11 +145,11 @@ function DefaultsForm({
           )}
         </form.Field>
       </FieldGroup>
-      <CardFooter className="justify-end px-0">
+      <div className="flex justify-end">
         <Button type="submit" isDisabled={save.isPending}>
           {save.isSuccess ? m.action_saved() : m.action_save()}
         </Button>
-      </CardFooter>
+      </div>
     </form>
   );
 }

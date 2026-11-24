@@ -1,11 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import {
+  getMyQuota,
   getDiscoverRequests,
   getRequestHistory,
   getRequests,
 } from "#/functions/requests.functions";
 import { IN_FLIGHT_STATUSES } from "#/lib/request-status";
+import type { MediaType } from "#/lib/requests";
 
 export type RequestScope = "mine" | "all";
 export type RequestFilter = "all" | "pending" | "processing" | "available" | "failed";
@@ -16,7 +18,15 @@ export const requestKeys = {
   list: (scope: RequestScope, filter: RequestFilter) =>
     [...requestKeys.lists(), scope, filter] as const,
   history: (id: string) => [...requestKeys.all, "history", id] as const,
+  quota: (format: MediaType) => [...requestKeys.all, "quota", format] as const,
 };
+
+/** The caller's remaining requests for a format (request dialog). */
+export const quotaQuery = (format: MediaType) =>
+  queryOptions({
+    queryKey: requestKeys.quota(format),
+    queryFn: () => getMyQuota({ data: { format } }),
+  });
 
 export const requestsQuery = (scope: RequestScope, filter: RequestFilter) =>
   queryOptions({

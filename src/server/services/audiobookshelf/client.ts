@@ -118,12 +118,13 @@ export function createAudiobookshelfClient({ url, apiKey }: AbsConnection, fetch
       return ok(items);
     },
 
-    /** All audiobook items across book libraries. */
-    async allItems(): Promise<ServiceResult<AbsItem[]>> {
+    /** All audiobook items across book libraries, but the excluded ones. */
+    async allItems(excluded: ReadonlySet<string> = new Set()): Promise<ServiceResult<AbsItem[]>> {
       const libraries = await client.libraries();
       if (!libraries.ok) return libraries;
       const items: AbsItem[] = [];
-      for (const library of libraries.value.filter((l) => l.mediaType === "book")) {
+      const wanted = libraries.value.filter((l) => l.mediaType === "book" && !excluded.has(l.id));
+      for (const library of wanted) {
         const result = await client.items(library);
         if (!result.ok) return result;
         items.push(...result.value);

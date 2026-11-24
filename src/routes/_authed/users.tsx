@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { CreateUserDialog } from "#/components/users/create-user-dialog";
+import { RequestLimitsDialog } from "#/components/users/request-limits-dialog";
 import { roleLabels } from "#/components/users/role-labels";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -28,6 +29,7 @@ import {
 } from "#/functions/users.functions";
 import { formatDate } from "#/lib/format";
 import { authKeys } from "#/lib/queries/auth";
+import { userSettingsQuery } from "#/lib/queries/settings";
 import { userKeys, usersQuery } from "#/lib/queries/users";
 import { m } from "#/paraglide/messages.js";
 
@@ -35,7 +37,11 @@ export const Route = createFileRoute("/_authed/users")({
   beforeLoad: ({ context }) => {
     if (!context.user.isAdmin) throw redirect({ to: "/" });
   },
-  loader: ({ context }) => context.queryClient.ensureQueryData(usersQuery()),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(usersQuery()),
+      context.queryClient.ensureQueryData(userSettingsQuery()),
+    ]),
   head: () => ({ meta: [{ title: `${m.users_title()} · ${m.app_name()}` }] }),
   component: UsersPage,
 });
@@ -59,6 +65,7 @@ function useUserAction<TInput>(fn: (input: TInput) => Promise<unknown>) {
 
 function UsersPage() {
   const users = useUsers();
+  const { data: defaults } = useSuspenseQuery(userSettingsQuery());
   const { user: me } = Route.useRouteContext();
   const roleFn = useServerFn(setUserRole);
   const autoApproveFn = useServerFn(setUserAutoApprove);
@@ -81,7 +88,7 @@ function UsersPage() {
           <h1 className="text-3xl font-semibold">{m.users_title()}</h1>
           <p className="text-muted-foreground">{m.users_description()}</p>
         </div>
-        <CreateUserDialog />
+        <CreateUserDialog defaultAutoApprove={defaults.defaultAutoApprove} />
       </div>
       <FormError message={error ? error.message || m.error_generic() : null} />
       <ul className="flex flex-col divide-y">
@@ -116,6 +123,14 @@ function UsersPage() {
               </Switch>
               {isMe ? null : (
                 <div className="flex flex-wrap gap-2">
+                  {isAdmin ? null : (
+                    <RequestLimitsDialog
+                      userId={account.id}
+                      name={account.name}
+                      current={account.requestLimits}
+                      global={defaults.requestLimits}
+                    />
+                  )}
                   <Button
                     size="sm"
                     variant="outline"

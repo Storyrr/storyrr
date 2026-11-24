@@ -34,6 +34,8 @@ export const ConnectionFormSchema = v.object({
 });
 export type ConnectionForm = v.InferOutput<typeof ConnectionFormSchema>;
 
+export const ServiceInputSchema = v.object({ service: v.picklist(SERVICES) });
+
 export const ServiceConnectionInputSchema = v.object({
   service: v.picklist(SERVICES),
   connection: ConnectionFormSchema,
@@ -71,3 +73,42 @@ export const FormatInputSchema = v.object({ format: v.picklist(CHAPTARR_FORMATS)
 /** The Hardcover API token as edited in the form. Blank keeps the stored one. */
 export const HardcoverTokenFormSchema = v.object({ token: v.pipe(v.string(), v.trim()) });
 export type HardcoverTokenForm = v.InferOutput<typeof HardcoverTokenFormSchema>;
+
+/** Libraries Storyrr reads from a media server. */
+export const LIBRARY_SERVICES = ["audiobookshelf", "kavita"] as const;
+export type LibraryService = (typeof LIBRARY_SERVICES)[number];
+
+/** Libraries left out of availability. Stored as exclusions so new libraries count by default. */
+export const LibrarySelectionSchema = v.object({ excluded: v.array(v.string()) });
+export type LibrarySelection = v.InferOutput<typeof LibrarySelectionSchema>;
+
+export const LibraryServiceInputSchema = v.object({ service: v.picklist(LIBRARY_SERVICES) });
+export const SaveLibrarySelectionSchema = v.object({
+  service: v.picklist(LIBRARY_SERVICES),
+  selection: LibrarySelectionSchema,
+});
+
+/** How many requests of one format a user may make per period; `limit: null` is unlimited. */
+export const RequestLimitSchema = v.object({
+  limit: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1000))),
+  days: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(365)),
+});
+export type RequestLimit = v.InferOutput<typeof RequestLimitSchema>;
+export const RequestLimitsSchema = v.object({
+  audiobook: RequestLimitSchema,
+  ebook: RequestLimitSchema,
+});
+export type RequestLimits = v.InferOutput<typeof RequestLimitsSchema>;
+export const UNLIMITED: RequestLimit = { limit: null, days: 7 };
+export const DEFAULT_REQUEST_LIMITS: RequestLimits = { audiobook: UNLIMITED, ebook: UNLIMITED };
+
+/** Settings → Users: defaults for new accounts and the global request limits. */
+export const UserSettingsSchema = v.object({
+  defaultAutoApprove: v.boolean(),
+  requestLimits: RequestLimitsSchema,
+});
+export type UserSettings = v.InferOutput<typeof UserSettingsSchema>;
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  defaultAutoApprove: false,
+  requestLimits: DEFAULT_REQUEST_LIMITS,
+};

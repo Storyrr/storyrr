@@ -12,6 +12,7 @@ import {
   RemoveFromChaptarrSchema,
   RequestIdSchema,
 } from "#/lib/schemas/requests";
+import { FormatInputSchema as FormatQuotaSchema } from "#/lib/schemas/settings";
 import { formatList } from "#/lib/format";
 import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
@@ -20,6 +21,7 @@ import { db } from "#/server/db";
 import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
+  activeRequestsByExternalId,
   isAutoApproved,
   listRequests,
   requestHistory,
@@ -29,6 +31,7 @@ import {
 import { block, findBlock, listBlocklist, unblock } from "#/server/requests/blocklist";
 import { downloadsFor } from "#/server/requests/downloads";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
+import { requestQuota } from "#/server/requests/quota";
 import { submitRequest } from "#/server/requests/submit";
 import {
   createRequest,
@@ -103,6 +106,20 @@ export const requestMedia = createServerFn({ method: "POST" })
           languages: formatList(policy.allowed.map(languageName)),
         }),
       );
+    }
+
+    // Joining someone else's active request costs nothing; a new one counts against the limit.
+    const joins = activeRequestsByExternalId(db, {
+      source: details.value.source,
+      format,
+      externalIds: [details.value.externalId],
+    }).has(details.value.externalId);
+    if (!joins) {
+      const quota = await requestQuota({ db, settings }, { id: user.id, isAdmin }, format);
+      if (quota.remaining === 0 && quota.limit !== null) {
+        setResponseStatus(429);
+        throw new Error(m.request_quota_exceeded({ limit: quota.limit, days: quota.days }));
+      }
     }
 
     const mediaId = upsertMedia(db, details.value);
@@ -355,3 +372,15 @@ export const unblockMedia = createServerFn({ method: "POST" })
 export const getBlocklist = createServerFn({ method: "GET" })
   .middleware([requireAdmin])
   .handler(() => listBlocklist(db));
+
+/** How many requests of a format the caller may still make (shown in the request dialog). */
+export const getMyQuota = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(FormatQuotaSchema)
+  .handler(({ data, context }) =>
+    requestQuota(
+      { db, settings },
+      { id: context.session.user.id, isAdmin: context.session.user.role === "admin" },
+      data.format,
+    ),
+  );

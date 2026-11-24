@@ -24,7 +24,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { requestMedia } from "#/functions/requests.functions";
 import { formatList } from "#/lib/format";
 import { mediaKeys } from "#/lib/queries/media";
-import { requestKeys } from "#/lib/queries/requests";
+import { quotaQuery, requestKeys } from "#/lib/queries/requests";
 import { chaptarrOptionsQuery } from "#/lib/queries/settings";
 import type { SearchableType } from "#/lib/media-types";
 import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
@@ -49,6 +49,8 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
   const { user } = useRouteContext({ from: "/_authed" });
   const queryClient = useQueryClient();
   const requestFn = useServerFn(requestMedia);
+  const quota = useQuery(quotaQuery(item.type)).data;
+  const exhausted = quota?.remaining === 0;
   const request = useMutation({
     mutationFn: (data: { rootFolderPath?: string; qualityProfileId?: number }) =>
       requestFn({ data: { media: { type: item.type, id: item.externalId }, ...data } }),
@@ -90,6 +92,21 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
       </DialogHeader>
       <FieldGroup>
         <FormError message={request.error ? request.error.message || m.error_generic() : null} />
+        {quota && quota.limit !== null && quota.remaining !== null ? (
+          exhausted ? (
+            <FormError
+              message={m.request_quota_exceeded({ limit: quota.limit, days: quota.days })}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {m.request_quota_left({
+                remaining: quota.remaining,
+                limit: quota.limit,
+                days: quota.days,
+              })}
+            </p>
+          )
+        ) : null}
         {user.autoApproved ? (
           <Alert>
             <InfoIcon />
@@ -137,7 +154,7 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
         <DialogClose>{m.action_cancel()}</DialogClose>
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" isDisabled={isSubmitting}>
+            <Button type="submit" isDisabled={isSubmitting || exhausted}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
               {m.action_request()}
             </Button>

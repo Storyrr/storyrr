@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { titleKey } from "#/lib/match";
 
@@ -10,13 +10,38 @@ import type { KavitaClient } from "#/server/services/kavita/client";
 import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
 
+export type SyncOptions = {
+  /** Library ids left out of the index (Settings → Audiobookshelf / Kavita). */
+  excluded?: readonly string[];
+  now?: Date;
+};
+
+/** Items indexed per library, and when the backend was last synced. */
+export function libraryStats(db: AppDatabase, backend: "audiobookshelf" | "kavita") {
+  const rows = db
+    .select({
+      libraryId: libraryItem.libraryId,
+      count: sql`count(distinct ${libraryItem.itemId})`.mapWith(Number),
+      syncedAt: sql`max(${libraryItem.syncedAt})`.mapWith(Number),
+    })
+    .from(libraryItem)
+    .where(eq(libraryItem.backend, backend))
+    .groupBy(libraryItem.libraryId)
+    .all();
+  const lastSync = Math.max(0, ...rows.map((row) => row.syncedAt));
+  return {
+    counts: new Map(rows.map((row) => [row.libraryId, row.count])),
+    lastSyncedAt: lastSync > 0 ? new Date(lastSync) : null,
+  };
+}
+
 /** Replaces the Audiobookshelf part of the library index with what ABS holds now. */
 export async function syncAudiobookshelf(
   db: AppDatabase,
   abs: AudiobookshelfClient,
-  now = new Date(),
+  { excluded = [], now = new Date() }: SyncOptions = {},
 ): Promise<ServiceResult<{ items: number }>> {
-  const items = await abs.allItems();
+  const items = await abs.allItems(new Set(excluded));
   if (!items.ok) return items;
   db.transaction((tx) => {
     tx.delete(libraryItem).where(eq(libraryItem.backend, "audiobookshelf")).run();
@@ -62,13 +87,15 @@ export function ownedAsins(db: AppDatabase, asins: readonly string[]): Set<strin
 export async function syncKavita(
   db: AppDatabase,
   kavita: KavitaClient,
-  now = new Date(),
+  { excluded = [], now = new Date() }: SyncOptions = {},
 ): Promise<ServiceResult<{ series: number }>> {
-  const series = await kavita.allSeries();
-  if (!series.ok) return series;
+  const all = await kavita.allSeries();
+  if (!all.ok) return all;
+  const skip = new Set(excluded);
+  const series = all.value.filter((item) => !skip.has(String(item.libraryId)));
   db.transaction((tx) => {
     tx.delete(libraryItem).where(eq(libraryItem.backend, "kavita")).run();
-    for (const item of series.value) {
+    for (const item of series) {
       for (const [index, name] of item.names.entries()) {
         tx.insert(libraryItem)
           .values({
@@ -86,7 +113,7 @@ export async function syncKavita(
       }
     }
   });
-  return ok({ series: series.value.length });
+  return ok({ series: series.length });
 }
 
 /** Which of these titles Kavita probably holds (normalized title match: no shared ID). */

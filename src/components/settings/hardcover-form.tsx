@@ -6,14 +6,7 @@ import { useState } from "react";
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card";
+import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { saveHardcover, testHardcover } from "#/functions/settings.functions";
@@ -25,7 +18,7 @@ import { m } from "#/paraglide/messages.js";
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
 /** Hardcover API token for eBook search: stored encrypted, never shown back. */
-export function HardcoverCard({ hasToken }: { hasToken: boolean }) {
+export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
   const queryClient = useQueryClient();
   const testFn = useServerFn(testHardcover);
   const saveFn = useServerFn(saveHardcover);
@@ -62,57 +55,52 @@ export function HardcoverCard({ hasToken }: { hasToken: boolean }) {
   });
 
   return (
-    <Card>
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-        className="flex flex-col gap-6"
-      >
-        <CardHeader>
-          <CardTitle>
-            <h2>{m.settings_hardcover_title()}</h2>
-          </CardTitle>
-          <CardDescription>{m.settings_hardcover_description()}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
-            {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
-            <form.Field name="token">
-              {(field) => (
-                <TextField
-                  label={m.field_token()}
-                  description={hasToken ? m.field_token_saved() : undefined}
-                  name={field.name}
-                  type="password"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-          </FieldGroup>
-        </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button
-            variant="outline"
-            isDisabled={test.isPending}
-            onPress={() => test.mutate(form.state.values)}
-          >
-            {test.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {m.action_test()}
-          </Button>
-          <Button type="submit" isDisabled={save.isPending}>
-            {save.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {m.action_save()}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.handleSubmit();
+      }}
+      className="flex flex-col gap-6"
+    >
+      <FieldGroup>
+        {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
+        {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
+        <form.Field name="token">
+          {(field) => (
+            <TextField
+              label={m.settings_hardcover_title()}
+              layout="row"
+              description={
+                hasToken
+                  ? `${m.settings_hardcover_description()} ${m.field_token_saved()}`
+                  : m.settings_hardcover_description()
+              }
+              name={field.name}
+              type="password"
+              autoComplete="off"
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              errors={field.state.meta.errors}
+            />
+          )}
+        </form.Field>
+      </FieldGroup>
+      <SettingsActions>
+        <Button
+          variant="outline"
+          isDisabled={test.isPending}
+          onPress={() => test.mutate(form.state.values)}
+        >
+          {test.isPending ? <Spinner data-icon="inline-start" /> : null}
+          {m.action_test()}
+        </Button>
+        <Button type="submit" isDisabled={save.isPending}>
+          {save.isPending ? <Spinner data-icon="inline-start" /> : null}
+          {m.action_save()}
+        </Button>
+      </SettingsActions>
+    </form>
   );
 }

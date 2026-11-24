@@ -1,0 +1,1 @@
+ALTER TABLE `user_preference` ADD `request_limits` text;

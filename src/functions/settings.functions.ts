@@ -2,11 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import type * as v from "valibot";
 
 import {
+  DEFAULT_USER_SETTINGS,
   FormatInputSchema,
   HardcoverTokenFormSchema,
+  LibraryServiceInputSchema,
   MetadataSettingsSchema,
   SaveFormatDefaultsSchema,
+  SaveLibrarySelectionSchema,
   ServiceConnectionInputSchema,
+  ServiceInputSchema,
+  UserSettingsSchema,
 } from "#/lib/schemas/settings";
 import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
 import { m } from "#/paraglide/messages.js";
@@ -19,8 +24,14 @@ import {
   connectionSettings,
   formatDefaults,
   hardcoverToken,
+  librarySelection,
   metadataSettings,
+  userSettings,
 } from "#/server/settings/definitions";
+import { db } from "#/server/db";
+import { libraryStats } from "#/server/library";
+import { syncLibrary } from "#/server/library/sync";
+import { checkAvailability } from "#/server/requests/availability";
 import {
   isCompatibleFolder,
   MissingApiKeyError,
@@ -60,6 +71,8 @@ export const getServiceSettings = createServerFn({ method: "GET" })
       // Never send the token back: only whether one is stored.
       hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
+      /** Public URL Storyrr is served at (BETTER_AUTH_URL), shown read-only. */
+      appUrl: getEnv().BETTER_AUTH_URL,
       defaults: { audiobook: audiobook ?? null, ebook: ebook ?? null },
     };
   });
@@ -175,4 +188,81 @@ export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
     const url = new URL("/api/webhooks/chaptarr", getEnv().BETTER_AUTH_URL);
     url.searchParams.set("token", token);
     return { url: url.toString() };
+  });
+
+/** Forgets a service connection (its key included). Admin only. */
+export const deleteServiceConnection = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(ServiceInputSchema)
+  .handler(async ({ data }) => {
+    await settings.remove(connectionSettings[data.service]);
+    if (data.service === "chaptarr") clearLanguagePolicyCache();
+    return { ok: true };
+  });
+
+/** The media server's libraries, whether each counts for availability, and what's indexed. Admin only. */
+export const getLibraries = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .validator(LibraryServiceInputSchema)
+  .handler(async ({ data }) => {
+    const excluded = new Set((await settings.get(librarySelection[data.service]))?.excluded ?? []);
+    const stats = libraryStats(db, data.service);
+    let live: { id: string; name: string }[];
+    if (data.service === "audiobookshelf") {
+      const abs = await services.audiobookshelf();
+      if (!abs) return { ok: false as const, reason: "not_configured" as const };
+      const result = await abs.libraries();
+      if (!result.ok) return { ok: false as const, reason: "error" as const, error: result.error };
+      live = result.value
+        .filter((library) => library.mediaType === "book")
+        .map((library) => ({ id: library.id, name: library.name }));
+    } else {
+      const kavita = await services.kavita();
+      if (!kavita) return { ok: false as const, reason: "not_configured" as const };
+      const result = await kavita.libraries();
+      if (!result.ok) return { ok: false as const, reason: "error" as const, error: result.error };
+      live = result.value.map((library) => ({
+        id: String(library.id),
+        name: library.name ?? String(library.id),
+      }));
+    }
+    return {
+      ok: true as const,
+      libraries: live.map((library) => ({
+        ...library,
+        enabled: !excluded.has(library.id),
+        items: stats.counts.get(library.id) ?? 0,
+      })),
+      lastSyncedAt: stats.lastSyncedAt,
+    };
+  });
+
+export const saveLibrarySelection = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(SaveLibrarySelectionSchema)
+  .handler(async ({ data }) => {
+    await settings.set(librarySelection[data.service], data.selection);
+    return { ok: true };
+  });
+
+/** Re-indexes a media server now, then promotes requests whose book arrived. Admin only. */
+export const syncLibraryNow = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(LibraryServiceInputSchema)
+  .handler(async ({ data }) => {
+    const result = await syncLibrary({ db, services, settings }, data.service);
+    if (result.ok) await checkAvailability({ db, services });
+    return result;
+  });
+
+export const getUserSettings = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .handler(async () => (await settings.get(userSettings)) ?? DEFAULT_USER_SETTINGS);
+
+export const saveUserSettings = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(UserSettingsSchema)
+  .handler(async ({ data }) => {
+    await settings.set(userSettings, data);
+    return { ok: true };
   });

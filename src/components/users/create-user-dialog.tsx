@@ -35,7 +35,7 @@ import { roleLabels } from "./role-labels";
 const isRole = (value: string | null): value is UserRole => USER_ROLES.some((r) => r === value);
 
 /** "Add a user": invite-only accounts, created with a temporary password. */
-export function CreateUserDialog() {
+export function CreateUserDialog({ defaultAutoApprove }: { defaultAutoApprove: boolean }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const createFn = useServerFn(createUser);
@@ -53,7 +53,7 @@ export function CreateUserDialog() {
       email: "",
       password: "",
       role: "user" as UserRole,
-      autoApprove: false,
+      autoApprove: defaultAutoApprove,
     },
     validators: { onSubmit: CreateUserSchema },
     onSubmit: async ({ value }) => {

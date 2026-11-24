@@ -1,11 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import type { ChaptarrFormat } from "#/lib/schemas/settings";
+import type { ChaptarrFormat, LibraryService } from "#/lib/schemas/settings";
 
 import {
   getChaptarrOptions,
   getChaptarrWebhookUrl,
+  getLibraries,
   getServiceSettings,
+  getUserSettings,
 } from "#/functions/settings.functions";
 
 export const settingsKeys = {
@@ -14,7 +16,18 @@ export const settingsKeys = {
   chaptarrOptions: (format: ChaptarrFormat) =>
     [...settingsKeys.all, "chaptarr", "options", format] as const,
   chaptarrWebhook: () => [...settingsKeys.all, "chaptarr", "webhook"] as const,
+  libraries: (service: LibraryService) => [...settingsKeys.all, "libraries", service] as const,
+  users: () => [...settingsKeys.all, "users"] as const,
 };
+
+export const librariesQuery = (service: LibraryService) =>
+  queryOptions({
+    queryKey: settingsKeys.libraries(service),
+    queryFn: () => getLibraries({ data: { service } }),
+  });
+
+export const userSettingsQuery = () =>
+  queryOptions({ queryKey: settingsKeys.users(), queryFn: () => getUserSettings() });
 
 export const serviceSettingsQuery = () =>
   queryOptions({ queryKey: settingsKeys.services(), queryFn: () => getServiceSettings() });

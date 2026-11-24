@@ -5,7 +5,7 @@ import { createDatabase } from "#/server/db/client";
 import { createKavitaClient } from "#/server/services/kavita/client";
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { ownedTitles, syncKavita } from "./index";
+import { libraryStats, ownedTitles, syncKavita } from "./index";
 
 describe("Kavita library index", () => {
   it("indexes every name of every series and matches titles loosely", async () => {
@@ -40,5 +40,29 @@ describe("Kavita library index", () => {
     );
     await syncKavita(db, empty);
     expect(ownedTitles(db, ["Berserk"]).size).toBe(0);
+  });
+
+  it("leaves excluded libraries out and counts items per library", async () => {
+    const db = createDatabase(":memory:");
+    const { fetch } = fakeFetch((url) =>
+      url.pathname === "/api/Plugin/authenticate"
+        ? json({ token: "jwt" })
+        : json([
+            { id: 1, name: "Dune", libraryId: 1 },
+            { id: 2, name: "Berserk", libraryId: 2 },
+          ]),
+    );
+    const kavita = createKavitaClient({ url: "http://kavita", apiKey: "k" }, fetch);
+    const now = new Date("2026-11-24T10:00:00Z");
+
+    expect(await syncKavita(db, kavita, { excluded: ["2"], now })).toEqual({
+      ok: true,
+      value: { series: 1 },
+    });
+    expect(ownedTitles(db, ["Berserk"]).size).toBe(0);
+    expect(libraryStats(db, "kavita")).toEqual({
+      counts: new Map([["1", 1]]),
+      lastSyncedAt: now,
+    });
   });
 });

@@ -1,5 +1,8 @@
 import type { Key } from "react-aria-components";
 
+import { SETTINGS_ROW, SETTINGS_ROW_OFFSET } from "#/components/settings/settings-section";
+import { cn } from "#/lib/utils";
+
 import { Field, FieldDescription, FieldError } from "#/components/ui/field";
 import { Label } from "#/components/ui/label";
 import {
@@ -22,6 +25,8 @@ type SelectFieldProps = {
   errors?: ReadonlyArray<{ message?: string } | undefined>;
   placeholder?: string;
   disabled?: boolean;
+  /** "row": label left, select right (settings pages). */
+  layout?: "stacked" | "row";
 };
 
 /** A labelled single-choice select bound to a form field. */
@@ -35,7 +40,9 @@ export function SelectField({
   errors = [],
   placeholder,
   disabled,
+  layout = "stacked",
 }: SelectFieldProps) {
+  const row = layout === "row";
   const invalid = errors.length > 0;
   return (
     <Field data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
@@ -46,7 +53,7 @@ export function SelectField({
         isDisabled={disabled}
         isInvalid={invalid}
         placeholder={placeholder}
-        className="flex flex-col gap-2"
+        className={row ? cn(SETTINGS_ROW, "md:items-center") : "flex flex-col gap-2"}
       >
         <Label>{label}</Label>
         <SelectTrigger>
@@ -60,8 +67,12 @@ export function SelectField({
           ))}
         </SelectContent>
       </Select>
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      <FieldError errors={[...errors]} />
+      {description ? (
+        <FieldDescription className={row ? SETTINGS_ROW_OFFSET : undefined}>
+          {description}
+        </FieldDescription>
+      ) : null}
+      <FieldError errors={[...errors]} className={row ? SETTINGS_ROW_OFFSET : undefined} />
     </Field>
   );
 }

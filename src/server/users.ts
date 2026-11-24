@@ -14,6 +14,7 @@ export function listUsers(db: AppDatabase) {
       role: user.role,
       banned: user.banned,
       createdAt: user.createdAt,
+      requestLimits: userPreference.requestLimits,
       autoApprove: sql<number>`coalesce(${userPreference.autoApprove}, 0)`.mapWith(Boolean),
       requests: sql`(select count(*) from ${request} where ${request.userId} = ${user.id})`.mapWith(
         Number,

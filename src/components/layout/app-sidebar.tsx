@@ -36,7 +36,7 @@ const NAV: NavItem[] = [
   { href: "/blocklist", label: m.nav_blocklist, icon: BanIcon, adminOnly: true },
   { href: "/issues", label: m.nav_issues, icon: TriangleAlertIcon },
   { href: "/users", label: m.nav_users, icon: UsersIcon, adminOnly: true },
-  { href: "/settings/services", label: m.nav_settings, icon: SettingsIcon, adminOnly: true },
+  { href: "/settings", label: m.nav_settings, icon: SettingsIcon, adminOnly: true },
 ];
 
 const isActive = (pathname: string, href: string) =>
