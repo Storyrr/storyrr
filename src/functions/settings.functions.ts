@@ -3,8 +3,11 @@ import type * as v from "valibot";
 
 import {
   FormatInputSchema,
+  DEFAULT_REQUEST_POLICY,
   HardcoverTokenFormSchema,
   MetadataSettingsSchema,
+  PodcastDefaultsSchema,
+  RequestPolicySchema,
   SaveFormatDefaultsSchema,
   ServiceConnectionInputSchema,
 } from "#/lib/schemas/settings";
@@ -20,6 +23,8 @@ import {
   formatDefaults,
   hardcoverToken,
   metadataSettings,
+  podcastDefaults,
+  requestPolicy,
 } from "#/server/settings/definitions";
 import {
   isCompatibleFolder,
@@ -53,6 +58,10 @@ export const getServiceSettings = createServerFn({ method: "GET" })
         settings.get(formatDefaults.audiobook),
         settings.get(formatDefaults.ebook),
       ]);
+    const [podcast, policy] = await Promise.all([
+      settings.get(podcastDefaults),
+      settings.get(requestPolicy),
+    ]);
     return {
       chaptarr,
       audiobookshelf,
@@ -60,7 +69,8 @@ export const getServiceSettings = createServerFn({ method: "GET" })
       // Never send the token back: only whether one is stored.
       hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
-      defaults: { audiobook: audiobook ?? null, ebook: ebook ?? null },
+      defaults: { audiobook: audiobook ?? null, ebook: ebook ?? null, podcast: podcast ?? null },
+      requestPolicy: policy ?? DEFAULT_REQUEST_POLICY,
     };
   });
 
@@ -175,4 +185,41 @@ export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
     const url = new URL("/api/webhooks/chaptarr", getEnv().BETTER_AUTH_URL);
     url.searchParams.set("token", token);
     return { url: url.toString() };
+  });
+
+export const savePodcastDefaults = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(PodcastDefaultsSchema)
+  .handler(async ({ data }) => {
+    await settings.set(podcastDefaults, data);
+    return { ok: true };
+  });
+
+export const saveRequestPolicy = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(RequestPolicySchema)
+  .handler(async ({ data }) => {
+    await settings.set(requestPolicy, data);
+    return { ok: true };
+  });
+
+/** Audiobookshelf's podcast libraries and their folders, live, for defaults and requests. Admin only. */
+export const getPodcastLibraryOptions = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .handler(async () => {
+    const abs = await services.audiobookshelf();
+    if (!abs) return { ok: false as const, reason: "not_configured" as const };
+    const libraries = await abs.libraries();
+    if (!libraries.ok)
+      return { ok: false as const, reason: "error" as const, error: libraries.error };
+    return {
+      ok: true as const,
+      libraries: libraries.value
+        .filter((library) => library.mediaType === "podcast")
+        .map((library) => ({
+          id: library.id,
+          name: library.name,
+          folders: library.folders.map((folder) => ({ id: folder.id, path: folder.fullPath })),
+        })),
+    };
   });

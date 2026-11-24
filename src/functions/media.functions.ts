@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
+import { isChaptarrType } from "#/lib/media-types";
 import { availabilityFromRequest } from "#/lib/request-status";
 import { MediaRefSchema, SearchInputSchema } from "#/lib/schemas/requests";
 import { requireUser } from "#/server/auth/middleware";
@@ -30,7 +31,7 @@ export const searchMedia = createServerFn({ method: "GET" })
     const source = mediaSources[data.type];
     const [result, policy] = await Promise.all([
       source.search(services, data.query),
-      getLanguagePolicy({ services, settings }, data.type),
+      isChaptarrType(data.type) ? getLanguagePolicy({ services, settings }, data.type) : null,
     ]);
     if (!result.ok) return { ok: false as const, error: result.error };
     const owned = source.owned(db, result.value);
@@ -62,7 +63,7 @@ export const getMedia = createServerFn({ method: "GET" })
     const source = mediaSources[data.type];
     const [result, policy] = await Promise.all([
       source.getDetails(services, data.id),
-      getLanguagePolicy({ services, settings }, data.type),
+      isChaptarrType(data.type) ? getLanguagePolicy({ services, settings }, data.type) : null,
     ]);
     if (!result.ok) return { ok: false as const, error: result.error };
     const owned = source.owned(db, [result.value]).has(result.value.externalId);

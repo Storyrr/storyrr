@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
+import { DEFAULT_AUDIBLE_REGION, itunesCountry } from "#/lib/audible-regions";
 import type { SettingsStore } from "#/server/settings/store";
 import {
   audiobookshelfConnection,
@@ -14,6 +14,7 @@ import { createAudibleClient } from "./audible/client";
 import { createAudiobookshelfClient } from "./audiobookshelf/client";
 import { createChaptarrClient } from "./chaptarr/client";
 import { createHardcoverClient } from "./hardcover/client";
+import { createItunesClient } from "./itunes/client";
 import { createKavitaClient } from "./kavita/client";
 import type { FetchFn } from "./result";
 
@@ -35,6 +36,14 @@ export function createServices(store: SettingsStore, fetch: FetchFn) {
     async hardcover() {
       const token = await store.get(hardcoverToken);
       return token ? createHardcoverClient({ token, fetch }) : null;
+    },
+    /** Podcast directory, in the store of the configured region. */
+    async itunes() {
+      const metadata = await store.get(metadataSettings);
+      return createItunesClient({
+        fetch,
+        country: itunesCountry(metadata?.audibleRegion ?? DEFAULT_AUDIBLE_REGION),
+      });
     },
     async audible() {
       const metadata = await store.get(metadataSettings);

@@ -31,14 +31,17 @@ const tabLabels: Record<Tab, () => string> = {
   all: m.search_tab_all,
   audiobook: m.search_tab_audiobooks,
   ebook: m.search_tab_books,
+  podcast: m.search_tab_podcasts,
 };
 const sectionTitles: Record<SearchableType, () => string> = {
   audiobook: m.search_tab_audiobooks,
   ebook: m.search_tab_books,
+  podcast: m.search_tab_podcasts,
 };
-const providers: Record<SearchableType, "audible" | "hardcover"> = {
+const providers: Record<SearchableType, "audible" | "hardcover" | "itunes"> = {
   audiobook: "audible",
   ebook: "hardcover",
+  podcast: "itunes",
 };
 
 export const Route = createFileRoute("/_authed/")({

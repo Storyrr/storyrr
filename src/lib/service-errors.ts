@@ -15,6 +15,7 @@ export const serviceNames: Record<ExternalService, () => string> = {
   kavita: m.service_kavita,
   hardcover: m.service_hardcover,
   audible: m.service_audible,
+  itunes: m.service_itunes,
 };
 
 /** A user-facing explanation of a failed call to an external service. */

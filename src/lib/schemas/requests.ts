@@ -5,6 +5,9 @@ import { m } from "#/paraglide/messages.js";
 
 export const AsinSchema = v.pipe(v.string(), v.trim(), v.toUpperCase(), v.regex(/^[A-Z0-9]{10}$/));
 
+/** iTunes collection ids are positive integers. */
+export const ItunesIdSchema = v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d{0,14}$/));
+
 /** Hardcover book ids are positive integers. */
 export const HardcoverIdSchema = v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d{0,11}$/));
 
@@ -12,6 +15,7 @@ export const HardcoverIdSchema = v.pipe(v.string(), v.trim(), v.regex(/^[1-9]\d{
 export const MediaRefSchema = v.variant("type", [
   v.object({ type: v.literal("audiobook"), id: AsinSchema }),
   v.object({ type: v.literal("ebook"), id: HardcoverIdSchema }),
+  v.object({ type: v.literal("podcast"), id: ItunesIdSchema }),
 ]);
 
 export const SearchInputSchema = v.object({
@@ -21,8 +25,12 @@ export const SearchInputSchema = v.object({
 
 /** Admin-only overrides chosen in the request modal or before approving. */
 export const TargetOverrideSchema = v.object({
+  /** Chaptarr formats. */
   rootFolderPath: v.optional(v.pipe(v.string(), v.nonEmpty())),
   qualityProfileId: v.optional(v.pipe(v.number(), v.integer())),
+  /** Podcasts: Audiobookshelf library and folder. */
+  libraryId: v.optional(v.pipe(v.string(), v.nonEmpty())),
+  folderId: v.optional(v.pipe(v.string(), v.nonEmpty())),
 });
 
 export const CreateRequestSchema = v.object({

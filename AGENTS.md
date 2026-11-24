@@ -91,7 +91,7 @@ src/
 │   ├── settings/           # typed settings (defineSetting + Valibot), secrets sealed with AES-256-GCM (key: HKDF of BETTER_AUTH_SECRET)
 │   ├── setup.ts            # first-run wizard (creates the first admin)
 │   ├── services/           # one client per external service (audible, chaptarr, audiobookshelf so far; kavita, hardcover, itunes next), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
-│   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
+│   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title; podcast: iTunes + ABS by feed URL), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from Audiobookshelf
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
@@ -170,7 +170,7 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 
 - Audiobooks: **Audible's catalog API**, called directly (`https://api.audible.<tld>/1.0/catalog/products`, no key; region configurable, default `fr`) for search and details. Decided over ABS's provider proxy so search works without Audiobookshelf; Audnexus only looks up by ASIN, so it can't search. The API is undocumented: validate every response with Valibot and degrade to "no results" with a logged reason. ASIN is the primary key.
 - eBooks (books, manga, comics): **Hardcover** (decided over Open Library, whose IDs Chaptarr may not resolve: Chaptarr's metadata server is built on Hardcover/Goodreads, so `hc:<id>` is a native Chaptarr ID). GraphQL at `https://api.hardcover.app/v1/graphql`, `authorization: Bearer <token>` (the admin's personal token, stored encrypted; only the `read:catalog:search` scope is needed), server-side only, search via `search(query, query_type: "Book")` (Typesense hits in `results`), details via `books_by_pk`. Source of truth: the docs repo [hardcoverapp/hardcover-docs](https://github.com/hardcoverapp/hardcover-docs) (the docs site refuses automated fetches). Limits: search times out after 2 s, rate limits per minute/day, the API is beta and may change. The Hardcover book id is the key.
-- Podcasts: iTunes Search API (`media=podcast`), feed URL as key.
+- Podcasts: iTunes Search API (`media=podcast&entity=podcast`, `country` = the Audible region, `uk` → `gb`), iTunes collection id in URLs, **feed URL** for ownership. Podcast requests are created in an Audiobookshelf podcast library folder and are available immediately; `policy.requests.podcastsRequireApproval` (default on) holds them for an admin even for auto-approved users.
 - Cache metadata in SQLite with a TTL; never block a page on a slow provider (show cached + refresh in background).
 
 ## Conventions

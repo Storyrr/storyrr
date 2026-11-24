@@ -3,8 +3,8 @@ import "@tanstack/react-start/server-only";
 import type { MediaDetails, MediaSummary } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
-import { ownedAsins, ownedTitles } from "#/server/library";
-import { titleKey } from "#/lib/match";
+import { ownedAsins, ownedFeeds, ownedTitles } from "#/server/library";
+import { feedKey, titleKey } from "#/lib/match";
 import type { Services } from "#/server/services/factory";
 import { fail, type ServiceResult } from "#/server/services/result";
 
@@ -19,7 +19,10 @@ export type MediaSource = {
   search(services: Services, query: string): Promise<ServiceResult<MediaSummary[]>>;
   getDetails(services: Services, id: string): Promise<ServiceResult<MediaDetails>>;
   /** External ids of the items a library already holds. */
-  owned(db: AppDatabase, items: readonly Pick<MediaSummary, "externalId" | "title">[]): Set<string>;
+  owned(
+    db: AppDatabase,
+    items: readonly Pick<MediaSummary, "externalId" | "title" | "feedUrl">[],
+  ): Set<string>;
 };
 
 const audiobooks: MediaSource = {
@@ -66,9 +69,34 @@ const ebooks: MediaSource = {
   },
 };
 
+const podcasts: MediaSource = {
+  type: "podcast",
+  source: "itunes",
+  async search(services, query) {
+    return (await services.itunes()).search(query);
+  },
+  async getDetails(services, id) {
+    return (await services.itunes()).getById(id);
+  },
+  // By feed URL in Audiobookshelf's podcast libraries.
+  owned(db, items) {
+    const withFeed = items.flatMap((item) =>
+      item.feedUrl ? [{ ...item, feedUrl: item.feedUrl }] : [],
+    );
+    const owned = ownedFeeds(
+      db,
+      withFeed.map((item) => item.feedUrl),
+    );
+    return new Set(
+      withFeed.filter((item) => owned.has(feedKey(item.feedUrl))).map((i) => i.externalId),
+    );
+  },
+};
+
 export const mediaSources: Record<SearchableType, MediaSource> = {
   audiobook: audiobooks,
   ebook: ebooks,
+  podcast: podcasts,
 };
 
 /** The provider ID Chaptarr resolves for a stored media row, or null if it can't. */

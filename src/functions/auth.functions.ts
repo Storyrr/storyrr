@@ -5,7 +5,10 @@ import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { db } from "#/server/db";
+import { DEFAULT_REQUEST_POLICY } from "#/lib/schemas/settings";
 import { isAutoApproved } from "#/server/requests/queries";
+import { settings } from "#/server/settings";
+import { requestPolicy } from "#/server/settings/definitions";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
 
 export type SessionUser = {
@@ -15,6 +18,8 @@ export type SessionUser = {
   isAdmin: boolean;
   /** Requests skip approval (admins, or the per-user flag). */
   autoApproved: boolean;
+  /** Same for podcasts, which the request policy may hold for approval anyway. */
+  autoApprovedPodcasts: boolean;
 };
 
 /**
@@ -26,13 +31,17 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
     isSetupComplete(db),
     auth.api.getSession({ headers: getRequestHeaders() }),
   ]);
+  const policy = session ? ((await settings.get(requestPolicy)) ?? DEFAULT_REQUEST_POLICY) : null;
+  const isAdmin = session?.user.role === "admin";
+  const autoApproved = session ? isAutoApproved(db, session.user.id, isAdmin) : false;
   const user: SessionUser | null = session
     ? {
         id: session.user.id,
         name: session.user.name,
         email: session.user.email,
-        isAdmin: session.user.role === "admin",
-        autoApproved: isAutoApproved(db, session.user.id, session.user.role === "admin"),
+        isAdmin,
+        autoApproved,
+        autoApprovedPodcasts: isAdmin || (autoApproved && !policy?.podcastsRequireApproval),
       }
     : null;
   return { setupComplete, user };
