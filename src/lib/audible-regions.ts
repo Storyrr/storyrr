@@ -32,8 +32,3 @@ export const DEFAULT_AUDIBLE_REGION: AudibleRegion = "fr";
 export function audibleHost(region: AudibleRegion): string {
   return AUDIBLE_HOSTS[region];
 }
-
-/** The Apple (iTunes) store for a region: the same two letters, except the United Kingdom ("gb"). */
-export function itunesCountry(region: AudibleRegion): string {
-  return region === "uk" ? "gb" : region;
-}

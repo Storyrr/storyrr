@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import * as v from "valibot";
 
 import { isLanguageAccepted } from "#/lib/languages";
-import { isChaptarrType, isSearchableType } from "#/lib/media-types";
+import { isSearchableType } from "#/lib/media-types";
 import { encodeRequestError, type RequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
 import type { AppDatabase } from "#/server/db/client";
@@ -12,7 +12,6 @@ import { formatDefaults } from "#/server/settings/definitions";
 import { chaptarrProviderId, mediaSources } from "#/server/sources";
 import type { SettingsStore } from "#/server/settings/store";
 import type { Services } from "#/server/services/factory";
-import { sanitizeFilename } from "#/server/services/audiobookshelf/client";
 import { submitBook } from "#/server/services/chaptarr/client";
 
 import { getLanguagePolicy } from "./language-policy";
@@ -67,11 +66,6 @@ async function submit(
     });
 
   const { target, format, qualityProfileId } = row.request;
-  if (target.service === "audiobookshelf") {
-    if (format !== "podcast") return failWith({ code: "unsupported" });
-    return submitPodcast({ db, services }, requestId, row.media, target, failWith);
-  }
-  if (format === "podcast") return failWith({ code: "unsupported" });
 
   const chaptarr = await services.chaptarr();
   if (!chaptarr) return failWith({ code: "not_configured", service: "chaptarr" });
@@ -131,7 +125,7 @@ async function refusedLanguages(
   format: string,
   metadata: unknown,
 ): Promise<string[] | null> {
-  if (!isSearchableType(format) || !isChaptarrType(format)) return null;
+  if (!isSearchableType(format)) return null;
   const stored = v.safeParse(StoredLanguagesSchema, metadata);
   if (!stored.success) return null;
   const policy = await getLanguagePolicy(deps, format);
@@ -190,72 +184,4 @@ async function withLanguages(
   if (!details.ok) return row.metadata;
   upsertMedia(db, details.value);
   return { ...details.value };
-}
-
-const StoredPodcastSchema = v.object({
-  feedUrl: v.string(),
-  authors: v.optional(v.array(v.string()), []),
-  coverUrl: v.optional(v.string()),
-  releaseDate: v.optional(v.string()),
-  genres: v.optional(v.array(v.string()), []),
-});
-
-/**
- * Creates the podcast in the chosen Audiobookshelf folder with auto-download
- * on. It's then in the library: the request is available right away (episodes
- * keep arriving through Audiobookshelf).
- */
-async function submitPodcast(
-  { db, services }: Pick<SubmitDeps, "db" | "services">,
-  requestId: string,
-  item: { title: string; externalId: string; metadata: unknown },
-  target: { libraryId: string; folderId: string },
-  failWith: (error: RequestError) => RequestStatus,
-): Promise<RequestStatus> {
-  const stored = v.safeParse(StoredPodcastSchema, item.metadata);
-  if (!stored.success) return failWith({ code: "unsupported" });
-  const abs = await services.audiobookshelf();
-  if (!abs) return failWith({ code: "not_configured", service: "audiobookshelf" });
-
-  const libraries = await abs.libraries();
-  if (!libraries.ok)
-    return failWith({ code: "service", service: "audiobookshelf", ...libraries.error });
-  const folder = libraries.value
-    .find((library) => library.id === target.libraryId)
-    ?.folders.find((f) => f.id === target.folderId);
-  if (!folder) {
-    return failWith({ code: "podcast_folder_missing" });
-  }
-
-  // Best effort: the feed has the description and language iTunes doesn't give.
-  const feed = await abs.feed(stored.output.feedUrl);
-  const feedMetadata = feed.ok ? feed.value.podcast.metadata : undefined;
-  const created = await abs.createPodcast({
-    libraryId: target.libraryId,
-    folderId: target.folderId,
-    path: `${folder.fullPath.replace(/\/+$/, "")}/${sanitizeFilename(item.title)}`,
-    metadata: {
-      title: item.title,
-      author: stored.output.authors[0],
-      description: feedMetadata?.description ?? undefined,
-      releaseDate: stored.output.releaseDate,
-      genres: stored.output.genres,
-      feedUrl: stored.output.feedUrl,
-      imageUrl: stored.output.coverUrl,
-      itunesId: item.externalId,
-      language: feedMetadata?.language ?? undefined,
-      explicit: feedMetadata?.explicit === true || feedMetadata?.explicit === "true",
-    },
-    autoDownloadEpisodes: true,
-  });
-  const alreadyThere = !created.ok && created.error.message === "Podcast already exists";
-  if (!created.ok && !alreadyThere) {
-    return failWith({ code: "service", service: "audiobookshelf", ...created.error });
-  }
-  transitionRequest(db, requestId, {
-    to: "submitted",
-    actor: "system",
-    backendRef: created.ok ? { absItemId: created.value.itemId } : {},
-  });
-  return transitionRequest(db, requestId, { to: "available", actor: "system" });
 }

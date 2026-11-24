@@ -9,7 +9,7 @@ export function Cover({
   className,
 }: {
   src?: string | null;
-  type?: "audiobook" | "ebook" | "podcast";
+  type?: "audiobook" | "ebook";
   className?: string;
 }) {
   return (

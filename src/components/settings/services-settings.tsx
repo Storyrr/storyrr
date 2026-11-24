@@ -6,7 +6,6 @@ import { ConnectionCard } from "./connection-card";
 import { FormatDefaultsCard } from "./format-defaults-card";
 import { HardcoverCard } from "./hardcover-card";
 import { MetadataCard } from "./metadata-card";
-import { PodcastSettingsCard } from "./podcast-settings-card";
 import { WebhookCard } from "./webhook-card";
 
 /** Service connections, metadata sources and per-format defaults (settings page and setup step). */
@@ -30,11 +29,6 @@ export function ServicesSettings() {
         key={`ebook-${chaptarrKey}`}
         format="ebook"
         current={data.defaults.ebook}
-      />
-      <PodcastSettingsCard
-        key={`podcast-${data.audiobookshelf?.url ?? "none"}`}
-        current={data.defaults.podcast}
-        policy={data.requestPolicy}
       />
       {data.chaptarr ? <WebhookCard /> : null}
     </div>

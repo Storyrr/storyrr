@@ -15,19 +15,3 @@ export function titleKey(title: string): string {
       .trim()
   );
 }
-
-/**
- * Normalized RSS feed URL for matching podcasts: scheme, host case, a leading
- * "www." and a trailing slash don't matter. Unparsable values are trimmed only.
- */
-export function feedKey(feedUrl: string): string {
-  const trimmed = feedUrl.trim();
-  try {
-    const url = new URL(trimmed);
-    const host = url.host.toLowerCase().replace(/^www\./, "");
-    const path = url.pathname.replace(/\/+$/, "");
-    return `${host}${path}${url.search}`;
-  } catch {
-    return trimmed;
-  }
-}

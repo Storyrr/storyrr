@@ -30,7 +30,7 @@ export const media = sqliteTable(
     type: text("type", { enum: MEDIA_TYPES }).notNull(),
     /** Metadata provider: audible, hardcover, openlibrary, itunes. */
     source: text("source").notNull(),
-    /** ASIN, ISBN / provider id, or podcast feed URL. */
+    /** ASIN for audiobooks, Hardcover id for eBooks. */
     externalId: text("external_id").notNull(),
     title: text("title").notNull(),
     authors: text("authors", { mode: "json" }).$type<string[]>().notNull().default([]),
@@ -45,9 +45,7 @@ export const media = sqliteTable(
 );
 
 /** Where an approved request is sent (a Chaptarr root folder or an Audiobookshelf library). */
-export type RequestTarget =
-  | { service: "chaptarr"; rootFolderPath: string }
-  | { service: "audiobookshelf"; libraryId: string; folderId: string };
+export type RequestTarget = { service: "chaptarr"; rootFolderPath: string };
 
 export const request = sqliteTable(
   "request",

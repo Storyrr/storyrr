@@ -1,12 +1,7 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
-import {
-  FormatDefaultsSchema,
-  MetadataSettingsSchema,
-  PodcastDefaultsSchema,
-  RequestPolicySchema,
-} from "#/lib/schemas/settings";
+import { FormatDefaultsSchema, MetadataSettingsSchema } from "#/lib/schemas/settings";
 
 import { defineSetting } from "./store";
 
@@ -71,16 +66,4 @@ export const chaptarrWebhookToken = defineSetting({
   key: "webhooks.chaptarr.token",
   schema: v.pipe(v.string(), v.minLength(32)),
   secret: true,
-});
-
-export const podcastDefaults = defineSetting({
-  key: "defaults.podcast",
-  schema: PodcastDefaultsSchema,
-  secret: false,
-});
-
-export const requestPolicy = defineSetting({
-  key: "policy.requests",
-  schema: RequestPolicySchema,
-  secret: false,
 });

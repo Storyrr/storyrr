@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, inArray } from "drizzle-orm";
 
-import { feedKey, titleKey } from "#/lib/match";
+import { titleKey } from "#/lib/match";
 
 import type { AppDatabase } from "#/server/db/client";
 import { libraryItem } from "#/server/db/schema";
@@ -10,7 +10,7 @@ import type { KavitaClient } from "#/server/services/kavita/client";
 import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
 
-/** Replaces the Audiobookshelf part of the library index (audiobooks and podcasts) with what ABS holds now. */
+/** Replaces the Audiobookshelf part of the library index with what ABS holds now. */
 export async function syncAudiobookshelf(
   db: AppDatabase,
   abs: AudiobookshelfClient,
@@ -26,9 +26,7 @@ export async function syncAudiobookshelf(
           backend: "audiobookshelf",
           itemId: item.itemId,
           libraryId: item.libraryId,
-          // Books by ASIN, podcasts by normalized feed URL.
-          externalId:
-            item.kind === "podcast" ? (item.feedUrl ? feedKey(item.feedUrl) : null) : item.asin,
+          externalId: item.asin,
           matchKey: titleKey(item.title),
           title: item.title,
           author: item.author,
@@ -99,18 +97,6 @@ export function ownedTitles(db: AppDatabase, titles: readonly string[]): Set<str
     .selectDistinct({ key: libraryItem.matchKey })
     .from(libraryItem)
     .where(and(eq(libraryItem.backend, "kavita"), inArray(libraryItem.matchKey, keys)))
-    .all();
-  return new Set(rows.flatMap((row) => (row.key ? [row.key] : [])));
-}
-
-/** Which of these podcast feeds Audiobookshelf already subscribes to (as feed keys). */
-export function ownedFeeds(db: AppDatabase, feedUrls: readonly string[]): Set<string> {
-  const keys = [...new Set(feedUrls.map(feedKey))];
-  if (keys.length === 0) return new Set();
-  const rows = db
-    .selectDistinct({ key: libraryItem.externalId })
-    .from(libraryItem)
-    .where(and(eq(libraryItem.backend, "audiobookshelf"), inArray(libraryItem.externalId, keys)))
     .all();
   return new Set(rows.flatMap((row) => (row.key ? [row.key] : [])));
 }

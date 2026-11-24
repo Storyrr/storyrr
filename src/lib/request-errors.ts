@@ -28,8 +28,6 @@ export const RequestErrorSchema = v.variant("code", [
     format: v.optional(v.picklist(["audiobook", "ebook"]), "audiobook"),
   }),
   v.object({ code: v.literal("unsupported") }),
-  /** The Audiobookshelf library folder chosen for a podcast is gone. */
-  v.object({ code: v.literal("podcast_folder_missing") }),
   /** Chaptarr's metadata profile filters out every language the work exists in. */
   v.object({ code: v.literal("language_not_accepted"), languages: v.array(v.string()) }),
 ]);
@@ -58,8 +56,6 @@ export function describeRequestError(stored: string | null | undefined): string 
       return error.format === "ebook"
         ? m.request_error_ebook_defaults_missing()
         : m.request_error_defaults_missing();
-    case "podcast_folder_missing":
-      return m.request_error_podcast_folder_missing();
     case "language_not_accepted":
       return m.request_language_not_accepted({
         languages: formatList(error.languages.map(languageName)),

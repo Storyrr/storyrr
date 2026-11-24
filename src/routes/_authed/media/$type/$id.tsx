@@ -30,13 +30,6 @@ export const Route = createFileRoute("/_authed/media/$type/$id")({
   component: MediaPage,
 });
 
-const providers = { audiobook: "audible", ebook: "hardcover", podcast: "itunes" } as const;
-const typeLabels = {
-  audiobook: m.media_type_audiobook,
-  ebook: m.media_type_ebook,
-  podcast: m.media_type_podcast,
-} as const;
-
 function MediaPage() {
   const { type, id } = Route.useParams();
   const { data } = useSuspenseQuery(mediaQuery(type, id));
@@ -47,7 +40,7 @@ function MediaPage() {
         message={
           data.error.kind === "not_found"
             ? m.media_not_found()
-            : serviceErrorMessage(providers[type], data.error)
+            : serviceErrorMessage(type === "ebook" ? "hardcover" : "audible", data.error)
         }
       />
     );
@@ -57,12 +50,7 @@ function MediaPage() {
   const facts: [string, string | undefined][] = [
     [m.media_duration(), item.durationMinutes ? formatDuration(item.durationMinutes) : undefined],
     [m.media_pages(), item.pages ? formatNumber(item.pages) : undefined],
-    [m.media_episodes(), item.episodeCount ? formatNumber(item.episodeCount) : undefined],
-    [m.media_genres(), item.genres?.length ? formatList(item.genres) : undefined],
-    [
-      type === "podcast" ? m.media_latest_episode() : m.media_release_date(),
-      item.releaseDate ? formatDate(item.releaseDate) : undefined,
-    ],
+    [m.media_release_date(), item.releaseDate ? formatDate(item.releaseDate) : undefined],
     [
       languages.length > 1 ? m.media_languages() : m.media_language(),
       languages.length > 0 ? formatList(languages.map(languageName)) : item.language,
@@ -89,7 +77,9 @@ function MediaPage() {
       </div>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <Badge variant="outline">{typeLabels[type]()}</Badge>
+          <Badge variant="outline">
+            {type === "ebook" ? m.media_type_ebook() : m.media_type_audiobook()}
+          </Badge>
           <h1 className="text-2xl font-semibold">{item.title}</h1>
           {item.subtitle ? <p className="text-lg text-muted-foreground">{item.subtitle}</p> : null}
           {item.authors.length > 0 ? (

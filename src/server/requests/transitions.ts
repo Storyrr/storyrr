@@ -31,9 +31,7 @@ export class InvalidTransitionError extends Error {
 }
 
 export function targetKey(target: RequestTarget): string {
-  return target.service === "chaptarr"
-    ? `chaptarr:${target.rootFolderPath}`
-    : `audiobookshelf:${target.libraryId}:${target.folderId}`;
+  return `chaptarr:${target.rootFolderPath}`;
 }
 
 export type CreateRequestInput = {

@@ -1,6 +1,6 @@
 /** Request vocabulary shared by the UI and the server (client-safe). */
 
-export const MEDIA_TYPES = ["audiobook", "ebook", "podcast"] as const;
+export const MEDIA_TYPES = ["audiobook", "ebook"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export const REQUEST_STATUSES = [

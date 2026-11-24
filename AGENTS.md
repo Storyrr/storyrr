@@ -1,6 +1,6 @@
 # AGENTS.md
 
-**Storyrr**: a self-hosted request manager for **audiobooks, eBooks (incl. manga/comics) and podcasts**, in the spirit of Seerr (Overseerr/Jellyseerr) but for the book side of a homelab. Users search, request, and see when it's available; admins approve and choose where it lands.
+**Storyrr**: a self-hosted request manager for **audiobooks and eBooks (incl. manga/comics)**, in the spirit of Seerr (Overseerr/Jellyseerr) but for the book side of a homelab. Users search, request, and see when it's available; admins approve and choose where it lands.
 
 Product spec: [docs/SPEC.md](docs/SPEC.md). GitHub: `Storyrr/storyrr`.
 
@@ -91,7 +91,7 @@ src/
 │   ├── settings/           # typed settings (defineSetting + Valibot), secrets sealed with AES-256-GCM (key: HKDF of BETTER_AUTH_SECRET)
 │   ├── setup.ts            # first-run wizard (creates the first admin)
 │   ├── services/           # one client per external service (audible, chaptarr, audiobookshelf so far; kavita, hardcover, itunes next), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
-│   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title; podcast: iTunes + ABS by feed URL), chaptarrProviderId (az:/hc:)
+│   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from Audiobookshelf
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
@@ -113,7 +113,7 @@ Rules:
 - **Media sources share one interface** so adding a type never touches the request flow:
   ```ts
   interface MediaSource {
-    type: "audiobook" | "ebook" | "podcast";
+    type: "audiobook" | "ebook";
     search(query: string, opts): Promise<MediaResult[]>;
     getDetails(externalId: string): Promise<MediaDetails>;
     getRequestTargets(): Promise<RequestTarget[]>; // root folders/libraries the admin can pick
@@ -149,14 +149,14 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 - Chaptarr can be slow (free-space checks on network shares, its own metadata service): use generous per-call timeouts (status/health 15 s, profiles 30 s, root folders and lookups 60 s, book import 90 s). The connection Test also shows `GET /api/v1/health` warnings, which often explain slowness or failed adds.
 - Stackarr (`stackarr/chaptarr.py`, MIT) is a useful field-tested client, but it predates `book/import`.
 
-### Audiobookshelf (audiobook availability, podcasts)
+### Audiobookshelf (audiobook availability)
 
 - Use an **API key** (Settings → API Keys, admin user) for server-to-server calls. Do **not** store user session tokens: on recent versions (2.26+) they expire quickly and break background calls with 401.
 - In Docker the server listens on **port 80 inside the container**, whatever port is published on the host.
 - **Ownership must be matched by ASIN.** Titles/authors in libraries are often wrong (narrator as author, "T01-…" folder-derived titles). Fall back to normalized title+author only when no ASIN exists, and treat that as "probably owned".
-- ABS proxies metadata providers (`/api/search/books?title=&author=&provider=audible.fr`) and podcast search: reuse instead of re-implementing where convenient.
-- Source of truth: [advplyr/audiobookshelf](https://github.com/advplyr/audiobookshelf) (`server/controllers`, models' `toOldJSON*`). Errors come back as **plain text** bodies (e.g. 400 `Podcast already exists`).
-- Podcasts: requesting = `POST /api/podcasts` `{ libraryId, folderId, path, media: { metadata: { title, author, description, feedUrl, imageUrl, itunesId, itunesPageUrl, genres, language, explicit }, autoDownloadEpisodes: true } }`, admin key only. `path` must be inside the folder: `<folder fullPath>/<sanitizeFilename(title)>` as ABS's own client does. `POST /api/podcasts/feed { rssFeed }` parses the feed (description, language). Podcast items expose `media.metadata.feedUrl`: ownership is matched by normalized feed URL.
+- ABS proxies metadata providers (`/api/search/books?title=&author=&provider=audible.fr`): reuse instead of re-implementing where convenient.
+- **No podcasts (decided 2026-11-24):** podcasts are free to follow in any podcast app, so requesting them added little. The feature was removed; it is in the git history (`451486a`) if ever needed.
+- Source of truth: [advplyr/audiobookshelf](https://github.com/advplyr/audiobookshelf) (`server/controllers`, models' `toOldJSON*`). Errors come back as **plain text** bodies.
 - The library's "metadata provider" setting matters (Google Books by default, Audible is far better for audiobooks).
 
 ### Kavita (eBook availability)
@@ -170,7 +170,6 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 
 - Audiobooks: **Audible's catalog API**, called directly (`https://api.audible.<tld>/1.0/catalog/products`, no key; region configurable, default `fr`) for search and details. Decided over ABS's provider proxy so search works without Audiobookshelf; Audnexus only looks up by ASIN, so it can't search. The API is undocumented: validate every response with Valibot and degrade to "no results" with a logged reason. ASIN is the primary key.
 - eBooks (books, manga, comics): **Hardcover** (decided over Open Library, whose IDs Chaptarr may not resolve: Chaptarr's metadata server is built on Hardcover/Goodreads, so `hc:<id>` is a native Chaptarr ID). GraphQL at `https://api.hardcover.app/v1/graphql`, `authorization: Bearer <token>` (the admin's personal token, stored encrypted; only the `read:catalog:search` scope is needed), server-side only, search via `search(query, query_type: "Book")` (Typesense hits in `results`), details via `books_by_pk`. Source of truth: the docs repo [hardcoverapp/hardcover-docs](https://github.com/hardcoverapp/hardcover-docs) (the docs site refuses automated fetches). Limits: search times out after 2 s, rate limits per minute/day, the API is beta and may change. The Hardcover book id is the key.
-- Podcasts: iTunes Search API (`media=podcast&entity=podcast`, `country` = the Audible region, `uk` → `gb`), iTunes collection id in URLs, **feed URL** for ownership. Podcast requests are created in an Audiobookshelf podcast library folder and are available immediately; `policy.requests.podcastsRequireApproval` (default on) holds them for an admin even for auto-approved users.
 - Cache metadata in SQLite with a TTL; never block a page on a slow provider (show cached + refresh in background).
 
 ## Conventions
@@ -196,7 +195,7 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 [Conventional Commits](https://www.conventionalcommits.org/), in English: `<type>(<optional scope>): <description>`, then an optional body and an optional footer, each after a blank line.
 
 - **Types:** `feat` (add, change or remove a user-facing feature), `fix` (bug fix), `refactor` (restructure without behavior change), `perf` (performance-only refactor), `style` (formatting only), `test`, `docs` (documentation only), `build` (tooling, dependencies, version), `ops` (CI/CD, Docker, deployment), `chore` (anything else: initial commit, `.gitignore`, …).
-- **Scopes** (optional, never an issue number): `requests`, `search`, `media`, `auth`, `users`, `settings`, `jobs`, `db`, `ui`, `i18n`, `chaptarr`, `audiobookshelf`, `kavita`, `metadata`, `podcasts`, `deps`.
+- **Scopes** (optional, never an issue number): `requests`, `search`, `media`, `auth`, `users`, `settings`, `jobs`, `db`, `ui`, `i18n`, `chaptarr`, `audiobookshelf`, `kavita`, `metadata`, `deps`.
 - **Description:** imperative present tense ("add", not "added"/"adds"; read it as "this commit will …"), lowercase first letter, no trailing period, concise.
 - **Body:** the motivation and how behavior differs from before, imperative tense.
 - **Footer:** issue references (`Closes #12`) and breaking changes.

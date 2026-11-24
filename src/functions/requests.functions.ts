@@ -12,12 +12,10 @@ import {
 } from "#/lib/schemas/requests";
 import { formatList } from "#/lib/format";
 import { isLanguageAccepted, languageName } from "#/lib/languages";
-import { isChaptarrType, type SearchableType } from "#/lib/media-types";
-import { DEFAULT_REQUEST_POLICY } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
 import { requireAdmin, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
-import { media, request, type RequestTarget } from "#/server/db/schema";
+import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
   isAutoApproved,
@@ -38,7 +36,7 @@ import {
 import { services } from "#/server/services";
 import { removeBook } from "#/server/services/chaptarr/client";
 import { settings } from "#/server/settings";
-import { formatDefaults, podcastDefaults, requestPolicy } from "#/server/settings/definitions";
+import { formatDefaults } from "#/server/settings/definitions";
 import { chaptarrProviderId, mediaSources } from "#/server/sources";
 
 /** Submission can take a while (Chaptarr refreshes the author): never block the caller on it. */
@@ -66,44 +64,9 @@ function notFound(): never {
   throw new Error(m.request_not_found());
 }
 
-/** Where a request goes: the admin's choice, else the format's defaults. */
-async function resolveTarget(
-  format: SearchableType,
-  override: { rootFolderPath?: string; libraryId?: string; folderId?: string },
-): Promise<RequestTarget> {
-  if (format === "podcast") {
-    const defaults = await settings.get(podcastDefaults);
-    const libraryId = override.libraryId ?? defaults?.libraryId;
-    const folderId = override.folderId ?? (override.libraryId ? undefined : defaults?.folderId);
-    if (!libraryId || !folderId) throw new Error(m.request_error_podcast_defaults_missing());
-    return { service: "audiobookshelf", libraryId, folderId };
-  }
-  const defaults = await settings.get(formatDefaults[format]);
-  const rootFolderPath = override.rootFolderPath ?? defaults?.rootFolderPath;
-  if (!rootFolderPath) {
-    throw new Error(
-      format === "ebook"
-        ? m.request_error_ebook_defaults_missing()
-        : m.request_error_defaults_missing(),
-    );
-  }
-  return { service: "chaptarr", rootFolderPath };
-}
-
-/** Admins always; others per their flag, except podcasts while the policy asks for approval. */
-async function isRequestAutoApproved(userId: string, isAdmin: boolean, format: SearchableType) {
-  if (isAdmin) return true;
-  if (format === "podcast") {
-    const policy = (await settings.get(requestPolicy)) ?? DEFAULT_REQUEST_POLICY;
-    if (policy.podcastsRequireApproval) return false;
-  }
-  return isAutoApproved(db, userId, false);
-}
-
 /**
- * Requests an audiobook, an eBook or a podcast. Admins may pick the target
- * (Chaptarr folder and profile, or Audiobookshelf library and folder);
- * everyone else gets the format's defaults. Signed-in users.
+ * Requests an audiobook or an eBook. Admins may pick the target folder and
+ * quality profile; everyone else gets the format's defaults. Signed-in users.
  */
 export const requestMedia = createServerFn({ method: "POST" })
   .middleware([requireUser])
@@ -112,14 +75,20 @@ export const requestMedia = createServerFn({ method: "POST" })
     const { user } = context.session;
     const isAdmin = user.role === "admin";
     const format = data.media.type;
-    const target = await resolveTarget(format, isAdmin ? data : {});
+    const defaults = await settings.get(formatDefaults[format]);
+    const rootFolderPath = (isAdmin ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
+    if (!rootFolderPath) {
+      throw new Error(
+        format === "ebook"
+          ? m.request_error_ebook_defaults_missing()
+          : m.request_error_defaults_missing(),
+      );
+    }
 
     const details = await mediaSources[format].getDetails(services, data.media.id);
     if (!details.ok) throw new Error(details.error.message);
     // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
-    const policy = isChaptarrType(format)
-      ? await getLanguagePolicy({ services, settings }, format)
-      : null;
+    const policy = await getLanguagePolicy({ services, settings }, format);
     if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
       setResponseStatus(422);
       throw new Error(
@@ -134,9 +103,9 @@ export const requestMedia = createServerFn({ method: "POST" })
       mediaId,
       userId: user.id,
       format,
-      target,
-      qualityProfileId: isAdmin && format !== "podcast" ? (data.qualityProfileId ?? null) : null,
-      autoApprove: await isRequestAutoApproved(user.id, isAdmin, format),
+      target: { service: "chaptarr", rootFolderPath },
+      qualityProfileId: isAdmin ? (data.qualityProfileId ?? null) : null,
+      autoApprove: isAutoApproved(db, user.id, isAdmin),
     });
     if (result.kind === "created" && result.status === "approved") {
       submitInBackground(result.requestId);
@@ -194,15 +163,11 @@ export const approveRequest = createServerFn({ method: "POST" })
   .handler(({ data, context }) => {
     const row = getRequestRow(db, data.id);
     if (!row) return notFound();
-    const changesTarget =
-      data.rootFolderPath || data.qualityProfileId !== undefined || data.libraryId || data.folderId;
-    if (row.status === "pending" && changesTarget) {
-      let target: RequestTarget = row.target;
-      if (row.target.service === "chaptarr" && data.rootFolderPath) {
-        target = { ...row.target, rootFolderPath: data.rootFolderPath };
-      } else if (row.target.service === "audiobookshelf" && data.libraryId && data.folderId) {
-        target = { service: "audiobookshelf", libraryId: data.libraryId, folderId: data.folderId };
-      }
+    if (row.status === "pending" && (data.rootFolderPath || data.qualityProfileId !== undefined)) {
+      const target =
+        data.rootFolderPath && row.target.service === "chaptarr"
+          ? { ...row.target, rootFolderPath: data.rootFolderPath }
+          : row.target;
       db.update(request)
         .set({
           target,
@@ -304,7 +269,7 @@ export const removeFromChaptarr = createServerFn({ method: "POST" })
       .get();
     if (!row) return notFound();
     const providerId = chaptarrProviderId(row.source, row.externalId);
-    if (!providerId || row.format === "podcast") throw new Error(m.request_error_unsupported());
+    if (!providerId) throw new Error(m.request_error_unsupported());
     const chaptarr = await services.chaptarr();
     if (!chaptarr)
       throw new Error(m.request_error_not_configured({ service: m.service_chaptarr() }));

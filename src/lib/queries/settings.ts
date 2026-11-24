@@ -5,7 +5,6 @@ import type { ChaptarrFormat } from "#/lib/schemas/settings";
 import {
   getChaptarrOptions,
   getChaptarrWebhookUrl,
-  getPodcastLibraryOptions,
   getServiceSettings,
 } from "#/functions/settings.functions";
 
@@ -15,7 +14,6 @@ export const settingsKeys = {
   chaptarrOptions: (format: ChaptarrFormat) =>
     [...settingsKeys.all, "chaptarr", "options", format] as const,
   chaptarrWebhook: () => [...settingsKeys.all, "chaptarr", "webhook"] as const,
-  podcastLibraries: () => [...settingsKeys.all, "audiobookshelf", "podcast-libraries"] as const,
 };
 
 export const serviceSettingsQuery = () =>
@@ -33,11 +31,4 @@ export const chaptarrWebhookQuery = () =>
     queryKey: settingsKeys.chaptarrWebhook(),
     queryFn: () => getChaptarrWebhookUrl(),
     staleTime: Infinity,
-  });
-
-export const podcastLibrariesQuery = () =>
-  queryOptions({
-    queryKey: settingsKeys.podcastLibraries(),
-    queryFn: () => getPodcastLibraryOptions(),
-    staleTime: 60_000,
   });

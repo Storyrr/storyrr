@@ -1,6 +1,6 @@
 # Storyrr
 
-A self-hosted request manager for **audiobooks, eBooks (including manga and comics) and podcasts**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to Chaptarr (audiobooks, eBooks) and [Audiobookshelf](https://www.audiobookshelf.org/) (podcasts), and checks availability in Audiobookshelf and [Kavita](https://www.kavitareader.com/).
+A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to Chaptarr and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/) and [Kavita](https://www.kavitareader.com/).
 
 > **Status: early development.** The first-run wizard, accounts and the app skeleton work; search and requests are being built. See the [v1 spec](docs/SPEC.md) for the roadmap.
 

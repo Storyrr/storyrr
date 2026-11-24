@@ -5,8 +5,9 @@ import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
+import { SelectField } from "#/components/form/select-field";
 import { Cover } from "#/components/media/cover";
-import { EMPTY_TARGET, targetOverride, TargetOptions } from "#/components/media/target-options";
+import { AdvancedOptions } from "#/components/media/request-dialog";
 import { Button } from "#/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import {
@@ -136,7 +137,7 @@ export function RequestRow({ request }: { request: RequestListItem }) {
         ) : null}
         {user.isAdmin ? (
           <>
-            {SENT_STATUSES.includes(request.status) && request.format !== "podcast" ? (
+            {SENT_STATUSES.includes(request.status) ? (
               <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
             ) : null}
             <DeleteRequestButton id={request.id} title={request.media.title} />
@@ -167,14 +168,19 @@ function ApproveDialog({ request }: { request: RequestListItem }) {
   const [open, setOpen] = useState(false);
   const approveFn = useServerFn(approveRequest);
   const approve = useRequestAction(
-    (vars: { id: string } & ReturnType<typeof targetOverride>) => approveFn({ data: vars }),
+    (vars: { id: string; rootFolderPath?: string; qualityProfileId?: number }) =>
+      approveFn({ data: vars }),
     "approved",
   );
   const form = useForm({
-    defaultValues: { target: EMPTY_TARGET },
+    defaultValues: { rootFolderPath: "", qualityProfileId: "" },
     onSubmit: async ({ value }) => {
       await approve
-        .mutateAsync({ id: request.id, ...targetOverride(value.target) })
+        .mutateAsync({
+          id: request.id,
+          rootFolderPath: value.rootFolderPath || undefined,
+          qualityProfileId: value.qualityProfileId ? Number(value.qualityProfileId) : undefined,
+        })
         .then(() => setOpen(false))
         .catch(() => undefined);
     },
@@ -199,17 +205,40 @@ function ApproveDialog({ request }: { request: RequestListItem }) {
             <FormError
               message={approve.error ? approve.error.message || m.error_generic() : null}
             />
-            {isSearchableType(request.format) ? (
-              <form.Field name="target">
-                {(field) => (
-                  <TargetOptions
-                    format={request.format}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                  />
-                )}
-              </form.Field>
-            ) : null}
+            <AdvancedOptions format={request.format === "ebook" ? "ebook" : "audiobook"}>
+              {(options) => (
+                <>
+                  <form.Field name="rootFolderPath">
+                    {(field) => (
+                      <SelectField
+                        label={m.field_root_folder()}
+                        description={m.request_default_hint()}
+                        options={options.rootFolders.map((f) => ({
+                          id: f.path,
+                          label: `${f.name} (${f.path})`,
+                        }))}
+                        value={field.state.value || null}
+                        onChange={(value) => field.handleChange(value ?? "")}
+                      />
+                    )}
+                  </form.Field>
+                  <form.Field name="qualityProfileId">
+                    {(field) => (
+                      <SelectField
+                        label={m.field_quality_profile()}
+                        description={m.request_default_hint()}
+                        options={options.qualityProfiles.map((p) => ({
+                          id: String(p.id),
+                          label: p.name,
+                        }))}
+                        value={field.state.value || null}
+                        onChange={(value) => field.handleChange(value ?? "")}
+                      />
+                    )}
+                  </form.Field>
+                </>
+              )}
+            </AdvancedOptions>
           </FieldGroup>
           <DialogFooter>
             <DialogClose>{m.action_cancel()}</DialogClose>

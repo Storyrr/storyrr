@@ -14,7 +14,6 @@ export const EXTERNAL_SERVICES = [
   "kavita",
   "hardcover",
   "audible",
-  "itunes",
 ] as const;
 export type ExternalService = (typeof EXTERNAL_SERVICES)[number];
 
@@ -72,23 +71,3 @@ export const FormatInputSchema = v.object({ format: v.picklist(CHAPTARR_FORMATS)
 /** The Hardcover API token as edited in the form. Blank keeps the stored one. */
 export const HardcoverTokenFormSchema = v.object({ token: v.pipe(v.string(), v.trim()) });
 export type HardcoverTokenForm = v.InferOutput<typeof HardcoverTokenFormSchema>;
-
-/** Where podcast requests go by default: an Audiobookshelf podcast library folder. */
-export const PodcastDefaultsSchema = v.object({
-  libraryId: v.pipe(
-    v.string(),
-    v.nonEmpty(() => m.validation_required()),
-  ),
-  folderId: v.pipe(
-    v.string(),
-    v.nonEmpty(() => m.validation_required()),
-  ),
-});
-export type PodcastDefaults = v.InferOutput<typeof PodcastDefaultsSchema>;
-
-export const RequestPolicySchema = v.object({
-  /** Podcast requests wait for an admin even for auto-approved users (spec: on by default). */
-  podcastsRequireApproval: v.boolean(),
-});
-export type RequestPolicy = v.InferOutput<typeof RequestPolicySchema>;
-export const DEFAULT_REQUEST_POLICY: RequestPolicy = { podcastsRequireApproval: true };

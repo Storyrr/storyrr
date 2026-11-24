@@ -1,13 +1,15 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { InfoIcon } from "lucide-react";
+import { ChevronDownIcon, InfoIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
+import { SelectField } from "#/components/form/select-field";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -19,17 +21,13 @@ import {
 } from "#/components/ui/dialog";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import {
-  EMPTY_TARGET,
-  targetOverride,
-  TargetOptions,
-  type TargetChoice,
-} from "#/components/media/target-options";
 import { requestMedia } from "#/functions/requests.functions";
 import { formatList } from "#/lib/format";
 import { mediaKeys } from "#/lib/queries/media";
 import { requestKeys } from "#/lib/queries/requests";
+import { chaptarrOptionsQuery } from "#/lib/queries/settings";
 import type { SearchableType } from "#/lib/media-types";
+import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
 type Item = { type: SearchableType; externalId: string; title: string; authors: string[] };
@@ -52,10 +50,8 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
   const queryClient = useQueryClient();
   const requestFn = useServerFn(requestMedia);
   const request = useMutation({
-    mutationFn: (choice: TargetChoice) =>
-      requestFn({
-        data: { media: { type: item.type, id: item.externalId }, ...targetOverride(choice) },
-      }),
+    mutationFn: (data: { rootFolderPath?: string; qualityProfileId?: number }) =>
+      requestFn({ data: { media: { type: item.type, id: item.externalId }, ...data } }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: mediaKeys.all }),
@@ -66,9 +62,14 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
   });
 
   const form = useForm({
-    defaultValues: { target: EMPTY_TARGET },
+    defaultValues: { rootFolderPath: "", qualityProfileId: "" },
     onSubmit: async ({ value }) => {
-      await request.mutateAsync(value.target).catch(() => undefined);
+      await request
+        .mutateAsync({
+          rootFolderPath: value.rootFolderPath || undefined,
+          qualityProfileId: value.qualityProfileId ? Number(value.qualityProfileId) : undefined,
+        })
+        .catch(() => undefined);
     },
   });
 
@@ -89,22 +90,47 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
       </DialogHeader>
       <FieldGroup>
         <FormError message={request.error ? request.error.message || m.error_generic() : null} />
-        {(item.type === "podcast" ? user.autoApprovedPodcasts : user.autoApproved) ? (
+        {user.autoApproved ? (
           <Alert>
             <InfoIcon />
             <AlertDescription>{m.request_auto_approved_info()}</AlertDescription>
           </Alert>
         ) : null}
         {user.isAdmin ? (
-          <form.Field name="target">
-            {(field) => (
-              <TargetOptions
-                format={item.type}
-                value={field.state.value}
-                onChange={field.handleChange}
-              />
+          <AdvancedOptions format={item.type}>
+            {(options) => (
+              <>
+                <form.Field name="rootFolderPath">
+                  {(field) => (
+                    <SelectField
+                      label={m.field_root_folder()}
+                      description={m.request_default_hint()}
+                      options={options.rootFolders.map((f) => ({
+                        id: f.path,
+                        label: `${f.name} (${f.path})`,
+                      }))}
+                      value={field.state.value || null}
+                      onChange={(value) => field.handleChange(value ?? "")}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="qualityProfileId">
+                  {(field) => (
+                    <SelectField
+                      label={m.field_quality_profile()}
+                      description={m.request_default_hint()}
+                      options={options.qualityProfiles.map((p) => ({
+                        id: String(p.id),
+                        label: p.name,
+                      }))}
+                      value={field.state.value || null}
+                      onChange={(value) => field.handleChange(value ?? "")}
+                    />
+                  )}
+                </form.Field>
+              </>
             )}
-          </form.Field>
+          </AdvancedOptions>
         ) : null}
       </FieldGroup>
       <DialogFooter>
@@ -119,5 +145,41 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
         </form.Subscribe>
       </DialogFooter>
     </form>
+  );
+}
+
+export type ChaptarrOptions = {
+  rootFolders: { path: string; name: string }[];
+  qualityProfiles: { id: number; name: string }[];
+};
+
+/** Admins only: collapsed by default; empty fields mean "use the defaults". */
+export function AdvancedOptions({
+  format,
+  children,
+}: {
+  /** Lists the root folders compatible with this format (e.g. Books, Manga, Comics for eBooks). */
+  format: SearchableType;
+  children: (options: ChaptarrOptions) => React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const options = useQuery({ ...chaptarrOptionsQuery(format), enabled: expanded });
+
+  return (
+    <Collapsible isExpanded={expanded} onExpandedChange={setExpanded}>
+      <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium">
+        <ChevronDownIcon className={expanded ? "rotate-180" : undefined} />
+        {m.request_advanced_options()}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <FieldGroup className="pt-4">
+          {expanded && options.isPending ? <Spinner /> : null}
+          {options.data && !options.data.ok ? (
+            <FormError message={chaptarrOptionsErrorMessage(options.data)} />
+          ) : null}
+          {options.data?.ok ? children(options.data) : null}
+        </FieldGroup>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
