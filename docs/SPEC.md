@@ -62,6 +62,7 @@ Shown when the database has no user.
 
 - **Audiobooks by genre** (Audible's top-level genres) and **Books by genre** (Hardcover's 20 most used genres, catch-alls like Fiction left out): a colored card per genre opening the Audiobooks / Books page filtered by it.
 - **Upcoming books** (Hardcover): out within a year, the most awaited first, "Untitled …" placeholders left out; See all opens Books sorted by "Upcoming". Audible can't list upcoming titles (no date filter, its newest-first sort starts years ahead), so there is no audiobook equivalent. No publishers row: neither catalog gives publisher logos.
+- **Genre names come from the catalogs, untranslated (decided 2026-11-24):** Audible names its genres in its store's language (the configured region, e.g. French for `fr`, whatever the UI language; genre ids differ per store, so another store's names can't be borrowed); Hardcover's genres are English-only reader tags. Seerr does the same, relying on its catalog: TMDB returns genre names in the requested language. The same applies to the genre filters and the genre chips on title pages.
 - Saved Discover layouts get rows added in later versions appended (enabled), keeping the admin's order and choices.
 
 ### 4.2b Books and Audiobooks pages (decided 2026-11-24, like Seerr's Movies / Series)
