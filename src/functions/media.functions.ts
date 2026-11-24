@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
+import { DEFAULT_DISCOVER_LAYOUT, DiscoverLayoutSchema } from "#/lib/discover";
 import { hasPermission } from "#/lib/permissions";
 import type { MediaSummary } from "#/lib/media";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
@@ -16,6 +17,7 @@ import { clearTitleData, markAvailable, titleAdminInfo } from "#/server/requests
 import { activeRequestsByExternalId, upsertMedia } from "#/server/requests/queries";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
+import { discoverLayout } from "#/server/settings/definitions";
 import { mediaSources } from "#/server/sources";
 
 /** Accepted (true) first, then unknown (null), then refused (false); stable otherwise. */
@@ -86,20 +88,26 @@ export const searchMedia = createServerFn({ method: "GET" })
   });
 
 const TRENDING_TTL_MS = 30 * 60_000;
-const trendingCache = new Map<SearchableType, { at: number; items: MediaSummary[] }>();
+const trendingCache = new Map<string, { at: number; items: MediaSummary[] }>();
 
 /** What's popular (Audible bestsellers, Hardcover trending), shared between users for 30 min. */
 export const getTrending = createServerFn({ method: "GET" })
   .middleware([requireUser])
-  .validator(v.object({ type: v.picklist(SEARCHABLE_TYPES) }))
+  .validator(
+    v.object({
+      type: v.picklist(SEARCHABLE_TYPES),
+      page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(50)), 1),
+    }),
+  )
   .handler(async ({ data }) => {
-    const cached = trendingCache.get(data.type);
+    const key = `${data.type}:${data.page}`;
+    const cached = trendingCache.get(key);
     let items = cached && Date.now() - cached.at < TRENDING_TTL_MS ? cached.items : null;
     if (!items) {
-      const result = await mediaSources[data.type].trending(services);
+      const result = await mediaSources[data.type].trending(services, data.page);
       if (!result.ok) return { ok: false as const, error: result.error };
       items = result.value;
-      trendingCache.set(data.type, { at: Date.now(), items });
+      trendingCache.set(key, { at: Date.now(), items });
     }
     return annotate(data.type, items);
   });
@@ -198,4 +206,19 @@ export const getAuthor = createServerFn({ method: "GET" })
     if (!result.ok) return { ok: false as const, error: result.error };
     const { name, description, imageUrl } = result.value;
     return { ...(await annotate(data.type, result.value.items)), name, description, imageUrl };
+  });
+
+/** Discover's rows, in order. Signed-in users (everyone sees the same Discover). */
+export const getDiscoverLayout = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async () => (await settings.get(discoverLayout)) ?? [...DEFAULT_DISCOVER_LAYOUT]);
+
+/** Saves Discover's rows (null: back to the default). Manage settings. */
+export const saveDiscoverLayout = createServerFn({ method: "POST" })
+  .middleware([requirePermission("manage_settings")])
+  .validator(v.object({ rows: v.nullable(DiscoverLayoutSchema) }))
+  .handler(async ({ data }) => {
+    if (data.rows) await settings.set(discoverLayout, data.rows);
+    else await settings.remove(discoverLayout);
+    return { ok: true };
   });

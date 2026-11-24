@@ -7,7 +7,7 @@ import { ownedAsins, ownedTitles } from "#/server/library";
 import { manuallyOwned } from "#/server/requests/manage";
 import { titleKey } from "#/lib/match";
 import type { Services } from "#/server/services/factory";
-import { fail, type ServiceResult } from "#/server/services/result";
+import { fail, ok, type ServiceResult } from "#/server/services/result";
 
 /**
  * One module per media type: where to search, how to tell what's owned, and
@@ -19,8 +19,8 @@ export type MediaSource = {
   source: string;
   search(services: Services, query: string): Promise<ServiceResult<MediaSummary[]>>;
   getDetails(services: Services, id: string): Promise<ServiceResult<MediaDetails>>;
-  /** What's popular right now, for Discover. */
-  trending(services: Services): Promise<ServiceResult<MediaSummary[]>>;
+  /** What's popular right now, for Discover (page 1) and Browse (more pages where the provider has them). */
+  trending(services: Services, page?: number): Promise<ServiceResult<MediaSummary[]>>;
   /** A series' works in reading order. */
   series(services: Services, id: string): Promise<ServiceResult<MediaCollection>>;
   /** An author's works (`name`: Audible searches by name). */
@@ -38,8 +38,8 @@ const audiobooks: MediaSource = {
   async getDetails(services, id) {
     return (await services.audible()).getByAsin(id);
   },
-  async trending(services) {
-    return (await services.audible()).bestsellers();
+  async trending(services, page = 1) {
+    return (await services.audible()).bestsellers({ page, limit: page === 1 ? 20 : 40 });
   },
   async series(services, id) {
     return (await services.audible()).series(id);
@@ -71,9 +71,11 @@ const ebooks: MediaSource = {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.getById(id) : fail("not_configured", "Hardcover token missing");
   },
-  async trending(services) {
+  async trending(services, page = 1) {
     const hardcover = await services.hardcover();
-    return hardcover ? hardcover.trending() : fail("not_configured", "Hardcover token missing");
+    if (!hardcover) return fail("not_configured", "Hardcover token missing");
+    // Hardcover's trending list has one page: Browse shows a longer one, then nothing more.
+    return page === 1 ? hardcover.trending({ limit: 40 }) : ok([]);
   },
   async series(services, id) {
     const hardcover = await services.hardcover();

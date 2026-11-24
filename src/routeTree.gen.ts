@@ -24,6 +24,7 @@ import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiImagesRouteImport } from './routes/api/images'
+import { Route as AuthedBrowseTypeRouteImport } from './routes/_authed/browse/$type'
 import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
 import { Route as AuthedIssuesIdRouteImport } from './routes/_authed/issues/$id'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -128,6 +129,11 @@ const ApiImagesRoute = ApiImagesRouteImport.update({
   id: '/api/images',
   path: '/api/images',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedBrowseTypeRoute = AuthedBrowseTypeRouteImport.update({
+  id: '/browse/$type',
+  path: '/browse/$type',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedIssuesIndexRoute = AuthedIssuesIndexRouteImport.update({
   id: '/issues/',
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/api/images': typeof ApiImagesRoute
+  '/browse/$type': typeof AuthedBrowseTypeRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/settings/about': typeof AuthedSettingsAboutRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/images': typeof ApiImagesRoute
   '/': typeof AuthedIndexRoute
+  '/browse/$type': typeof AuthedBrowseTypeRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/settings/about': typeof AuthedSettingsAboutRoute
@@ -401,6 +409,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/images': typeof ApiImagesRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/browse/$type': typeof AuthedBrowseTypeRoute
   '/_authed/issues/$id': typeof AuthedIssuesIdRoute
   '/_authed/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/_authed/settings/about': typeof AuthedSettingsAboutRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/health'
     | '/api/images'
+    | '/browse/$type'
     | '/issues/$id'
     | '/profile/settings'
     | '/settings/about'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/images'
     | '/'
+    | '/browse/$type'
     | '/issues/$id'
     | '/profile/settings'
     | '/settings/about'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/images'
     | '/_authed/'
+    | '/_authed/browse/$type'
     | '/_authed/issues/$id'
     | '/_authed/profile/settings'
     | '/_authed/settings/about'
@@ -692,6 +704,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/images'
       preLoaderRoute: typeof ApiImagesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/browse/$type': {
+      id: '/_authed/browse/$type'
+      path: '/browse/$type'
+      fullPath: '/browse/$type'
+      preLoaderRoute: typeof AuthedBrowseTypeRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/issues/': {
       id: '/_authed/issues/'
@@ -1002,6 +1021,7 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedBrowseTypeRoute: typeof AuthedBrowseTypeRoute
   AuthedIssuesIdRoute: typeof AuthedIssuesIdRoute
   AuthedProfileSettingsRoute: typeof AuthedProfileSettingsRouteWithChildren
   AuthedIssuesIndexRoute: typeof AuthedIssuesIndexRoute
@@ -1023,6 +1043,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedBrowseTypeRoute: AuthedBrowseTypeRoute,
   AuthedIssuesIdRoute: AuthedIssuesIdRoute,
   AuthedProfileSettingsRoute: AuthedProfileSettingsRouteWithChildren,
   AuthedIssuesIndexRoute: AuthedIssuesIndexRoute,

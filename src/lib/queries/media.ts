@@ -1,7 +1,8 @@
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, keepPreviousData, queryOptions } from "@tanstack/react-query";
 
 import {
   getAuthor,
+  getDiscoverLayout,
   getMedia,
   getSeries,
   getTitleAdmin,
@@ -63,4 +64,22 @@ export const trendingQuery = (type: SearchableType) =>
     queryKey: [...mediaKeys.all, "trending", type] as const,
     queryFn: () => getTrending({ data: { type } }),
     staleTime: 10 * 60_000,
+  });
+
+/** Browse: the trending list page by page (Audible has more pages, Hardcover one). */
+export const trendingPagesQuery = (type: SearchableType) =>
+  infiniteQueryOptions({
+    queryKey: [...mediaKeys.all, "trending", type, "pages"] as const,
+    queryFn: ({ pageParam }) => getTrending({ data: { type, page: pageParam } }),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, page) =>
+      last.ok && last.results.length > 0 && page < 50 ? page + 1 : undefined,
+    staleTime: 10 * 60_000,
+  });
+
+export const discoverLayoutQuery = () =>
+  queryOptions({
+    queryKey: ["discover", "layout"] as const,
+    queryFn: () => getDiscoverLayout(),
+    staleTime: 5 * 60_000,
   });

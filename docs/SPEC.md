@@ -68,6 +68,8 @@ Shown when the database has no user.
 - **Discover** shows horizontal rows: **Trending** (Audible bestsellers in the configured region, Hardcover's trending books), **Recent requests** (with status), **Recently added** (requests that became available).
 - **Books** / **Audiobooks** pages: search and browse that type only.
 
+- Discover's rows are configurable (Settings → General → Discover): turn rows on or off, reorder them, add rows showing a search (format, title, query), or reset. Trending rows have a "See all" Browse page (`/browse/<type>`): the full list (Audible bestsellers page by page, Hardcover's trending list), filterable to hide what's in the library or requested and to accepted languages.
+
 ### 4.3c Blocklist (decided 2026-11-24)
 
 - Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. The Blocklist page lists them and unblocks.

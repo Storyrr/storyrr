@@ -119,8 +119,9 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
     },
 
     /** The region's bestsellers (verified on api.audible.fr: no keywords, sorted by BestSellers). */
-    async bestsellers({ limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
-      return list({ products_sort_by: "BestSellers" }, limit);
+    async bestsellers({ limit = 20, page = 1 } = {}): Promise<ServiceResult<MediaSummary[]>> {
+      // Audible pages from 0.
+      return list({ products_sort_by: "BestSellers", page: String(page - 1) }, limit);
     },
 
     /** A series' volumes in reading order (its children, sorted by Audible's `sort`). */

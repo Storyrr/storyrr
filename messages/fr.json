@@ -623,5 +623,18 @@
   "network_image_cache_description": "Storyrr télécharge chaque couverture une fois, la garde 30 jours dans le dossier de données et la sert lui-même : pages plus rapides, et les navigateurs ne contactent pas les fournisseurs.",
   "network_cache_size": "Taille du cache",
   "network_cache_files": "{count} couvertures",
-  "network_clear_cache": "Vider le cache"
+  "network_clear_cache": "Vider le cache",
+  "browse_title": "Parcourir",
+  "browse_hide_owned": "Masquer ce qui est dans la bibliothèque ou demandé",
+  "browse_accepted_only": "Seulement les langues acceptées par Chaptarr",
+  "browse_load_more": "Charger plus",
+  "discover_editor_title": "Découvrir",
+  "discover_editor_description": "Les lignes de Découvrir, de haut en bas : activez-les, déplacez-les, ou ajoutez des lignes affichant une recherche (par exemple « Mangas » avec une recherche Hardcover).",
+  "discover_row_up": "Monter",
+  "discover_row_down": "Descendre",
+  "discover_row_search": "Recherche {format} : {query}",
+  "discover_add_row": "Ajouter une ligne de recherche",
+  "discover_row_title": "Titre de la ligne",
+  "discover_row_query": "Recherche",
+  "discover_reset": "Rétablir par défaut"
 }
