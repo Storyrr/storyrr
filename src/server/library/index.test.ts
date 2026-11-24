@@ -27,7 +27,7 @@ describe("Kavita library index", () => {
     const kavita = createKavitaClient({ url: "http://kavita", apiKey: "k" }, fetch);
 
     expect(await syncKavita(db, kavita)).toEqual({ ok: true, value: { series: 2 } });
-    expect(ownedTitles(db, ["L’étranger", "ベルセルク", "Dune"])).toEqual(
+    expect(ownedTitles(db, "ebook", ["L’étranger", "ベルセルク", "Dune"])).toEqual(
       new Set([titleKey("L'Etranger"), titleKey("ベルセルク")]),
     );
 
@@ -39,7 +39,7 @@ describe("Kavita library index", () => {
       ).fetch,
     );
     await syncKavita(db, empty);
-    expect(ownedTitles(db, ["Berserk"]).size).toBe(0);
+    expect(ownedTitles(db, "ebook", ["Berserk"]).size).toBe(0);
   });
 
   it("leaves excluded libraries out and counts items per library", async () => {
@@ -59,7 +59,7 @@ describe("Kavita library index", () => {
       ok: true,
       value: { series: 1 },
     });
-    expect(ownedTitles(db, ["Berserk"]).size).toBe(0);
+    expect(ownedTitles(db, "ebook", ["Berserk"]).size).toBe(0);
     expect(libraryStats(db, "kavita")).toEqual({
       counts: new Map([["1", 1]]),
       lastSyncedAt: now,

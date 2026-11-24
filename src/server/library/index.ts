@@ -1,7 +1,9 @@
 import "@tanstack/react-start/server-only";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, notLike, sql } from "drizzle-orm";
 
 import { titleKey } from "#/lib/match";
+import type { SearchableType } from "#/lib/media-types";
+import type { LibraryService } from "#/lib/schemas/settings";
 
 import type { AppDatabase } from "#/server/db/client";
 import { libraryItem } from "#/server/db/schema";
@@ -11,21 +13,66 @@ import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
 
 export type SyncOptions = {
-  /** Library ids left out of the index (Settings → Audiobookshelf / Kavita). */
+  /** Library ids left out of the index (each media server's settings tab). */
   excluded?: readonly string[];
   now?: Date;
 };
 
+/** One work a media server holds, under every title it's known by. */
+export type IndexedItem = {
+  itemId: string;
+  libraryId: string;
+  format: SearchableType;
+  /** ASIN (Audiobookshelf audiobooks); null when there's none. */
+  externalId: string | null;
+  titles: readonly string[];
+  author: string;
+};
+
+/** Rows after the first title of an item get `#n` ids: stats count the first ones only. */
+const EXTRA_TITLE = "#";
+
+/** Replaces a media server's part of the library index with what it holds now. */
+export function replaceIndex(
+  db: AppDatabase,
+  backend: LibraryService,
+  items: readonly IndexedItem[],
+  now = new Date(),
+): void {
+  db.transaction((tx) => {
+    tx.delete(libraryItem).where(eq(libraryItem.backend, backend)).run();
+    for (const item of items) {
+      const titles = [...new Set(item.titles.filter(Boolean))];
+      for (const [index, title] of titles.entries()) {
+        tx.insert(libraryItem)
+          .values({
+            backend,
+            itemId: index === 0 ? item.itemId : `${item.itemId}${EXTRA_TITLE}${index}`,
+            libraryId: item.libraryId,
+            format: item.format,
+            externalId: item.externalId,
+            matchKey: titleKey(title),
+            title,
+            author: item.author,
+            syncedAt: now,
+          })
+          .onConflictDoNothing()
+          .run();
+      }
+    }
+  });
+}
+
 /** Items indexed per library, and when the backend was last synced. */
-export function libraryStats(db: AppDatabase, backend: "audiobookshelf" | "kavita") {
+export function libraryStats(db: AppDatabase, backend: LibraryService) {
   const rows = db
     .select({
       libraryId: libraryItem.libraryId,
-      count: sql`count(distinct ${libraryItem.itemId})`.mapWith(Number),
+      count: sql`count(*)`.mapWith(Number),
       syncedAt: sql`max(${libraryItem.syncedAt})`.mapWith(Number),
     })
     .from(libraryItem)
-    .where(eq(libraryItem.backend, backend))
+    .where(and(eq(libraryItem.backend, backend), notLike(libraryItem.itemId, `%${EXTRA_TITLE}%`)))
     .groupBy(libraryItem.libraryId)
     .all();
   const lastSync = Math.max(0, ...rows.map((row) => row.syncedAt));
@@ -43,24 +90,19 @@ export async function syncAudiobookshelf(
 ): Promise<ServiceResult<{ items: number }>> {
   const items = await abs.allItems(new Set(excluded));
   if (!items.ok) return items;
-  db.transaction((tx) => {
-    tx.delete(libraryItem).where(eq(libraryItem.backend, "audiobookshelf")).run();
-    for (const item of items.value) {
-      tx.insert(libraryItem)
-        .values({
-          backend: "audiobookshelf",
-          itemId: item.itemId,
-          libraryId: item.libraryId,
-          externalId: item.asin,
-          matchKey: titleKey(item.title),
-          title: item.title,
-          author: item.author,
-          syncedAt: now,
-        })
-        .onConflictDoNothing()
-        .run();
-    }
-  });
+  replaceIndex(
+    db,
+    "audiobookshelf",
+    items.value.map((item) => ({
+      itemId: item.itemId,
+      libraryId: item.libraryId,
+      format: "audiobook",
+      externalId: item.asin,
+      titles: [item.title],
+      author: item.author,
+    })),
+    now,
+  );
   return ok({ items: items.value.length });
 }
 
@@ -93,37 +135,44 @@ export async function syncKavita(
   if (!all.ok) return all;
   const skip = new Set(excluded);
   const series = all.value.filter((item) => !skip.has(String(item.libraryId)));
-  db.transaction((tx) => {
-    tx.delete(libraryItem).where(eq(libraryItem.backend, "kavita")).run();
-    for (const item of series) {
-      for (const [index, name] of item.names.entries()) {
-        tx.insert(libraryItem)
-          .values({
-            backend: "kavita",
-            itemId: `${item.seriesId}#${index}`,
-            libraryId: String(item.libraryId),
-            externalId: null,
-            matchKey: titleKey(name),
-            title: name,
-            author: "",
-            syncedAt: now,
-          })
-          .onConflictDoNothing()
-          .run();
-      }
-    }
-  });
+  replaceIndex(
+    db,
+    "kavita",
+    series.map((item) => ({
+      itemId: String(item.seriesId),
+      libraryId: String(item.libraryId),
+      format: "ebook",
+      externalId: null,
+      titles: item.names,
+      author: "",
+    })),
+    now,
+  );
   return ok({ series: series.length });
 }
 
-/** Which of these titles Kavita probably holds (normalized title match: no shared ID). */
-export function ownedTitles(db: AppDatabase, titles: readonly string[]): Set<string> {
+/**
+ * Which of these titles a media server probably holds in this format (normalized
+ * title match: no shared ID). Audiobookshelf is left out: its titles are often
+ * wrong, it's matched by ASIN only.
+ */
+export function ownedTitles(
+  db: AppDatabase,
+  format: SearchableType,
+  titles: readonly string[],
+): Set<string> {
   const keys = [...new Set(titles.map(titleKey).filter(Boolean))];
   if (keys.length === 0) return new Set();
   const rows = db
     .selectDistinct({ key: libraryItem.matchKey })
     .from(libraryItem)
-    .where(and(eq(libraryItem.backend, "kavita"), inArray(libraryItem.matchKey, keys)))
+    .where(
+      and(
+        eq(libraryItem.format, format),
+        ne(libraryItem.backend, "audiobookshelf"),
+        inArray(libraryItem.matchKey, keys),
+      ),
+    )
     .all();
   return new Set(rows.flatMap((row) => (row.key ? [row.key] : [])));
 }

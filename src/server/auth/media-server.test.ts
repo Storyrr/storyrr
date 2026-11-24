@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabase, type AppDatabase } from "#/server/db/client";
-import { userPreference } from "#/server/db/schema";
+import { mediaServerAccount } from "#/server/db/schema";
 import { createServices } from "#/server/services/factory";
 import { fakeFetch, json, jsonBody } from "#/server/services/test-utils";
 import { deriveSettingsKey } from "#/server/settings/crypto";
@@ -69,11 +69,11 @@ describe("sign in with a media server", () => {
     const first = await signIn();
     expect(first.status).toBe(200);
     expect(first.headers.get("set-cookie")).toContain("session_token");
-    const links = db.select().from(userPreference).all();
-    expect(links).toMatchObject([{ absUserId: "abs-1" }]);
+    const links = db.select().from(mediaServerAccount).all();
+    expect(links).toMatchObject([{ server: "audiobookshelf", accountKey: "abs-1" }]);
 
     expect((await signIn()).status).toBe(200);
-    expect(db.select().from(userPreference).all()).toHaveLength(1);
+    expect(db.select().from(mediaServerAccount).all()).toHaveLength(1);
     expect((await signIn("wrong")).status).toBe(401);
   });
 

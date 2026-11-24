@@ -47,14 +47,24 @@ const audiobooks: MediaSource = {
   async author(services, id, name) {
     return (await services.audible()).author(id, name);
   },
-  // By ASIN in Audiobookshelf: titles in libraries are often wrong.
+  // By ASIN in Audiobookshelf (titles there are often wrong); by title in Jellyfin (no ASIN).
   owned(db, items) {
     const ids = items.map((item) => item.externalId);
     const owned = ownedAsins(db, ids);
+    const titles = ownedTitles(
+      db,
+      "audiobook",
+      items.map((item) => item.title),
+    );
     const manual = manuallyOwned(db, "audible", ids);
     return new Set(
       items
-        .filter((item) => owned.has(item.externalId.toUpperCase()) || manual.has(item.externalId))
+        .filter(
+          (item) =>
+            owned.has(item.externalId.toUpperCase()) ||
+            titles.has(titleKey(item.title)) ||
+            manual.has(item.externalId),
+        )
         .map((i) => i.externalId),
     );
   },
@@ -85,10 +95,11 @@ const ebooks: MediaSource = {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.author(id) : fail("not_configured", "Hardcover token missing");
   },
-  // By normalized title in Kavita (no shared ID): "probably owned".
+  // By normalized title in Kavita, Komga and Jellyfin (no shared ID): "probably owned".
   owned(db, items) {
     const owned = ownedTitles(
       db,
+      "ebook",
       items.map((item) => item.title),
     );
     const manual = manuallyOwned(

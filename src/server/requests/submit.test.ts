@@ -115,6 +115,7 @@ describe("checkAvailability", () => {
 
     await db.insert(libraryItem).values({
       backend: "audiobookshelf",
+      format: "audiobook",
       itemId: "li1",
       libraryId: "lib",
       externalId: "B07Q44JYLF",
@@ -195,6 +196,7 @@ describe("eBooks", () => {
     expect(await checkAvailability(d)).toEqual([]);
     await db.insert(libraryItem).values({
       backend: "kavita",
+      format: "ebook",
       itemId: "7#0",
       libraryId: "1",
       externalId: null,

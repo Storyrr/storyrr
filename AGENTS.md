@@ -93,7 +93,7 @@ src/
 │   ├── services/           # one client per external service (audible, chaptarr, audiobookshelf so far; kavita, hardcover, itunes next), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
-│   ├── library/            # ownership index (library_item) synced from Audiobookshelf
+│   ├── library/            # ownership index (library_item) synced from the media servers (replaceIndex), with each item's format
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
 │   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults); list and implications in src/lib/permissions.ts

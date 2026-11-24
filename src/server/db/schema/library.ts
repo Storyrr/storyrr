@@ -2,13 +2,16 @@ import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlit
 
 /**
  * What the media servers already hold, refreshed by the library sync job.
- * Audiobooks are matched by ASIN (titles in libraries are often wrong).
+ * Audiobookshelf audiobooks are matched by ASIN (titles in libraries are often
+ * wrong); the other servers have no shared ID and are matched by title.
  */
 export const libraryItem = sqliteTable(
   "library_item",
   {
-    /** "audiobookshelf" or "kavita". */
+    /** "audiobookshelf", "kavita", "komga" or "jellyfin". */
     backend: text("backend").notNull(),
+    /** "audiobook" or "ebook": Jellyfin holds both. Null only on rows from before this column. */
+    format: text("format", { enum: ["audiobook", "ebook"] }),
     itemId: text("item_id").notNull(),
     libraryId: text("library_id").notNull(),
     /** ASIN for audiobooks, uppercased; null when the item has none. */
@@ -23,5 +26,6 @@ export const libraryItem = sqliteTable(
     primaryKey({ columns: [t.backend, t.itemId] }),
     index("library_item_external_id_idx").on(t.externalId),
     index("library_item_match_key_idx").on(t.backend, t.matchKey),
+    index("library_item_format_key_idx").on(t.format, t.matchKey),
   ],
 );

@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type {
   MediaServer,
@@ -8,7 +8,7 @@ import type {
 } from "#/lib/media-server-login";
 import { PLACEHOLDER_EMAIL_DOMAIN } from "#/lib/emails";
 import type { AppDatabase } from "#/server/db/client";
-import { user, userPreference } from "#/server/db/schema";
+import { mediaServerAccount, user } from "#/server/db/schema";
 import type { Services } from "#/server/services/factory";
 import { mediaServerSignIn } from "#/server/settings/definitions";
 import type { SettingsStore } from "#/server/settings/store";
@@ -24,30 +24,34 @@ export type MediaServerResolution =
   | { ok: true; create: { name: string; email: string }; link: (userId: string) => void }
   | { ok: false; error: MediaServerSignInError };
 
-const linkColumn = (server: MediaServer) =>
-  server === "audiobookshelf" ? userPreference.absUserId : userPreference.kavitaUser;
-
-/** Records which media-server account a Storyrr user is. */
+/** Records which media-server account a Storyrr user is (replacing an earlier link). */
 export function linkAccount(
   db: AppDatabase,
   server: MediaServer,
   userId: string,
   key: string,
 ): void {
-  const set = server === "audiobookshelf" ? { absUserId: key } : { kavitaUser: key };
-  db.insert(userPreference)
-    .values({ userId, ...set })
-    .onConflictDoUpdate({ target: userPreference.userId, set })
-    .run();
+  db.transaction((tx) => {
+    tx.delete(mediaServerAccount)
+      .where(and(eq(mediaServerAccount.server, server), eq(mediaServerAccount.userId, userId)))
+      .run();
+    tx.insert(mediaServerAccount)
+      .values({ server, accountKey: key, userId })
+      .onConflictDoUpdate({
+        target: [mediaServerAccount.server, mediaServerAccount.accountKey],
+        set: { userId },
+      })
+      .run();
+  });
 }
 
 /** The Storyrr user linked to a media-server account, if any. */
 export function linkedUserId(db: AppDatabase, server: MediaServer, key: string): string | null {
   return (
     db
-      .select({ userId: userPreference.userId })
-      .from(userPreference)
-      .where(eq(linkColumn(server), key))
+      .select({ userId: mediaServerAccount.userId })
+      .from(mediaServerAccount)
+      .where(and(eq(mediaServerAccount.server, server), eq(mediaServerAccount.accountKey, key)))
       .get()?.userId ?? null
   );
 }
