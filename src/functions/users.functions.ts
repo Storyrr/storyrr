@@ -1,93 +1,112 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeaders, setResponseStatus } from "@tanstack/react-start/server";
+import { setResponseStatus } from "@tanstack/react-start/server";
+import { eq } from "drizzle-orm";
 
 import {
   CreateUserSchema,
-  SetAutoApproveSchema,
   SetBannedSchema,
+  SetPermissionsSchema,
   SetRequestLimitsSchema,
   SetRoleSchema,
   UserIdSchema,
 } from "#/lib/schemas/users";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
-import { requireAdmin } from "#/server/auth/middleware";
+import { banAccount, removeAccount, unbanAccount, updateAccount } from "#/server/auth/accounts";
+import { requireAdmin, requirePermission } from "#/server/auth/middleware";
 import { db } from "#/server/db";
+import { user } from "#/server/db/schema";
+import { setUserPermissions } from "#/server/permissions";
 import { setUserRequestLimits } from "#/server/requests/quota";
-import { listUsers, setAutoApprove } from "#/server/users";
+import { listUsers } from "#/server/users";
 
-/** Admins can't lock themselves out: no demoting, banning or deleting one's own account. */
-function refuseSelf(userId: string, adminId: string) {
-  if (userId === adminId) {
+const requireManageUsers = requirePermission("manage_users");
+
+type Caller = { session: { user: { id: string } }; permissions: readonly string[] };
+
+/**
+ * Checks a change to another account: never one's own (no locking oneself out),
+ * and only admins change admins. The change itself goes through
+ * `#/server/auth/accounts`.
+ */
+function assertCanManage(caller: Caller, userId: string) {
+  if (userId === caller.session.user.id) {
     setResponseStatus(409);
     throw new Error(m.users_not_yourself());
+  }
+  const target = db.select({ role: user.role }).from(user).where(eq(user.id, userId)).get();
+  if (!target) {
+    setResponseStatus(404);
+    throw new Error(m.users_not_found());
+  }
+  if (target.role === "admin" && !caller.permissions.includes("admin")) {
+    setResponseStatus(403);
+    throw new Error(m.users_admin_only());
   }
 }
 
 export const getUsers = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requireManageUsers])
   .handler(() => listUsers(db));
 
-/** Creates an account (invite-only: the admin hands over the temporary password). */
+/** Creates an account (invite-only: the creator hands over the temporary password). */
 export const createUser = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageUsers])
   .validator(CreateUserSchema)
   .handler(async ({ data }) => {
-    const { user } = await auth.api.createUser({
-      body: { name: data.name, email: data.email, password: data.password, role: data.role },
-      headers: getRequestHeaders(),
+    const { user: created } = await auth.api.createUser({
+      body: { name: data.name, email: data.email, password: data.password, role: "user" },
     });
-    if (data.autoApprove) setAutoApprove(db, user.id, true);
-    return { id: user.id };
+    return { id: created.id };
   });
 
+/** Grants or removes the admin role. Admins only. */
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
   .validator(SetRoleSchema)
   .handler(async ({ data, context }) => {
-    refuseSelf(data.userId, context.session.user.id);
-    await auth.api.setRole({
-      body: { userId: data.userId, role: data.role },
-      headers: getRequestHeaders(),
-    });
+    assertCanManage(context, data.userId);
+    await updateAccount(data.userId, { role: data.role });
     return { ok: true };
   });
 
-export const setUserAutoApprove = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
-  .validator(SetAutoApproveSchema)
-  .handler(({ data }) => {
-    setAutoApprove(db, data.userId, data.autoApprove);
+/** A user's own permissions (null: the defaults). */
+export const setUserPermissionList = createServerFn({ method: "POST" })
+  .middleware([requireManageUsers])
+  .validator(SetPermissionsSchema)
+  .handler(({ data, context }) => {
+    assertCanManage(context, data.userId);
+    setUserPermissions(db, data.userId, data.permissions);
     return { ok: true };
   });
 
 /** Banning signs the user out everywhere and blocks sign-in until unbanned. */
 export const setUserBanned = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageUsers])
   .validator(SetBannedSchema)
   .handler(async ({ data, context }) => {
-    refuseSelf(data.userId, context.session.user.id);
-    const headers = getRequestHeaders();
-    if (data.banned) await auth.api.banUser({ body: { userId: data.userId }, headers });
-    else await auth.api.unbanUser({ body: { userId: data.userId }, headers });
+    assertCanManage(context, data.userId);
+    if (data.banned) await banAccount(data.userId);
+    else await unbanAccount(data.userId);
     return { ok: true };
   });
 
 /** Deletes the account with its requests and issues. */
 export const deleteUser = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageUsers])
   .validator(UserIdSchema)
   .handler(async ({ data, context }) => {
-    refuseSelf(data.userId, context.session.user.id);
-    await auth.api.removeUser({ body: { userId: data.userId }, headers: getRequestHeaders() });
+    assertCanManage(context, data.userId);
+    await removeAccount(data.userId);
     return { ok: true };
   });
 
-/** Per-user request limits (null: the global ones from Settings → Users). Admin only. */
+/** Per-user request limits (null: the global ones from Settings → Users). */
 export const setUserLimits = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageUsers])
   .validator(SetRequestLimitsSchema)
-  .handler(({ data }) => {
+  .handler(({ data, context }) => {
+    assertCanManage(context, data.userId);
     setUserRequestLimits(db, data.userId, data.requestLimits);
     return { ok: true };
   });

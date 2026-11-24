@@ -1,12 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 
+import type { Permission } from "#/lib/permissions";
 import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
-import { isAutoApproved } from "#/server/requests/queries";
+import { permissionsOf } from "#/server/permissions";
+import { settings } from "#/server/settings";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
 import { getEnv } from "#/server/env";
 import { APP_VERSION } from "#/server/version";
@@ -16,8 +18,8 @@ export type SessionUser = {
   name: string;
   email: string;
   isAdmin: boolean;
-  /** Requests skip approval (admins, or the per-user flag). */
-  autoApproved: boolean;
+  /** Effective permissions, for showing what the user can do (the server re-checks). */
+  permissions: Permission[];
   /** Display language picked in their settings; null follows the browser. */
   locale: string | null;
 };
@@ -37,7 +39,7 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
         name: session.user.name,
         email: session.user.email,
         isAdmin: session.user.role === "admin",
-        autoApproved: isAutoApproved(db, session.user.id, session.user.role === "admin"),
+        permissions: await permissionsOf({ db, settings }, session.user),
         locale: userLocale(db, session.user.id),
       }
     : null;

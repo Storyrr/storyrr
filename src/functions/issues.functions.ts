@@ -8,8 +8,9 @@ import {
   ReportIssueSchema,
   SetIssueStatusSchema,
 } from "#/lib/schemas/issues";
+import { hasPermission } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
-import { requireAdmin, requireUser } from "#/server/auth/middleware";
+import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
 import {
   addComment,
@@ -28,9 +29,9 @@ function notFound(): never {
   throw new Error(m.issue_not_found());
 }
 
-/** Reports a problem on a title. Signed-in users. */
+/** Reports a problem on a title. Users who can create issues. */
 export const reportIssue = createServerFn({ method: "POST" })
-  .middleware([requireUser])
+  .middleware([requirePermission("create_issues")])
   .validator(ReportIssueSchema)
   .handler(async ({ data, context }) => {
     const details = await mediaSources[data.media.type].getDetails(services, data.media.id);
@@ -46,25 +47,30 @@ export const reportIssue = createServerFn({ method: "POST" })
     };
   });
 
-/** Every issue for admins, one's own otherwise. */
+/** Every issue for issue managers, one's own otherwise. */
 export const getIssues = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(ListIssuesSchema)
   .handler(({ data, context }) => {
     const { user } = context.session;
     return listIssues(db, {
-      userId: user.role === "admin" ? undefined : user.id,
+      userId: hasPermission(context.permissions, "manage_issues") ? undefined : user.id,
       status: data.status,
     });
   });
 
-/** One issue and its comments: its reporter or an admin. */
+/** One issue and its comments: its reporter or an issue manager. */
 export const getIssueById = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(IssueIdSchema)
   .handler(({ data, context }) => {
     const { user } = context.session;
-    if (!canAccessIssue(db, data.id, { id: user.id, isAdmin: user.role === "admin" }))
+    if (
+      !canAccessIssue(db, data.id, {
+        id: user.id,
+        isAdmin: hasPermission(context.permissions, "manage_issues"),
+      })
+    )
       return notFound();
     const found = getIssue(db, data.id);
     return found ?? notFound();
@@ -75,15 +81,20 @@ export const commentIssue = createServerFn({ method: "POST" })
   .validator(CommentIssueSchema)
   .handler(({ data, context }) => {
     const { user } = context.session;
-    if (!canAccessIssue(db, data.id, { id: user.id, isAdmin: user.role === "admin" }))
+    if (
+      !canAccessIssue(db, data.id, {
+        id: user.id,
+        isAdmin: hasPermission(context.permissions, "manage_issues"),
+      })
+    )
       return notFound();
     addComment(db, { issueId: data.id, userId: user.id, message: data.message });
     return { ok: true };
   });
 
-/** Resolves or reopens an issue. Admins. */
+/** Resolves or reopens an issue. Issue managers. */
 export const updateIssueStatus = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_issues")])
   .validator(SetIssueStatusSchema)
   .handler(({ data }) => {
     if (!setIssueStatus(db, data.id, data.status)) return notFound();

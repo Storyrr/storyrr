@@ -14,15 +14,17 @@ import {
 } from "#/lib/schemas/requests";
 import { FormatInputSchema as FormatQuotaSchema } from "#/lib/schemas/settings";
 import { formatList } from "#/lib/format";
+import { hasPermission } from "#/lib/permissions";
 import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
-import { requireAdmin, requireUser } from "#/server/auth/middleware";
+import { requirePermission, requireUser } from "#/server/auth/middleware";
+
+const requireManageRequests = requirePermission("manage_requests");
 import { db } from "#/server/db";
 import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
   activeRequestsByExternalId,
-  isAutoApproved,
   listRequests,
   requestHistory,
   upsertMedia,
@@ -79,10 +81,17 @@ export const requestMedia = createServerFn({ method: "POST" })
   .validator(CreateRequestSchema)
   .handler(async ({ data, context }) => {
     const { user } = context.session;
+    const { permissions } = context;
     const isAdmin = user.role === "admin";
     const format = data.media.type;
+    if (!hasPermission(permissions, `request_${format}`)) {
+      setResponseStatus(403);
+      throw new Error(m.request_not_allowed());
+    }
+    // Picking the folder and profile is an advanced request option.
+    const advanced = hasPermission(permissions, "request_advanced");
     const defaults = await settings.get(formatDefaults[format]);
-    const rootFolderPath = (isAdmin ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
+    const rootFolderPath = (advanced ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
     if (!rootFolderPath) {
       throw new Error(
         format === "ebook"
@@ -128,8 +137,8 @@ export const requestMedia = createServerFn({ method: "POST" })
       userId: user.id,
       format,
       target: { service: "chaptarr", rootFolderPath },
-      qualityProfileId: isAdmin ? (data.qualityProfileId ?? null) : null,
-      autoApprove: isAutoApproved(db, user.id, isAdmin),
+      qualityProfileId: advanced ? (data.qualityProfileId ?? null) : null,
+      autoApprove: hasPermission(permissions, `auto_approve_${format}`),
     });
     if (result.kind === "created" && result.status === "approved") {
       submitInBackground(result.requestId);
@@ -142,8 +151,7 @@ export const getRequests = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(ListRequestsSchema)
   .handler(async ({ data, context }) => {
-    const isAdmin = context.session.user.role === "admin";
-    if (data.scope === "all" && !isAdmin) {
+    if (data.scope === "all" && !hasPermission(context.permissions, "view_requests")) {
       setResponseStatus(403);
       throw new Error("Forbidden");
     }
@@ -167,7 +175,7 @@ export const getRequests = createServerFn({ method: "GET" })
     return rows.map((row) => ({ ...row, download: downloads.get(row.id) ?? null }));
   });
 
-/** A request's status history. Its requester, a watcher or an admin. */
+/** A request's status history. Its requester, a watcher, or who can view all requests. */
 export const getRequestHistory = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(RequestIdSchema)
@@ -176,13 +184,13 @@ export const getRequestHistory = createServerFn({ method: "GET" })
     if (!row) return notFound();
     const { user } = context.session;
     const mine = listRequests(db, { userId: user.id, filter: "all" }).some((r) => r.id === data.id);
-    if (user.role !== "admin" && !mine) return notFound();
+    if (!hasPermission(context.permissions, "view_requests") && !mine) return notFound();
     return requestHistory(db, data.id);
   });
 
-/** Approves a pending request, optionally changing its folder / profile first. Admins. */
+/** Approves a pending request, optionally changing its folder / profile first. Request managers. */
 export const approveRequest = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .validator(ApproveRequestSchema)
   .handler(({ data, context }) => {
     const row = getRequestRow(db, data.id);
@@ -210,7 +218,7 @@ export const approveRequest = createServerFn({ method: "POST" })
   });
 
 export const denyRequest = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .validator(DenyRequestSchema)
   .handler(({ data, context }) => {
     if (!getRequestRow(db, data.id)) return notFound();
@@ -229,15 +237,15 @@ export const cancelRequest = createServerFn({ method: "POST" })
   .handler(({ data, context }) => {
     const row = getRequestRow(db, data.id);
     const { user } = context.session;
-    const isAdmin = user.role === "admin";
-    if (!row || (!isAdmin && row.userId !== user.id)) return notFound();
-    if (!isAdmin && row.status !== "pending") throw new Error(m.request_cannot_cancel());
+    const manager = hasPermission(context.permissions, "manage_requests");
+    if (!row || (!manager && row.userId !== user.id)) return notFound();
+    if (!manager && row.status !== "pending") throw new Error(m.request_cannot_cancel());
     return { status: transitionRequest(db, data.id, { to: "cancelled", actor: user.id }) };
   });
 
 /** Sends a failed request again. Admins. */
 export const retryRequest = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .validator(RequestIdSchema)
   .handler(({ data, context }) => {
     if (!getRequestRow(db, data.id)) return notFound();
@@ -251,7 +259,7 @@ export const retryRequest = createServerFn({ method: "POST" })
 
 /** Runs the library sync and availability check now. Admins. */
 export const checkAvailabilityNow = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .handler(async () => {
     await runJob("library-sync");
     return { ok: true };
@@ -259,7 +267,7 @@ export const checkAvailabilityNow = createServerFn({ method: "POST" })
 
 /** Deletes a request and its history from Storyrr (not from Chaptarr). Admins. */
 export const deleteRequest = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .validator(RequestIdSchema)
   .handler(({ data }) => {
     const deleted = db
@@ -277,7 +285,7 @@ export const deleteRequest = createServerFn({ method: "POST" })
  * still on its way is then cancelled. Admins.
  */
 export const removeFromChaptarr = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireManageRequests])
   .validator(RemoveFromChaptarrSchema)
   .handler(async ({ data, context }) => {
     const row = db
@@ -320,7 +328,7 @@ export const getDiscoverRequests = createServerFn({ method: "GET" })
   .handler(({ context }) => {
     const { user } = context.session;
     const recentRequests = listRequests(db, {
-      userId: user.role === "admin" ? undefined : user.id,
+      userId: hasPermission(context.permissions, "view_requests") ? undefined : user.id,
       filter: "all",
     })
       .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -349,7 +357,7 @@ export const getDiscoverRequests = createServerFn({ method: "GET" })
 
 /** Blocks a work so nobody can request it (existing requests are left alone). Admins. */
 export const blockMedia = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_blocklist")])
   .validator(BlockMediaSchema)
   .handler(async ({ data, context }) => {
     const details = await mediaSources[data.media.type].getDetails(services, data.media.id);
@@ -362,7 +370,7 @@ export const blockMedia = createServerFn({ method: "POST" })
   });
 
 export const unblockMedia = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_blocklist")])
   .validator(BlockIdSchema)
   .handler(({ data }) => {
     if (!unblock(db, data.id)) return notFound();
@@ -370,7 +378,7 @@ export const unblockMedia = createServerFn({ method: "POST" })
   });
 
 export const getBlocklist = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_blocklist")])
   .handler(() => listBlocklist(db));
 
 /** How many requests of a format the caller may still make (shown in the request dialog). */

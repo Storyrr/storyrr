@@ -4,14 +4,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { MediaDetails, MediaSummary } from "#/lib/media";
 import { ACTIVE_REQUEST_STATUSES, type MediaType, type RequestStatus } from "#/lib/requests";
 import type { AppDatabase } from "#/server/db/client";
-import {
-  media,
-  request,
-  requestEvent,
-  requestWatcher,
-  user,
-  userPreference,
-} from "#/server/db/schema";
+import { media, request, requestEvent, requestWatcher, user } from "#/server/db/schema";
 
 /** Saves (or refreshes) provider metadata and returns the local media id. */
 export function upsertMedia(
@@ -71,16 +64,6 @@ export function activeRequestsByExternalId(
   const byId = new Map<string, ActiveRequestInfo>();
   for (const row of rows) if (!byId.has(row.externalId)) byId.set(row.externalId, row);
   return byId;
-}
-
-export function isAutoApproved(db: AppDatabase, userId: string, isAdmin: boolean): boolean {
-  if (isAdmin) return true;
-  const pref = db
-    .select({ autoApprove: userPreference.autoApprove })
-    .from(userPreference)
-    .where(eq(userPreference.userId, userId))
-    .get();
-  return pref?.autoApprove ?? false;
 }
 
 export type RequestListFilter = "all" | "pending" | "processing" | "available" | "failed";

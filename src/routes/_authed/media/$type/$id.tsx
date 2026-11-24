@@ -14,6 +14,7 @@ import { languageName } from "#/lib/languages";
 import { isSearchableType } from "#/lib/media-types";
 import { mediaQuery } from "#/lib/queries/media";
 import { serviceErrorMessage } from "#/lib/service-errors";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 export const Route = createFileRoute("/_authed/media/$type/$id")({
@@ -69,9 +70,9 @@ function MediaPage() {
           <AvailabilityBadge availability={availability} />
         ) : accepted === false && acceptedLanguages ? (
           <LanguageNotice acceptedLanguages={acceptedLanguages} />
-        ) : (
+        ) : data.canRequest ? (
           <RequestDialog item={{ ...item, type }} />
-        )}
+        ) : null}
         {request ? (
           <p className="text-sm text-muted-foreground">
             {m.media_requested_by({ name: request.requesterName })}
@@ -82,10 +83,10 @@ function MediaPage() {
             {m.blocklist_reason_shown({ reason: block.reason })}
           </p>
         ) : null}
-        {availability === "available" ? (
+        {availability === "available" && can(user, "create_issues") ? (
           <ReportIssueDialog type={type} externalId={item.externalId} title={item.title} />
         ) : null}
-        {user.isAdmin ? (
+        {can(user, "manage_blocklist") ? (
           <BlockButton
             type={type}
             externalId={item.externalId}

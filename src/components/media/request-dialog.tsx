@@ -23,11 +23,13 @@ import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { requestMedia } from "#/functions/requests.functions";
 import { formatList } from "#/lib/format";
+import { hasPermission } from "#/lib/permissions";
 import { mediaKeys } from "#/lib/queries/media";
 import { quotaQuery, requestKeys } from "#/lib/queries/requests";
 import { chaptarrOptionsQuery } from "#/lib/queries/settings";
 import type { SearchableType } from "#/lib/media-types";
 import { chaptarrOptionsErrorMessage } from "#/lib/service-errors";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 type Item = { type: SearchableType; externalId: string; title: string; authors: string[] };
@@ -118,13 +120,13 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
             </p>
           )
         ) : null}
-        {user.autoApproved ? (
+        {hasPermission(user.permissions, `auto_approve_${item.type}`) ? (
           <Alert>
             <InfoIcon />
             <AlertDescription>{m.request_auto_approved_info()}</AlertDescription>
           </Alert>
         ) : null}
-        {user.isAdmin ? (
+        {can(user, "request_advanced") ? (
           <AdvancedOptions format={item.type}>
             {(options) => (
               <>

@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { MediaSummary } from "#/lib/media";
 import { createDatabase, type AppDatabase } from "#/server/db/client";
-import { user, userPreference } from "#/server/db/schema";
+import { user } from "#/server/db/schema";
 
-import { activeRequestsByExternalId, isAutoApproved, listRequests, upsertMedia } from "./queries";
+import { activeRequestsByExternalId, listRequests, upsertMedia } from "./queries";
 import { createRequest, transitionRequest } from "./transitions";
 
 let db: AppDatabase;
@@ -80,14 +80,5 @@ describe("listRequests", () => {
 
     expect(listRequests(db, { filter: "all" }).map((r) => r.id)).toEqual([pending, approved]);
     expect(listRequests(db, { filter: "processing" }).map((r) => r.id)).toEqual([approved]);
-  });
-});
-
-describe("isAutoApproved", () => {
-  it("is true for admins and users with the flag", async () => {
-    expect(isAutoApproved(db, "alice", true)).toBe(true);
-    expect(isAutoApproved(db, "alice", false)).toBe(false);
-    await db.insert(userPreference).values({ userId: "alice", autoApprove: true });
-    expect(isAutoApproved(db, "alice", false)).toBe(true);
   });
 });

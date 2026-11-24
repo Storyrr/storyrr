@@ -30,7 +30,7 @@ One place where invited users **search and request audiobooks and eBooks (books,
 | **Admin** | everything a user can + approve/deny requests, choose target folder and quality profile, manage users, manage settings |
 | **User**  | search, request, see own requests and their status                                                                     |
 
-Per-user flag **Auto-approve** (admins are always auto-approved). Accounts are **invite-only**: no public sign-up.
+Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everything), each user has a list of permissions: Manage users, Manage settings, Manage requests (implies Advanced requests, View requests and auto-approval), Advanced requests (pick folder and profile), View requests, Request audiobooks / eBooks, Auto-approve audiobooks / eBooks, Manage issues (implies Report issues), Report issues, Manage blocklist. Users without their own list get the defaults from Settings → Users (request both formats, report issues). User managers who aren't admins can't change admins' accounts or grant the Admin role. Accounts are **invite-only**: no public sign-up.
 
 ## 4. Core flows
 

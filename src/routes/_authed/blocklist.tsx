@@ -16,6 +16,7 @@ import {
 import { getBlocklist, unblockMedia } from "#/functions/requests.functions";
 import { formatDate } from "#/lib/format";
 import { mediaKeys } from "#/lib/queries/media";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 const blocklistQuery = () =>
@@ -23,7 +24,7 @@ const blocklistQuery = () =>
 
 export const Route = createFileRoute("/_authed/blocklist")({
   beforeLoad: ({ context }) => {
-    if (!context.user.isAdmin) throw redirect({ to: "/" });
+    if (!can(context.user, "manage_blocklist")) throw redirect({ to: "/" });
   },
   loader: ({ context }) => context.queryClient.ensureQueryData(blocklistQuery()),
   head: () => ({ meta: [{ title: `${m.blocklist_title()} · ${m.app_name()}` }] }),

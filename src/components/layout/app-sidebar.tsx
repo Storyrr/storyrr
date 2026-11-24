@@ -24,20 +24,21 @@ import {
   useSidebar,
 } from "#/components/ui/sidebar";
 import type { SessionUser } from "#/functions/auth.functions";
+import { can, type Permission } from "#/lib/permissions";
 import { Logo } from "#/components/layout/logo";
 import { m } from "#/paraglide/messages.js";
 
-type NavItem = { href: string; label: () => string; icon: LucideIcon; adminOnly?: boolean };
+type NavItem = { href: string; label: () => string; icon: LucideIcon; permission?: Permission };
 
 const NAV: NavItem[] = [
   { href: "/", label: m.nav_discover, icon: CompassIcon },
   { href: "/books", label: m.nav_books, icon: BookOpenIcon },
   { href: "/audiobooks", label: m.nav_audiobooks, icon: BookAudioIcon },
   { href: "/requests", label: m.nav_requests, icon: InboxIcon },
-  { href: "/blocklist", label: m.nav_blocklist, icon: BanIcon, adminOnly: true },
+  { href: "/blocklist", label: m.nav_blocklist, icon: BanIcon, permission: "manage_blocklist" },
   { href: "/issues", label: m.nav_issues, icon: TriangleAlertIcon },
-  { href: "/users", label: m.nav_users, icon: UsersIcon, adminOnly: true },
-  { href: "/settings", label: m.nav_settings, icon: SettingsIcon, adminOnly: true },
+  { href: "/users", label: m.nav_users, icon: UsersIcon, permission: "manage_users" },
+  { href: "/settings", label: m.nav_settings, icon: SettingsIcon, permission: "manage_settings" },
 ];
 
 const isActive = (pathname: string, href: string) =>
@@ -60,23 +61,25 @@ export function AppSidebar({ user, version }: { user: SessionUser; version: stri
           <SidebarGroupContent>
             <nav aria-label={m.sidebar_title()}>
               <SidebarMenu>
-                {NAV.filter((item) => !item.adminOnly || user.isAdmin).map((item) => {
-                  const active = isActive(pathname, item.href);
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        href={item.href}
-                        isActive={active}
-                        aria-current={active ? "page" : undefined}
-                        size="lg"
-                        onPress={() => setOpenMobile(false)}
-                      >
-                        <item.icon />
-                        <span>{item.label()}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {NAV.filter((item) => !item.permission || can(user, item.permission)).map(
+                  (item) => {
+                    const active = isActive(pathname, item.href);
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          href={item.href}
+                          isActive={active}
+                          aria-current={active ? "page" : undefined}
+                          size="lg"
+                          onPress={() => setOpenMobile(false)}
+                        >
+                          <item.icon />
+                          <span>{item.label()}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  },
+                )}
               </SidebarMenu>
             </nav>
           </SidebarGroupContent>

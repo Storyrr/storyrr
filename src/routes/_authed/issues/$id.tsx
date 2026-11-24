@@ -15,6 +15,7 @@ import { commentIssue, updateIssueStatus } from "#/functions/issues.functions";
 import { formatDate, formatList } from "#/lib/format";
 import { issueKeys, issueQuery } from "#/lib/queries/issues";
 import { CommentFormSchema } from "#/lib/schemas/issues";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 export const Route = createFileRoute("/_authed/issues/$id")({
@@ -66,7 +67,7 @@ function IssuePage() {
         </div>
       </header>
 
-      {user.isAdmin ? (
+      {can(user, "manage_issues") ? (
         <div className="flex gap-2">
           <Button
             variant={issue.status === "open" ? "default" : "outline"}

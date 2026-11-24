@@ -12,11 +12,13 @@ import {
   SaveLibrarySelectionSchema,
   ServiceConnectionInputSchema,
   ServiceInputSchema,
-  UserSettingsSchema,
+  UserSettingsFormSchema,
 } from "#/lib/schemas/settings";
 import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
 import { m } from "#/paraglide/messages.js";
-import { requireAdmin } from "#/server/auth/middleware";
+import { requirePermission } from "#/server/auth/middleware";
+
+const requireSettings = requirePermission("manage_settings");
 import { getEnv } from "#/server/env";
 import { services } from "#/server/services";
 import type { ServiceError } from "#/server/services/result";
@@ -58,9 +60,9 @@ async function connectionSummary(service: keyof typeof connectionSettings) {
   return stored ? { url: stored.url, hasApiKey: true } : null;
 }
 
-/** Everything the Services settings page shows. Admin only. */
+/** Everything the Services settings page shows. Manage settings. */
 export const getServiceSettings = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .handler(async () => {
     const [chaptarr, audiobookshelf, kavita, hardcover, metadata, audiobook, ebook] =
       await Promise.all([
@@ -95,18 +97,18 @@ async function resolveOrExplain(input: v.InferOutput<typeof ServiceConnectionInp
   }
 }
 
-/** Tests a connection as typed in the form (a blank key uses the stored one). Admin only. */
+/** Tests a connection as typed in the form (a blank key uses the stored one). Manage settings. */
 export const testServiceConnection = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(ServiceConnectionInputSchema)
   .handler(async ({ data }) => {
     const connection = await resolveOrExplain(data);
     return testConnection(data.service, connection, globalFetch);
   });
 
-/** Saves a connection (without requiring a passing test). Admin only. */
+/** Saves a connection (without requiring a passing test). Manage settings. */
 export const saveServiceConnection = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(ServiceConnectionInputSchema)
   .handler(async ({ data }) => {
     const connection = await resolveOrExplain(data);
@@ -115,7 +117,7 @@ export const saveServiceConnection = createServerFn({ method: "POST" })
   });
 
 export const saveMetadataSettings = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(MetadataSettingsSchema)
   .handler(async ({ data }) => {
     await settings.set(metadataSettings, data);
@@ -123,7 +125,7 @@ export const saveMetadataSettings = createServerFn({ method: "POST" })
   });
 
 export const saveFormatDefaults = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(SaveFormatDefaultsSchema)
   .handler(async ({ data }) => {
     await settings.set(formatDefaults[data.format], data.defaults);
@@ -137,16 +139,16 @@ async function resolveHardcoverToken(typed: string): Promise<string> {
   return token;
 }
 
-/** Tests the typed Hardcover token (blank: the stored one). Admin only. */
+/** Tests the typed Hardcover token (blank: the stored one). Manage settings. */
 export const testHardcover = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(HardcoverTokenFormSchema)
   .handler(async ({ data }) =>
     testHardcoverToken(await resolveHardcoverToken(data.token), globalFetch),
   );
 
 export const saveHardcover = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(HardcoverTokenFormSchema)
   .handler(async ({ data }) => {
     await settings.set(hardcoverToken, await resolveHardcoverToken(data.token));
@@ -162,10 +164,10 @@ function optionsFailure(endpoint: string, error: ServiceError) {
 /**
  * The root folders compatible with a format (e.g. Books, Manga and Comics for
  * eBooks) and the profiles, live from Chaptarr, for the defaults form and the
- * request and approve dialogs. Admin only.
+ * request and approve dialogs. Settings, request managers and advanced requesters.
  */
 export const getChaptarrOptions = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_settings", "manage_requests", "request_advanced")])
   .validator(FormatInputSchema)
   .handler(async ({ data }) => {
     const chaptarr = await services.chaptarr();
@@ -188,9 +190,9 @@ export const getChaptarrOptions = createServerFn({ method: "GET" })
     };
   });
 
-/** The URL to paste into Chaptarr → Settings → Connect → Webhook. Admin only. */
+/** The URL to paste into Chaptarr → Settings → Connect → Webhook. Manage settings. */
 export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .handler(async () => {
     const token = await getOrCreateWebhookToken(settings);
     const url = new URL("/api/webhooks/chaptarr", getEnv().BETTER_AUTH_URL);
@@ -198,9 +200,9 @@ export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
     return { url: url.toString() };
   });
 
-/** Forgets a service connection (its key included). Admin only. */
+/** Forgets a service connection (its key included). Manage settings. */
 export const deleteServiceConnection = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(ServiceInputSchema)
   .handler(async ({ data }) => {
     await settings.remove(connectionSettings[data.service]);
@@ -208,9 +210,9 @@ export const deleteServiceConnection = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** The media server's libraries, whether each counts for availability, and what's indexed. Admin only. */
+/** The media server's libraries, whether each counts for availability, and what's indexed. Manage settings. */
 export const getLibraries = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(LibraryServiceInputSchema)
   .handler(async ({ data }) => {
     const excluded = new Set((await settings.get(librarySelection[data.service]))?.excluded ?? []);
@@ -246,16 +248,16 @@ export const getLibraries = createServerFn({ method: "GET" })
   });
 
 export const saveLibrarySelection = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(SaveLibrarySelectionSchema)
   .handler(async ({ data }) => {
     await settings.set(librarySelection[data.service], data.selection);
     return { ok: true };
   });
 
-/** Re-indexes a media server now, then promotes requests whose book arrived. Admin only. */
+/** Re-indexes a media server now, then promotes requests whose book arrived. Manage settings. */
 export const syncLibraryNow = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(LibraryServiceInputSchema)
   .handler(async ({ data }) => {
     const result = await syncLibrary({ db, services, settings }, data.service);
@@ -264,12 +266,12 @@ export const syncLibraryNow = createServerFn({ method: "POST" })
   });
 
 export const getUserSettings = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requirePermission("manage_settings", "manage_users")])
   .handler(async () => (await settings.get(userSettings)) ?? DEFAULT_USER_SETTINGS);
 
 export const saveUserSettings = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
-  .validator(UserSettingsSchema)
+  .middleware([requireSettings])
+  .validator(UserSettingsFormSchema)
   .handler(async ({ data }) => {
     await settings.set(userSettings, data);
     return { ok: true };
@@ -277,7 +279,7 @@ export const saveUserSettings = createServerFn({ method: "POST" })
 
 /** Settings → About: version (and whether a newer release exists), totals, runtime info. */
 export const getAbout = createServerFn({ method: "GET" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .handler(async () => {
     const releases = await latestReleases(globalFetch);
     const latest = releases.ok ? (releases.value[0] ?? null) : null;
@@ -300,7 +302,7 @@ export const getAbout = createServerFn({ method: "GET" })
 
 /** Settings → Metadata "Test": whether Audible and Hardcover answer with the saved settings. */
 export const testMetadataProviders = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .handler(async () => {
     const [audible, hardcover] = await Promise.all([
       services.audible().then((client) => client.search("dune")),
@@ -316,11 +318,11 @@ export const testMetadataProviders = createServerFn({ method: "POST" })
 
 /**
  * The saved API key or token of a service, for the eye button of its field.
- * The one place a stored secret goes back to the browser: admins only, on
+ * The one place a stored secret goes back to the browser: settings managers only, on
  * demand, never logged.
  */
 export const revealSecret = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireSettings])
   .validator(RevealSecretSchema)
   .handler(async ({ data }) => {
     if (data.service === "hardcover")

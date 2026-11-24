@@ -2,12 +2,13 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { TabNav } from "#/components/layout/tab-nav";
 
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 /** Settings, admin only: Seerr-like tabs over one page per area. */
 export const Route = createFileRoute("/_authed/settings")({
   beforeLoad: ({ context, location }) => {
-    if (!context.user.isAdmin) throw redirect({ to: "/" });
+    if (!can(context.user, "manage_settings")) throw redirect({ to: "/" });
     if (location.pathname.replace(/\/+$/, "") === "/settings")
       throw redirect({ to: "/settings/general" });
   },

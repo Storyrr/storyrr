@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { ACTIVE_REQUEST_STATUSES, MEDIA_TYPES, REQUEST_STATUSES } from "#/lib/requests";
+import type { AssignablePermission } from "#/lib/permissions";
 import type { RequestLimits } from "#/lib/schemas/settings";
 
 import { user } from "./auth";
@@ -122,7 +123,8 @@ export const userPreference = sqliteTable("user_preference", {
   userId: text("user_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
-  autoApprove: integer("auto_approve", { mode: "boolean" }).notNull().default(false),
+  /** Granted permissions (`#/lib/permissions`); null uses the defaults from Settings → Users. */
+  permissions: text("permissions", { mode: "json" }).$type<AssignablePermission[]>(),
   locale: text("locale"),
   absUserId: text("abs_user_id"),
   /** Per-user override of the global request limits; null uses the global ones. */

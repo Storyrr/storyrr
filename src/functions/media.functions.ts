@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
+import { hasPermission } from "#/lib/permissions";
 import type { MediaSummary } from "#/lib/media";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
 import { availabilityFromRequest, type MediaAvailability } from "#/lib/request-status";
@@ -11,7 +12,7 @@ import { requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
 import { blockedIds, findBlock } from "#/server/requests/blocklist";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
-import { activeRequestsByExternalId, isAutoApproved } from "#/server/requests/queries";
+import { activeRequestsByExternalId } from "#/server/requests/queries";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
 import { mediaSources } from "#/server/sources";
@@ -119,7 +120,6 @@ export const getMedia = createServerFn({ method: "GET" })
       format: source.type,
       externalIds: [result.value.externalId],
     }).get(result.value.externalId);
-    const isAdmin = context.session.user.role === "admin";
     return {
       ok: true as const,
       item: result.value,
@@ -131,7 +131,8 @@ export const getMedia = createServerFn({ method: "GET" })
       ),
       request: active ? { status: active.status, requesterName: active.requesterName } : null,
       block: block ? { id: block.id, reason: block.reason } : null,
-      autoApproved: isAutoApproved(db, context.session.user.id, isAdmin),
+      canRequest: hasPermission(context.permissions, `request_${data.type}`),
+      autoApproved: hasPermission(context.permissions, `auto_approve_${data.type}`),
       accepted: isLanguageAccepted(policy, result.value.languages),
       ...languageInfo(policy),
     };

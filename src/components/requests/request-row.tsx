@@ -34,6 +34,7 @@ import { isSearchableType } from "#/lib/media-types";
 import { describeRequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
 import { DenyReasonSchema } from "#/lib/schemas/requests";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 import { DeleteRequestButton, RemoveFromChaptarrButton } from "./request-admin-actions";
@@ -55,9 +56,10 @@ export function RequestRow({ request }: { request: RequestListItem }) {
   const retry = useRequestAction((vars: { id: string }) => retryFn({ data: vars }), "approved");
   const error = cancel.error ?? retry.error;
   const failure = request.status === "failed" ? describeRequestError(request.lastError) : null;
+  const manager = can(user, "manage_requests");
   const canCancel =
-    (request.status === "pending" && (user.isAdmin || request.requester.id === user.id)) ||
-    (request.status === "submitted" && user.isAdmin);
+    (request.status === "pending" && (manager || request.requester.id === user.id)) ||
+    (request.status === "submitted" && manager);
 
   const year = yearOf(request.media.releaseDate ?? undefined);
 
@@ -106,7 +108,7 @@ export function RequestRow({ request }: { request: RequestListItem }) {
                 : null}
             </span>
           </p>
-          {user.isAdmin && request.target.service === "chaptarr" ? (
+          {manager && request.target.service === "chaptarr" ? (
             <p className="truncate text-xs text-muted-foreground">
               {request.target.rootFolderPath}
             </p>
@@ -134,13 +136,13 @@ export function RequestRow({ request }: { request: RequestListItem }) {
         </div>
       ) : null}
       <div className="relative flex flex-wrap items-center gap-2">
-        {user.isAdmin && request.status === "pending" ? (
+        {manager && request.status === "pending" ? (
           <>
             <ApproveDialog request={request} />
             <DenyDialog request={request} />
           </>
         ) : null}
-        {user.isAdmin && request.status === "failed" ? (
+        {manager && request.status === "failed" ? (
           <>
             <Button
               size="sm"
@@ -169,7 +171,7 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             {m.action_cancel()}
           </Button>
         ) : null}
-        {user.isAdmin ? (
+        {manager ? (
           <>
             {SENT_STATUSES.includes(request.status) ? (
               <RemoveFromChaptarrButton id={request.id} title={request.media.title} />

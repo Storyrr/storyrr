@@ -6,11 +6,12 @@ import { FormError } from "#/components/form/form-error";
 import { Button } from "#/components/ui/button";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import { Switch } from "#/components/ui/switch";
 import { saveUserSettings } from "#/functions/settings.functions";
 import { settingsKeys, userSettingsQuery } from "#/lib/queries/settings";
-import { UserSettingsSchema, type UserSettings } from "#/lib/schemas/settings";
+import { UserSettingsFormSchema, type UserSettings } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
+
+import { PermissionChecklist } from "#/components/users/permission-checklist";
 
 import { RequestLimitFields } from "./request-limit-fields";
 import { SettingsActions, SettingsRow, SettingsSection } from "./settings-section";
@@ -26,7 +27,7 @@ export function UserSettingsForm() {
   });
   const form = useForm({
     defaultValues: current,
-    validators: { onSubmit: UserSettingsSchema },
+    validators: { onSubmit: UserSettingsFormSchema },
     onSubmit: async ({ value }) => {
       await save.mutateAsync(value).catch(() => undefined);
     },
@@ -44,15 +45,15 @@ export function UserSettingsForm() {
       >
         <FieldGroup>
           <FormError message={save.error ? save.error.message || m.error_generic() : null} />
-          <form.Field name="defaultAutoApprove">
+          <form.Field name="defaultPermissions">
             {(field) => (
               <SettingsRow
-                label={m.settings_default_auto_approve()}
-                description={m.settings_default_auto_approve_description()}
+                label={m.settings_default_permissions()}
+                description={m.settings_default_permissions_description()}
               >
-                <Switch
-                  aria-label={m.settings_default_auto_approve()}
-                  isSelected={field.state.value}
+                <PermissionChecklist
+                  label={m.settings_default_permissions()}
+                  value={field.state.value}
                   onChange={field.handleChange}
                 />
               </SettingsRow>

@@ -8,12 +8,13 @@ import { LibraryServerSettings } from "#/components/settings/library-server";
 import { SettingsSection } from "#/components/settings/settings-section";
 import { buttonVariants } from "#/components/ui/button";
 import { serviceSettingsQuery } from "#/lib/queries/settings";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 /** Optional second step of the setup wizard: connect services (same forms as Settings). */
 export const Route = createFileRoute("/_authed/welcome")({
   beforeLoad: ({ context }) => {
-    if (!context.user.isAdmin) throw redirect({ to: "/" });
+    if (!can(context.user, "manage_settings")) throw redirect({ to: "/" });
   },
   loader: ({ context }) => context.queryClient.ensureQueryData(serviceSettingsQuery()),
   head: () => ({ meta: [{ title: `${m.welcome_title()} · ${m.app_name()}` }] }),

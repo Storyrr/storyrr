@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { SwitchField } from "#/components/form/switch-field";
 import { RequestLimitFields } from "#/components/settings/request-limit-fields";
+import { PermissionChecklist } from "#/components/users/permission-checklist";
 import {
   SettingsActions,
   SettingsRow,
@@ -17,30 +17,19 @@ import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import {
-  setUserAutoApprove,
   setUserBanned,
   setUserLimits,
+  setUserPermissionList,
   setUserRole,
 } from "#/functions/users.functions";
 import { accountQuery, profileKeys } from "#/lib/queries/profile";
 import { userSettingsQuery } from "#/lib/queries/settings";
 import { userKeys } from "#/lib/queries/users";
+import type { AssignablePermission, Permission } from "#/lib/permissions";
 import type { RequestQuota } from "#/lib/requests";
 import type { RequestLimits } from "#/lib/schemas/settings";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
-
-function Allowed({ value, label }: { value: boolean; label: string }) {
-  return (
-    <p className="flex items-center gap-2 text-sm">
-      {value ? (
-        <CheckIcon className="size-4 text-primary" aria-hidden />
-      ) : (
-        <XIcon className="size-4 text-muted-foreground" aria-hidden />
-      )}
-      {label}
-    </p>
-  );
-}
 
 function quotaText(quota: RequestQuota) {
   if (quota.limit === null || quota.remaining === null) return m.settings_limit_unlimited();
@@ -54,33 +43,34 @@ function quotaText(quota: RequestQuota) {
 export function PermissionSettings({ userId }: { userId?: string }) {
   const { user } = useRouteContext({ from: "/_authed" });
   const { data: account } = useSuspenseQuery(accountQuery(userId));
-  if (user.isAdmin && !account.self) return <EditPermissions userId={account.id} />;
+  if (can(user, "manage_users") && !account.self) return <EditPermissions userId={account.id} />;
   return (
-    <SettingsSection
-      title={m.profile_permissions_title()}
-      description={m.profile_permissions_description()}
-    >
-      <SettingsRow label={m.field_role()}>
-        <Allowed
-          value={account.isAdmin}
-          label={account.isAdmin ? m.profile_permission_admin() : m.role_user()}
+    <div className="flex flex-col gap-12">
+      <SettingsSection
+        title={m.profile_permissions_title()}
+        description={m.profile_permissions_description()}
+      >
+        <PermissionChecklist
+          label={m.profile_permissions_title()}
+          value={account.permissions.filter(isAssignable)}
+          onChange={() => undefined}
+          isDisabled
+          admin={{ isSelected: account.isAdmin, isDisabled: true, onChange: () => undefined }}
         />
-      </SettingsRow>
-      <SettingsRow label={m.profile_permission_auto_approve()}>
-        <Allowed
-          value={account.autoApproved}
-          label={account.autoApproved ? m.profile_yes() : m.profile_no()}
-        />
-      </SettingsRow>
-      <SettingsRow label={m.settings_chaptarr_audiobooks()}>
-        <p className="text-sm">{quotaText(account.quotas.audiobook)}</p>
-      </SettingsRow>
-      <SettingsRow label={m.settings_chaptarr_ebooks()}>
-        <p className="text-sm">{quotaText(account.quotas.ebook)}</p>
-      </SettingsRow>
-    </SettingsSection>
+      </SettingsSection>
+      <SettingsSection title={m.users_limits()}>
+        <SettingsRow label={m.settings_chaptarr_audiobooks()}>
+          <p className="text-sm">{quotaText(account.quotas.audiobook)}</p>
+        </SettingsRow>
+        <SettingsRow label={m.settings_chaptarr_ebooks()}>
+          <p className="text-sm">{quotaText(account.quotas.ebook)}</p>
+        </SettingsRow>
+      </SettingsSection>
+    </div>
   );
 }
+
+const isAssignable = (p: Permission): p is AssignablePermission => p !== "admin";
 
 function useAccountMutation<TInput>(fn: (input: TInput) => Promise<unknown>) {
   const queryClient = useQueryClient();
@@ -97,15 +87,20 @@ function useAccountMutation<TInput>(fn: (input: TInput) => Promise<unknown>) {
 function EditPermissions({ userId }: { userId: string }) {
   const { data: account } = useSuspenseQuery(accountQuery(userId));
   const { data: defaults } = useSuspenseQuery(userSettingsQuery());
+  const { user: me } = useRouteContext({ from: "/_authed" });
   const roleFn = useServerFn(setUserRole);
-  const autoApproveFn = useServerFn(setUserAutoApprove);
+  const permissionsFn = useServerFn(setUserPermissionList);
   const bannedFn = useServerFn(setUserBanned);
   const limitsFn = useServerFn(setUserLimits);
   const role = useAccountMutation((admin: boolean) =>
     roleFn({ data: { userId, role: admin ? "admin" : "user" } }),
   );
-  const autoApprove = useAccountMutation((value: boolean) =>
-    autoApproveFn({ data: { userId, autoApprove: value } }),
+  const savePermissions = useAccountMutation((value: AssignablePermission[] | null) =>
+    permissionsFn({ data: { userId, permissions: value } }),
+  );
+  const [useDefaults, setUseDefaults] = useState(account.grantedPermissions === null);
+  const [granted, setGranted] = useState<AssignablePermission[]>(
+    account.grantedPermissions ?? defaults.defaultPermissions,
   );
   const banned = useAccountMutation((value: boolean) =>
     bannedFn({ data: { userId, banned: value } }),
@@ -117,7 +112,7 @@ function EditPermissions({ userId }: { userId: string }) {
   const [ownLimits, setOwnLimits] = useState<RequestLimits>(
     account.requestLimits ?? defaults.requestLimits,
   );
-  const error = role.error ?? autoApprove.error ?? banned.error ?? limits.error;
+  const error = role.error ?? savePermissions.error ?? banned.error ?? limits.error;
 
   return (
     <div className="flex flex-col gap-12">
@@ -127,25 +122,36 @@ function EditPermissions({ userId }: { userId: string }) {
       >
         <FieldGroup>
           <FormError message={error ? error.message || m.error_generic() : null} />
-          <SettingsRow label={m.role_admin()} description={m.users_admin_description()}>
-            <Switch
-              aria-label={m.role_admin()}
-              isSelected={account.isAdmin}
-              isDisabled={role.isPending}
-              onChange={(value) => role.mutate(value)}
-            />
-          </SettingsRow>
-          <SettingsRow
-            label={m.field_auto_approve()}
-            description={account.isAdmin ? m.users_admin_auto_approved() : undefined}
-          >
-            <Switch
-              aria-label={m.field_auto_approve()}
-              isSelected={account.isAdmin || account.autoApprove}
-              isDisabled={account.isAdmin || autoApprove.isPending}
-              onChange={(value) => autoApprove.mutate(value)}
-            />
-          </SettingsRow>
+          <SwitchField
+            label={m.users_use_default_permissions()}
+            isSelected={useDefaults && !account.isAdmin}
+            isDisabled={account.isAdmin}
+            onChange={(value) => {
+              setUseDefaults(value);
+              if (value) setGranted(defaults.defaultPermissions);
+            }}
+          />
+          <PermissionChecklist
+            label={m.profile_permissions_title()}
+            value={useDefaults ? defaults.defaultPermissions : granted}
+            onChange={setGranted}
+            isDisabled={useDefaults || account.isAdmin}
+            admin={{
+              isSelected: account.isAdmin,
+              // Only admins grant or remove the admin role.
+              isDisabled: !me.isAdmin || role.isPending,
+              onChange: (value) => role.mutate(value),
+            }}
+          />
+          <SettingsActions>
+            <Button
+              isDisabled={savePermissions.isPending || account.isAdmin}
+              onPress={() => savePermissions.mutate(useDefaults ? null : granted)}
+            >
+              {savePermissions.isPending ? <Spinner data-icon="inline-start" /> : null}
+              {savePermissions.isSuccess ? m.action_saved() : m.action_save()}
+            </Button>
+          </SettingsActions>
           <SettingsRow label={m.users_banned()} description={m.users_ban_description()}>
             <Switch
               aria-label={m.users_banned()}

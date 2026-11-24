@@ -5,8 +5,6 @@ import { UserPlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
-import { SelectField } from "#/components/form/select-field";
-import { SwitchField } from "#/components/form/switch-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
 import {
@@ -22,20 +20,11 @@ import { Spinner } from "#/components/ui/spinner";
 import { createUser } from "#/functions/users.functions";
 import { userKeys } from "#/lib/queries/users";
 import { PASSWORD_MIN_LENGTH } from "#/lib/schemas/auth";
-import {
-  CreateUserSchema,
-  USER_ROLES,
-  type CreateUserInput,
-  type UserRole,
-} from "#/lib/schemas/users";
+import { CreateUserSchema, type CreateUserInput } from "#/lib/schemas/users";
 import { m } from "#/paraglide/messages.js";
 
-import { roleLabels } from "./role-labels";
-
-const isRole = (value: string | null): value is UserRole => USER_ROLES.some((r) => r === value);
-
-/** "Add a user": invite-only accounts, created with a temporary password. */
-export function CreateUserDialog({ defaultAutoApprove }: { defaultAutoApprove: boolean }) {
+/** "Add a user": invite-only accounts, created with a temporary password and the default permissions. */
+export function CreateUserDialog() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const createFn = useServerFn(createUser);
@@ -52,8 +41,6 @@ export function CreateUserDialog({ defaultAutoApprove }: { defaultAutoApprove: b
       name: "",
       email: "",
       password: "",
-      role: "user" as UserRole,
-      autoApprove: defaultAutoApprove,
     },
     validators: { onSubmit: CreateUserSchema },
     onSubmit: async ({ value }) => {
@@ -118,28 +105,6 @@ export function CreateUserDialog({ defaultAutoApprove }: { defaultAutoApprove: b
                   onChange={field.handleChange}
                   onBlur={field.handleBlur}
                   errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-            <form.Field name="role">
-              {(field) => (
-                <SelectField
-                  label={m.field_role()}
-                  options={USER_ROLES.map((r) => ({ id: r, label: roleLabels[r]() }))}
-                  value={field.state.value}
-                  onChange={(value) => {
-                    if (isRole(value)) field.handleChange(value);
-                  }}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-            <form.Field name="autoApprove">
-              {(field) => (
-                <SwitchField
-                  label={m.field_auto_approve()}
-                  isSelected={field.state.value}
-                  onChange={field.handleChange}
                 />
               )}
             </form.Field>

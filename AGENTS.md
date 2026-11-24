@@ -108,7 +108,7 @@ Rules:
 
 - Import alias: **`#/`** (package.json `imports`, e.g. `#/server/db`). Don't introduce a second alias.
 - **UI never talks to external services directly.** Pages call server functions → server functions call `src/server/**`. Server-only modules live under `src/server/` (or use the `*.server.ts` suffix) so they can't leak into the client bundle.
-- **Every server function that touches private data checks the session itself** (route `beforeLoad` guards are not enough). Attach the `requireUser` / `requireAdmin` function middleware (`#/server/auth/middleware`). The root route loads `authState` (setup done? current user) into the router context for guards; pages needing a user live under the `_authed` layout route.
+- **Every server function that touches private data checks the session itself** (route `beforeLoad` guards are not enough). Attach the `requireUser` / `requirePermission(...)` function middleware (`#/server/auth/middleware`; `context.permissions` holds the effective permissions from `#/lib/permissions`), and gate UI with `can(user, permission)`. The root route loads `authState` (setup done? current user) into the router context for guards; pages needing a user live under the `_authed` layout route.
 - **Background jobs:** TanStack Start has no documented startup/cron hook. Start an in-process scheduler (e.g. `croner`) from the custom server entry `src/server.ts` (singleton guard, so dev HMR doesn't start it twice). Jobs must be idempotent and safe to run concurrently with webhooks.
 - **Media sources share one interface** so adding a type never touches the request flow:
   ```ts

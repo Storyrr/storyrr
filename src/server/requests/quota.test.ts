@@ -53,7 +53,7 @@ describe("request quota", () => {
 
   it("counts recent requests of the format, giving denied ones back", async () => {
     await settings.set(userSettings, {
-      defaultAutoApprove: false,
+      defaultPermissions: ["request_audiobook"],
       requestLimits: { audiobook: { limit: 2, days: 7 }, ebook: { limit: null, days: 7 } },
     });
     requestBook("A1");

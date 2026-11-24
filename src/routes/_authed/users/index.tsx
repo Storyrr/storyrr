@@ -46,20 +46,16 @@ import {
 import { deleteUser, type getUsers } from "#/functions/users.functions";
 import { formatDate } from "#/lib/format";
 import { authKeys } from "#/lib/queries/auth";
-import { userSettingsQuery } from "#/lib/queries/settings";
 import { userKeys, usersQuery } from "#/lib/queries/users";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
 
 export const Route = createFileRoute("/_authed/users/")({
   beforeLoad: ({ context }) => {
-    if (!context.user.isAdmin) throw redirect({ to: "/" });
+    if (!can(context.user, "manage_users")) throw redirect({ to: "/" });
   },
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(usersQuery()),
-      context.queryClient.ensureQueryData(userSettingsQuery()),
-    ]),
+  loader: ({ context }) => context.queryClient.ensureQueryData(usersQuery()),
   head: () => ({ meta: [{ title: `${m.users_title()} · ${m.app_name()}` }] }),
   component: UsersPage,
 });
@@ -87,7 +83,6 @@ function compare(a: Account, b: Account, column: SortColumn): number {
 /** Seerr-like users table: search, sortable columns, pages; Edit opens the user's settings. */
 function UsersPage() {
   const { data: users } = useSuspenseQuery(usersQuery());
-  const { data: defaults } = useSuspenseQuery(userSettingsQuery());
   const { user: me } = Route.useRouteContext();
   const searchId = useId();
   const [query, setQuery] = useState("");
@@ -120,7 +115,7 @@ function UsersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold">{m.users_title()}</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <CreateUserDialog defaultAutoApprove={defaults.defaultAutoApprove} />
+          <CreateUserDialog />
           <Label htmlFor={searchId} className="sr-only">
             {m.users_search()}
           </Label>

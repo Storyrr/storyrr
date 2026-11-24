@@ -1,6 +1,7 @@
 import * as v from "valibot";
 
 import { AUDIBLE_REGION_CODES } from "#/lib/audible-regions";
+import { ASSIGNABLE_PERMISSIONS, DEFAULT_PERMISSIONS } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 /** Services connected with a URL and an API / Auth key. */
@@ -105,13 +106,21 @@ export type RequestLimits = v.InferOutput<typeof RequestLimitsSchema>;
 export const UNLIMITED: RequestLimit = { limit: null, days: 7 };
 export const DEFAULT_REQUEST_LIMITS: RequestLimits = { audiobook: UNLIMITED, ebook: UNLIMITED };
 
-/** Settings → Users: defaults for new accounts and the global request limits. */
+export const AssignablePermissionsSchema = v.array(v.picklist(ASSIGNABLE_PERMISSIONS));
+
+/** Settings → Users: permissions of new accounts and the global request limits. */
 export const UserSettingsSchema = v.object({
-  defaultAutoApprove: v.boolean(),
+  // Optional: settings saved before permissions existed have none.
+  defaultPermissions: v.optional(AssignablePermissionsSchema, () => [...DEFAULT_PERMISSIONS]),
   requestLimits: RequestLimitsSchema,
 });
 export type UserSettings = v.InferOutput<typeof UserSettingsSchema>;
+/** The Settings → Users form (every field required). */
+export const UserSettingsFormSchema = v.object({
+  defaultPermissions: AssignablePermissionsSchema,
+  requestLimits: RequestLimitsSchema,
+});
 export const DEFAULT_USER_SETTINGS: UserSettings = {
-  defaultAutoApprove: false,
+  defaultPermissions: [...DEFAULT_PERMISSIONS],
   requestLimits: DEFAULT_REQUEST_LIMITS,
 };

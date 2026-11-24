@@ -18,6 +18,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { checkAvailabilityNow } from "#/functions/requests.functions";
 import { requestKeys, requestsQuery, type RequestFilter } from "#/lib/queries/requests";
+import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 const FILTERS = ["all", "pending", "processing", "available", "failed"] as const;
@@ -38,7 +39,10 @@ export const Route = createFileRoute("/_authed/requests")({
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>
     context.queryClient.ensureQueryData(
-      requestsQuery(deps.scope ?? (context.user.isAdmin ? "all" : "mine"), deps.filter ?? "all"),
+      requestsQuery(
+        deps.scope ?? (can(context.user, "view_requests") ? "all" : "mine"),
+        deps.filter ?? "all",
+      ),
     ),
   head: () => ({ meta: [{ title: `${m.requests_title()} · ${m.app_name()}` }] }),
   component: RequestsPage,
@@ -50,7 +54,7 @@ function RequestsPage() {
   const { user } = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const scope = search.scope ?? (user.isAdmin ? "all" : "mine");
+  const scope = search.scope ?? (can(user, "view_requests") ? "all" : "mine");
   const activeFilter = search.filter ?? "all";
   const { data: requests } = useSuspenseQuery(requestsQuery(scope, activeFilter));
 
@@ -58,10 +62,10 @@ function RequestsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">{m.requests_title()}</h1>
-        {user.isAdmin ? <CheckNowButton /> : null}
+        {can(user, "manage_requests") ? <CheckNowButton /> : null}
       </div>
       <div className="flex flex-wrap gap-4">
-        {user.isAdmin ? (
+        {can(user, "view_requests") ? (
           <ToggleGroup
             aria-label={m.requests_scope_label()}
             selectionMode="single"
