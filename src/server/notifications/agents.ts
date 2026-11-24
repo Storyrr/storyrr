@@ -158,11 +158,11 @@ export async function sendShared(
     }
     case "pushover": {
       const c = target.config;
-      return c.userKey ? pushover(fetch, c.appToken, c.userKey, n) : null;
+      return c.userKey ? sendPushover(fetch, c.appToken, c.userKey, n) : null;
     }
     case "pushbullet": {
       const c = target.config;
-      return pushbullet(fetch, c.accessToken, n, c.channelTag || undefined);
+      return sendPushbullet(fetch, c.accessToken, n, c.channelTag || undefined);
     }
     case "webhook": {
       const c = target.config;
@@ -197,10 +197,10 @@ export async function sendPersonal(
         : null;
     case "pushover":
       return to.pushoverUserKey
-        ? pushover(fetch, target.config.appToken, to.pushoverUserKey, n)
+        ? sendPushover(fetch, target.config.appToken, to.pushoverUserKey, n)
         : null;
     case "pushbullet":
-      return to.pushbulletToken ? pushbullet(fetch, to.pushbulletToken, n) : null;
+      return to.pushbulletToken ? sendPushbullet(fetch, to.pushbulletToken, n) : null;
     default:
       // Discord mentions go in the shared message; the others have no personal target.
       return null;
@@ -223,7 +223,7 @@ function telegram(fetch: FetchFn, botToken: string, chatId: string, n: Outgoing)
   );
 }
 
-function pushover(fetch: FetchFn, appToken: string, userKey: string, n: Outgoing) {
+export function sendPushover(fetch: FetchFn, appToken: string, userKey: string, n: Outgoing) {
   const body = new URLSearchParams({
     token: appToken,
     user: userKey,
@@ -237,7 +237,12 @@ function pushover(fetch: FetchFn, appToken: string, userKey: string, n: Outgoing
   });
 }
 
-function pushbullet(fetch: FetchFn, accessToken: string, n: Outgoing, channelTag?: string) {
+export function sendPushbullet(
+  fetch: FetchFn,
+  accessToken: string,
+  n: Outgoing,
+  channelTag?: string,
+) {
   return post(fetch, "Pushbullet", "https://api.pushbullet.com/v2/pushes", {
     headers: { "Content-Type": "application/json", "Access-Token": accessToken },
     body: JSON.stringify({

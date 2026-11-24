@@ -26,6 +26,7 @@ import {
 import {
   AGENT_DEFINITIONS,
   DEFAULT_WEBHOOK_TEMPLATE,
+  PERSONAL_ONLY_AGENTS,
   type AgentField,
   type NotificationAgent,
   type NotificationEvent,
@@ -137,6 +138,7 @@ export function AgentForm({
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),
   });
 
+  const personalOnly = PERSONAL_ONLY_AGENTS.includes(agent);
   const form = useForm({
     defaultValues: {
       enabled: stored?.enabled ?? false,
@@ -146,7 +148,7 @@ export function AgentForm({
     },
     validators: { onSubmit: ({ value }) => validate(agent, value.config, saved) },
     onSubmit: async ({ value }) => {
-      if (value.enabled && value.events.length === 0) {
+      if (value.enabled && value.events.length === 0 && !personalOnly) {
         setFeedback({ tone: "error", message: m.notification_events_required() });
         return;
       }
@@ -249,20 +251,26 @@ export function AgentForm({
               }}
             </form.Field>
           ))}
-          <form.Field name="events">
-            {(field) => (
-              <SettingsRow
-                label={m.notification_events()}
-                description={m.notification_events_description()}
-              >
-                <EventChecklist
+          {personalOnly ? (
+            <SettingsRow label={m.notification_events()}>
+              <p className="text-sm text-muted-foreground">{m.notification_events_personal()}</p>
+            </SettingsRow>
+          ) : (
+            <form.Field name="events">
+              {(field) => (
+                <SettingsRow
                   label={m.notification_events()}
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                />
-              </SettingsRow>
-            )}
-          </form.Field>
+                  description={m.notification_events_description()}
+                >
+                  <EventChecklist
+                    label={m.notification_events()}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                  />
+                </SettingsRow>
+              )}
+            </form.Field>
+          )}
         </FieldGroup>
         <SettingsActions>
           <Button variant="outline" isDisabled={test.isPending} onPress={() => void runTest()}>

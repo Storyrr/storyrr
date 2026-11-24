@@ -9,7 +9,6 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { ACTIVE_REQUEST_STATUSES, MEDIA_TYPES, REQUEST_STATUSES } from "#/lib/requests";
-import type { UserNotifications } from "#/lib/notifications";
 import type { AssignablePermission } from "#/lib/permissions";
 import type { RequestLimits } from "#/lib/schemas/settings";
 
@@ -133,6 +132,6 @@ export const userPreference = sqliteTable("user_preference", {
   kavitaUser: text("kavita_user"),
   /** Per-user override of the global request limits; null uses the global ones. */
   requestLimits: text("request_limits", { mode: "json" }).$type<RequestLimits>(),
-  /** Personal notification channels and events; null uses the defaults (email, every event). */
-  notifications: text("notifications", { mode: "json" }).$type<UserNotifications>(),
+  /** Personal notification channels, each with its events (read with withNotificationDefaults: older rows have one shared list). */
+  notifications: text("notifications", { mode: "json" }).$type<unknown>(),
 });

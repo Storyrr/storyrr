@@ -8,7 +8,8 @@ import {
   AgentCommonSchema,
   withNotificationDefaults,
   NOTIFICATION_AGENTS,
-  UserNotificationsSchema,
+  PERSONAL_ONLY_AGENTS,
+  UserNotificationChannelSchema,
   type AgentTarget,
   type NotificationAgent,
 } from "#/lib/notifications";
@@ -134,7 +135,8 @@ export const saveNotificationAgent = createServerFn({ method: "POST" })
     v.pipe(
       v.object({ ...AgentInputSchema.entries, ...AgentCommonSchema.entries }),
       v.check(
-        (input) => !input.enabled || input.events.length > 0,
+        (input) =>
+          !input.enabled || input.events.length > 0 || PERSONAL_ONLY_AGENTS.includes(input.agent),
         () => m.notification_events_required(),
       ),
     ),
@@ -200,15 +202,37 @@ export const getMyNotifications = createServerFn({ method: "GET" })
     return { prefs: withNotificationDefaults(pref?.notifications), enabledAgents: enabled };
   });
 
-export const saveMyNotifications = createServerFn({ method: "POST" })
+/** Saves one of the caller's channels (each tab of Profile → Settings → Notifications). */
+export const saveMyNotificationChannel = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(UserNotificationsSchema)
-  .handler(({ data, context }) => {
+  .validator(UserNotificationChannelSchema)
+  .handler(async ({ data, context }) => {
+    if (data.channel === "pushover" && data.value.userKey && !data.value.appToken) {
+      const admin = (await loadAgents(settings)).find(
+        (a) => a.enabled && a.target.agent === "pushover",
+      );
+      if (!admin)
+        return {
+          ok: false as const,
+          field: "appToken" as const,
+          message: m.my_notifications_pushover_app_token_required(),
+        };
+    }
+    const userId = context.session.user.id;
+    const pref = db
+      .select({ notifications: userPreference.notifications })
+      .from(userPreference)
+      .where(eq(userPreference.userId, userId))
+      .get();
+    const notifications = {
+      ...withNotificationDefaults(pref?.notifications),
+      [data.channel]: data.value,
+    };
     db.insert(userPreference)
-      .values({ userId: context.session.user.id, notifications: data })
-      .onConflictDoUpdate({ target: userPreference.userId, set: { notifications: data } })
+      .values({ userId, notifications })
+      .onConflictDoUpdate({ target: userPreference.userId, set: { notifications } })
       .run();
-    return { ok: true };
+    return { ok: true as const };
   });
 
 /** The public VAPID key, to subscribe a device (null while Web Push is off). */

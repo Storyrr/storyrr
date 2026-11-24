@@ -55,6 +55,12 @@ export const NOTIFICATION_AGENTS = [
 ] as const;
 export type NotificationAgent = (typeof NOTIFICATION_AGENTS)[number];
 
+/**
+ * Agents with no shared destination: each user picks their events for them (in
+ * their own settings), so the agent itself has no event list, like Seerr.
+ */
+export const PERSONAL_ONLY_AGENTS: readonly NotificationAgent[] = ["email", "webpush"];
+
 /** A form field of an agent's settings; `secret` fields are never sent back (eye button reveals). */
 export type AgentField = {
   name: string;
@@ -311,37 +317,114 @@ export const AgentCommonSchema = v.object({
   events: v.array(v.picklist(NOTIFICATION_EVENTS)),
 });
 
-/** A user's own notification preferences (Profile → Settings → Notifications). */
+/** Channels a user sets up for themselves (Profile → Settings → Notifications), like Seerr. */
+export const PERSONAL_CHANNELS = [
+  "email",
+  "webpush",
+  "discord",
+  "telegram",
+  "pushbullet",
+  "pushover",
+] as const;
+export type PersonalChannel = (typeof PERSONAL_CHANNELS)[number];
+
+/**
+ * Channels that need the administrator's agent (its SMTP server, bot, webhook or
+ * keys). Pushbullet and Pushover work with the user's own tokens.
+ */
+export const ADMIN_BACKED_CHANNELS: readonly PersonalChannel[] = [
+  "email",
+  "webpush",
+  "discord",
+  "telegram",
+];
+
+const events = () => v.array(v.picklist(NOTIFICATION_EVENTS));
+const trimmed = () => v.pipe(v.string(), v.trim());
+
+/** A user's own notification preferences: each channel with its own events. */
 export const UserNotificationsSchema = v.object({
-  email: v.boolean(),
-  discordId: v.pipe(
-    v.string(),
-    v.trim(),
-    v.regex(/^\d*$/, () => m.validation_discord_id()),
-  ),
-  telegramChatId: v.pipe(v.string(), v.trim()),
-  pushoverUserKey: v.pipe(v.string(), v.trim()),
-  pushbulletToken: v.pipe(v.string(), v.trim()),
+  email: v.object({ events: events() }),
   /** Web Push to the devices the user enabled it on. */
-  webpush: v.boolean(),
-  events: v.array(v.picklist(NOTIFICATION_EVENTS)),
+  webpush: v.object({ events: events() }),
+  /** Mentioned in the shared Discord message. */
+  discord: v.object({
+    discordId: v.pipe(
+      v.string(),
+      v.trim(),
+      v.regex(/^\d*$/, () => m.validation_discord_id()),
+    ),
+    events: events(),
+  }),
+  /** Sent by the administrator's bot. */
+  telegram: v.object({ chatId: trimmed(), events: events() }),
+  pushbullet: v.object({ accessToken: trimmed(), events: events() }),
+  /** The user's own Pushover application, or the administrator's when left blank. */
+  pushover: v.object({ appToken: trimmed(), userKey: trimmed(), events: events() }),
 });
 export type UserNotifications = v.InferOutput<typeof UserNotificationsSchema>;
+
+/** One channel's settings, saved from its own tab. */
+export const UserNotificationChannelSchema = v.variant("channel", [
+  v.object({ channel: v.literal("email"), value: UserNotificationsSchema.entries.email }),
+  v.object({ channel: v.literal("webpush"), value: UserNotificationsSchema.entries.webpush }),
+  v.object({ channel: v.literal("discord"), value: UserNotificationsSchema.entries.discord }),
+  v.object({ channel: v.literal("telegram"), value: UserNotificationsSchema.entries.telegram }),
+  v.object({ channel: v.literal("pushbullet"), value: UserNotificationsSchema.entries.pushbullet }),
+  v.object({ channel: v.literal("pushover"), value: UserNotificationsSchema.entries.pushover }),
+]);
+export type UserNotificationChannel = v.InferOutput<typeof UserNotificationChannelSchema>;
+
+// Every event: a user only gets those about their requests and issues, or what they manage.
+const all = () => [...NOTIFICATION_EVENTS];
 export const DEFAULT_USER_NOTIFICATIONS: UserNotifications = {
-  email: true,
-  discordId: "",
-  telegramChatId: "",
-  pushoverUserKey: "",
-  pushbulletToken: "",
-  webpush: true,
-  // Every event: a user only gets those about their requests and issues, or what they manage.
-  events: [...NOTIFICATION_EVENTS],
+  email: { events: all() },
+  webpush: { events: all() },
+  discord: { discordId: "", events: all() },
+  telegram: { chatId: "", events: all() },
+  pushbullet: { accessToken: "", events: all() },
+  pushover: { appToken: "", userKey: "", events: all() },
 };
 
-/** A user's stored preferences, completed with the defaults (older rows lack newer fields). */
-export const withNotificationDefaults = (
-  stored: Partial<UserNotifications> | null | undefined,
-) => ({
-  ...DEFAULT_USER_NOTIFICATIONS,
-  ...stored,
+/** The single-list shape stored before per-channel events (2026-11-24). */
+const LegacySchema = v.object({
+  email: v.boolean(),
+  discordId: v.string(),
+  telegramChatId: v.string(),
+  pushoverUserKey: v.string(),
+  pushbulletToken: v.string(),
+  webpush: v.boolean(),
+  events: events(),
 });
+
+/** A user's stored preferences, completed with the defaults (and converted from the old shape). */
+export function withNotificationDefaults(stored: unknown): UserNotifications {
+  const legacy = v.safeParse(LegacySchema, stored);
+  if (legacy.success) {
+    const old = legacy.output;
+    return {
+      email: { events: old.email ? old.events : [] },
+      webpush: { events: old.webpush ? old.events : [] },
+      discord: { discordId: old.discordId, events: old.events },
+      telegram: { chatId: old.telegramChatId, events: old.events },
+      pushbullet: { accessToken: old.pushbulletToken, events: old.events },
+      pushover: { appToken: "", userKey: old.pushoverUserKey, events: old.events },
+    };
+  }
+  const record: Record<string, unknown> = stored && typeof stored === "object" ? { ...stored } : {};
+  const entries = UserNotificationsSchema.entries;
+  const d = DEFAULT_USER_NOTIFICATIONS;
+  return {
+    email: read(entries.email, record.email, d.email),
+    webpush: read(entries.webpush, record.webpush, d.webpush),
+    discord: read(entries.discord, record.discord, d.discord),
+    telegram: read(entries.telegram, record.telegram, d.telegram),
+    pushbullet: read(entries.pushbullet, record.pushbullet, d.pushbullet),
+    pushover: read(entries.pushover, record.pushover, d.pushover),
+  };
+}
+
+function read<S extends v.GenericSchema>(schema: S, value: unknown, fallback: v.InferOutput<S>) {
+  const result = v.safeParse(schema, value);
+  return result.success ? result.output : fallback;
+}

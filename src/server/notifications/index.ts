@@ -5,6 +5,9 @@ import {
   withNotificationDefaults,
   type AgentTarget,
   type NotificationEvent,
+  PERSONAL_ONLY_AGENTS,
+  type PersonalChannel,
+  type UserNotifications,
 } from "#/lib/notifications";
 import { hasPermission, type Permission } from "#/lib/permissions";
 import { baseLocale, isLocale, type Locale } from "#/paraglide/runtime.js";
@@ -24,7 +27,15 @@ import type { FetchFn } from "#/server/services/result";
 import { notificationAgentSettings, notificationGeneral } from "#/server/settings/definitions";
 import type { SettingsStore } from "#/server/settings/store";
 
-import { sendPersonal, sendShared, type Outgoing, type Recipient, type SendResult } from "./agents";
+import {
+  sendPersonal,
+  sendPushbullet,
+  sendPushover,
+  sendShared,
+  type Outgoing,
+  type Recipient,
+  type SendResult,
+} from "./agents";
 import { renderNotification, type NotificationData } from "./render";
 import { sendWebPush } from "./webpush";
 
@@ -156,11 +167,12 @@ async function usersWith(
   return ids;
 }
 
-type RecipientInfo = Recipient & {
+type RecipientInfo = {
   id: string;
   locale: Locale;
-  events: readonly NotificationEvent[];
-  webpush: boolean;
+  /** Their account email (sent to only when their Email channel wants the event). */
+  email: string;
+  prefs: UserNotifications;
 };
 
 function recipientsFor(db: AppDatabase, ids: readonly string[]): RecipientInfo[] {
@@ -173,22 +185,31 @@ function recipientsFor(db: AppDatabase, ids: readonly string[]): RecipientInfo[]
       .where(eq(user.id, id))
       .get();
     if (!row || row.banned) return [];
-    const prefs = withNotificationDefaults(row.pref?.notifications);
     const locale = row.pref?.locale && isLocale(row.pref.locale) ? row.pref.locale : null;
     return [
       {
         id,
         locale: locale ?? baseLocale,
-        events: prefs.events,
-        email: prefs.email ? row.email : null,
-        discordId: prefs.discordId || null,
-        telegramChatId: prefs.telegramChatId || null,
-        pushoverUserKey: prefs.pushoverUserKey || null,
-        pushbulletToken: prefs.pushbulletToken || null,
-        webpush: prefs.webpush,
+        email: row.email,
+        prefs: withNotificationDefaults(row.pref?.notifications),
       },
     ];
   });
+}
+
+/** Where a recipient wants this event, through each of their channels (null: not there). */
+function destinations(r: RecipientInfo, event: string): Recipient & { webpush: boolean } {
+  const wants = (channel: PersonalChannel) =>
+    r.prefs[channel].events.some((e: string) => e === event);
+  return {
+    email: wants("email") ? r.email : null,
+    discordId: wants("discord") ? r.prefs.discord.discordId || null : null,
+    telegramChatId: wants("telegram") ? r.prefs.telegram.chatId || null : null,
+    // Pushover and Pushbullet use the user's own tokens: sent by sendOwnChannels.
+    pushoverUserKey: null,
+    pushbulletToken: null,
+    webpush: wants("webpush"),
+  };
 }
 
 type StoredAgent = { enabled: boolean; events: NotificationEvent[]; target: AgentTarget };
@@ -249,42 +270,92 @@ const outgoing = (data: NotificationData, locale: Locale): Outgoing => ({
   event: data.event,
 });
 
-/** Sends a planned notification through every enabled agent that wants its event. */
+function report(agent: string, results: readonly SendResult[]) {
+  for (const result of results)
+    if (!result.ok) console.warn(`[notifications] ${agent}: ${result.error}`);
+}
+
+/**
+ * Sends a planned notification: through every enabled agent that wants its
+ * event (its shared destination, and each recipient's channels backed by it),
+ * then through the recipients' own Pushbullet and Pushover.
+ */
 export async function deliver(deps: NotifyDeps, planned: Planned): Promise<void> {
-  const recipients = recipientsFor(deps.db, planned.recipientIds).filter((r) =>
-    r.events.includes(planned.data.event),
-  );
+  const event = planned.data.event;
+  const recipients = recipientsFor(deps.db, planned.recipientIds);
   const shared = outgoing(planned.data, await sharedLocale(deps.settings));
-  for (const stored of await loadAgents(deps.settings)) {
-    if (!stored.enabled || !stored.events.includes(planned.data.event)) continue;
-    const results = await sendThrough(deps, stored.target, shared, recipients, (r) =>
-      outgoing(planned.data, r.locale),
+  const agents = await loadAgents(deps.settings);
+  for (const stored of agents) {
+    if (!stored.enabled) continue;
+    const personalOnly = PERSONAL_ONLY_AGENTS.includes(stored.target.agent);
+    if (!personalOnly && !stored.events.includes(event)) continue;
+    const results = await sendThrough(
+      deps,
+      stored.target,
+      shared,
+      recipients.map((r) => ({ info: r, to: destinations(r, event) })),
+      (r) => outgoing(planned.data, r.locale),
     );
-    for (const result of results)
-      if (!result.ok) console.warn(`[notifications] ${stored.target.agent}: ${result.error}`);
+    report(stored.target.agent, results);
+  }
+  const adminPushover = agents.find(
+    (a): a is StoredAgent & { target: { agent: "pushover" } } =>
+      a.enabled && a.target.agent === "pushover",
+  );
+  for (const recipient of recipients) {
+    const results = await sendOwnChannels(
+      deps,
+      recipient,
+      outgoing(planned.data, recipient.locale),
+      {
+        event,
+        adminPushoverToken: adminPushover?.target.config.appToken ?? null,
+      },
+    );
+    report("personal", results);
   }
 }
+
+/** A recipient's own Pushbullet and Pushover (their tokens; no administrator agent needed). */
+async function sendOwnChannels(
+  deps: NotifyDeps,
+  r: RecipientInfo,
+  n: Outgoing,
+  { event, adminPushoverToken }: { event: string | null; adminPushoverToken: string | null },
+): Promise<SendResult[]> {
+  const wants = (channel: PersonalChannel) =>
+    event === null || r.prefs[channel].events.some((e: string) => e === event);
+  const results: SendResult[] = [];
+  const { pushbullet, pushover } = r.prefs;
+  if (pushbullet.accessToken && wants("pushbullet"))
+    results.push(await sendPushbullet(deps.fetch, pushbullet.accessToken, n));
+  const appToken = pushover.appToken || adminPushoverToken;
+  if (pushover.userKey && appToken && wants("pushover"))
+    results.push(await sendPushover(deps.fetch, appToken, pushover.userKey, n));
+  return results;
+}
+
+type Addressed = { info: RecipientInfo; to: Recipient & { webpush: boolean } };
 
 async function sendThrough(
   deps: NotifyDeps,
   target: AgentTarget,
   shared: Outgoing,
-  recipients: readonly RecipientInfo[],
+  recipients: readonly Addressed[],
   personal: (r: RecipientInfo) => Outgoing,
 ): Promise<SendResult[]> {
   const results: SendResult[] = [];
   if (target.agent === "webpush") {
     // Personal only: each recipient's devices.
-    for (const recipient of recipients)
-      if (recipient.webpush)
-        results.push(...(await sendWebPush(deps, recipient.id, personal(recipient))));
+    for (const { info, to } of recipients)
+      if (to.webpush) results.push(...(await sendWebPush(deps, info.id, personal(info))));
     return results;
   }
-  const mentions = recipients.flatMap((r) => (r.discordId ? [r.discordId] : []));
+  const mentions = recipients.flatMap(({ to }) => (to.discordId ? [to.discordId] : []));
   const sharedResult = await sendShared(target, shared, { fetch: deps.fetch, mentions });
   if (sharedResult) results.push(sharedResult);
-  for (const recipient of recipients) {
-    const result = await sendPersonal(target, personal(recipient), recipient, deps);
+  for (const { info, to } of recipients) {
+    const result = await sendPersonal(target, personal(info), to, deps);
     if (result) results.push(result);
   }
   return results;
@@ -301,8 +372,23 @@ export async function testAgent(
 ): Promise<SendResult> {
   const data: NotificationData = { event: "test", url: deps.appUrl };
   const [tester] = recipientsFor(deps.db, [testerId]);
-  const recipients = tester
-    ? [{ ...tester, email: tester.email ?? emailOf(deps.db, testerId) }]
+  const email = tester?.email ?? emailOf(deps.db, testerId);
+  // The tester gets it on every channel of theirs this agent backs, whatever their events.
+  const recipients: Addressed[] = tester
+    ? [
+        {
+          info: tester,
+          to: {
+            email,
+            discordId: tester.prefs.discord.discordId || null,
+            telegramChatId: tester.prefs.telegram.chatId || null,
+            // Through this agent's app token / as a personal push when testing it.
+            pushoverUserKey: tester.prefs.pushover.userKey || null,
+            pushbulletToken: tester.prefs.pushbullet.accessToken || null,
+            webpush: true,
+          },
+        },
+      ]
     : [];
   const results = await sendThrough(
     deps,
