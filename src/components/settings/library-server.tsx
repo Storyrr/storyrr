@@ -36,6 +36,12 @@ const copy: Record<
     description: m.service_kavita_description,
     libraries: m.settings_kavita_libraries_description,
   },
+  komga: {
+    name: m.service_komga,
+    title: m.settings_komga_title,
+    description: m.service_komga_description,
+    libraries: m.settings_komga_libraries_description,
+  },
 };
 
 /** Seerr's Plex tab, for Audiobookshelf or Kavita: the connection, then its libraries. */

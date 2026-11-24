@@ -13,6 +13,7 @@ export const serviceNames: Record<ExternalService, () => string> = {
   chaptarr: m.service_chaptarr,
   audiobookshelf: m.service_audiobookshelf,
   kavita: m.service_kavita,
+  komga: m.service_komga,
   hardcover: m.service_hardcover,
   audible: m.service_audible,
 };

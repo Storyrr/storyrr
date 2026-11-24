@@ -90,7 +90,7 @@ src/
 │   ├── auth/               # better-auth: config.ts (createAuth factory), index.ts (app instance), middleware.ts (requireUser / requirePermission), accounts.ts (account changes after Storyrr's own checks), password-reset.ts, media-server.ts + media-server-plugin.ts (sign in with Audiobookshelf / Kavita)
 │   ├── settings/           # typed settings (defineSetting + Valibot), secrets sealed with AES-256-GCM (key: HKDF of BETTER_AUTH_SECRET)
 │   ├── setup.ts            # first-run wizard (creates the first admin)
-│   ├── services/           # one client per external service (audible, chaptarr, audiobookshelf so far; kavita, hardcover, itunes next), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
+│   ├── services/           # one client per external service (audible, hardcover, chaptarr, audiobookshelf, kavita, komga), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from the media servers (replaceIndex), with each item's format
@@ -171,6 +171,12 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 
 - Use a dedicated **Auth Key** (Settings → Account → Auth Keys / OPDS → + New), authenticate with `POST /api/Plugin/authenticate?apiKey=…&pluginName=Storyrr` to get a JWT, then query libraries/series.
 - Kavita libraries map 1:1 to Chaptarr eBook root folders (Books, Manga, Comics): use that to compute availability per folder.
+
+### Komga (eBook availability)
+
+- Source of truth: [gotson/komga](https://github.com/gotson/komga) (`komga/src/main/kotlin/org/gotson/komga/interfaces/api/rest`, checked at commit `19cb01b`).
+- REST calls take an **API key** in `X-API-Key` (Account settings → API keys; an admin's key to list users). A user's own email + password work as HTTP Basic: sign in with Komga checks them with `GET /api/v2/users/me`. Komga accounts are identified by **email** (no username).
+- Series are listed with `POST /api/v1/series/list?page=&size=` (body `{}`); pages use Spring's default JSON (`content`, `last`). Matching is by series title (+ alternate titles): Komga series carry no shared ID.
 
 ### Metadata
 

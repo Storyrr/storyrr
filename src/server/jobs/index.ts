@@ -13,7 +13,7 @@ export type JobName = "library-sync" | "submit-approved";
 type JobRun = { startedAt: Date; finishedAt?: Date; error?: string };
 
 const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
-  /** Refresh the ownership index (Audiobookshelf, Kavita), then promote requests whose book arrived. */
+  /** Refresh the ownership index (every media server), then promote requests whose book arrived. */
   "library-sync": {
     pattern: "*/15 * * * *",
     run: async () => {
@@ -22,6 +22,7 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
       for (const [service, label] of [
         ["audiobookshelf", "Audiobookshelf"],
         ["kavita", "Kavita"],
+        ["komga", "Komga"],
       ] as const) {
         const synced = await syncLibrary({ db, services, settings }, service);
         if (!synced.ok && synced.error.kind !== "not_configured")

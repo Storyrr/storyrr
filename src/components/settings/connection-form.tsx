@@ -27,6 +27,16 @@ import { m } from "#/paraglide/messages.js";
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
 /** URL + API key of a service, with Test and Save (a blank key keeps the stored one). */
+/** The connection test's success message of each media server. */
+const libraryTestMessages: Record<
+  Exclude<ServiceName, "chaptarr">,
+  (inputs: { count: number }) => string
+> = {
+  audiobookshelf: m.test_ok_audiobookshelf,
+  kavita: m.test_ok_kavita,
+  komga: m.test_ok_komga,
+};
+
 export function ConnectionForm({
   service,
   current,
@@ -58,9 +68,7 @@ export function ConnectionForm({
                 m.test_ok_chaptarr({ version: result.version ?? "" }),
                 ...(result.warnings ?? []).map((warning) => m.test_chaptarr_warning({ warning })),
               ].join(" ")
-            : service === "kavita"
-              ? m.test_ok_kavita({ count: result.libraries ?? 0 })
-              : m.test_ok_audiobookshelf({ count: result.libraries ?? 0 }),
+            : libraryTestMessages[service]({ count: result.libraries ?? 0 }),
       });
     },
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),

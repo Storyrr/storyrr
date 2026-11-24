@@ -71,6 +71,18 @@ async function checkCredentials(
     if (!result.ok) return result.error.kind === "retryable" ? "unreachable" : "invalid";
     return { key: result.value.id, name: result.value.username, email: result.value.email ?? null };
   }
+  if (server === "komga") {
+    const komga = await services.komga();
+    if (!komga) return "disabled";
+    // Komga signs in with the account's email.
+    const result = await komga.login(username, password);
+    if (!result.ok) return result.error.kind === "retryable" ? "unreachable" : "invalid";
+    return {
+      key: result.value.id,
+      name: result.value.email.split("@")[0] ?? result.value.email,
+      email: result.value.email,
+    };
+  }
   const kavita = await services.kavita();
   if (!kavita) return "disabled";
   const result = await kavita.login(username, password);

@@ -9,6 +9,7 @@ import type { AppDatabase } from "#/server/db/client";
 import { libraryItem } from "#/server/db/schema";
 import type { AudiobookshelfClient } from "#/server/services/audiobookshelf/client";
 import type { KavitaClient } from "#/server/services/kavita/client";
+import type { KomgaClient } from "#/server/services/komga/client";
 import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
 
@@ -149,6 +150,32 @@ export async function syncKavita(
     now,
   );
   return ok({ series: series.length });
+}
+
+/** Replaces the Komga part of the library index: each series under all its titles (no shared ID). */
+export async function syncKomga(
+  db: AppDatabase,
+  komga: KomgaClient,
+  { excluded = [], now = new Date() }: SyncOptions = {},
+): Promise<ServiceResult<{ items: number }>> {
+  const all = await komga.allSeries();
+  if (!all.ok) return all;
+  const skip = new Set(excluded);
+  const series = all.value.filter((item) => !skip.has(item.libraryId));
+  replaceIndex(
+    db,
+    "komga",
+    series.map((item) => ({
+      itemId: item.seriesId,
+      libraryId: item.libraryId,
+      format: "ebook",
+      externalId: null,
+      titles: item.names,
+      author: item.author,
+    })),
+    now,
+  );
+  return ok({ items: series.length });
 }
 
 /**

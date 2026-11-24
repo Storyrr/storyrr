@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { titleKey } from "#/lib/match";
 import { createDatabase } from "#/server/db/client";
 import { createKavitaClient } from "#/server/services/kavita/client";
+import { createKomgaClient } from "#/server/services/komga/client";
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { libraryStats, ownedTitles, syncKavita } from "./index";
+import { libraryStats, ownedTitles, syncKavita, syncKomga } from "./index";
 
 describe("Kavita library index", () => {
   it("indexes every name of every series and matches titles loosely", async () => {
@@ -64,5 +65,30 @@ describe("Kavita library index", () => {
       counts: new Map([["1", 1]]),
       lastSyncedAt: now,
     });
+  });
+});
+
+describe("Komga library index", () => {
+  it("indexes series titles as eBooks only", async () => {
+    const db = createDatabase(":memory:");
+    const { fetch } = fakeFetch(() =>
+      json({
+        content: [
+          {
+            id: "s1",
+            libraryId: "lib",
+            name: "dune",
+            metadata: { title: "Dune", alternateTitles: [] },
+          },
+        ],
+        last: true,
+      }),
+    );
+    const komga = createKomgaClient({ url: "http://komga", apiKey: "k" }, fetch);
+
+    expect(await syncKomga(db, komga)).toEqual({ ok: true, value: { items: 1 } });
+    expect(ownedTitles(db, "ebook", ["Dune"])).toEqual(new Set(["dune"]));
+    expect(ownedTitles(db, "audiobook", ["Dune"]).size).toBe(0);
+    expect(libraryStats(db, "komga").counts).toEqual(new Map([["lib", 1]]));
   });
 });

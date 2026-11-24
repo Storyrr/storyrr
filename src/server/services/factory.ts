@@ -7,6 +7,7 @@ import {
   chaptarrConnection,
   hardcoverToken,
   kavitaConnection,
+  komgaConnection,
   metadataSettings,
 } from "#/server/settings/definitions";
 
@@ -15,6 +16,7 @@ import { createAudiobookshelfClient } from "./audiobookshelf/client";
 import { createChaptarrClient } from "./chaptarr/client";
 import { createHardcoverClient } from "./hardcover/client";
 import { createKavitaClient } from "./kavita/client";
+import { createKomgaClient } from "./komga/client";
 import type { FetchFn } from "./result";
 
 /** Builds service clients from the stored settings (null when a service isn't configured). */
@@ -31,6 +33,10 @@ export function createServices(store: SettingsStore, fetch: FetchFn) {
     async kavita() {
       const connection = await store.get(kavitaConnection);
       return connection ? createKavitaClient(connection, fetch) : null;
+    },
+    async komga() {
+      const connection = await store.get(komgaConnection);
+      return connection ? createKomgaClient(connection, fetch) : null;
     },
     async hardcover() {
       const token = await store.get(hardcoverToken);

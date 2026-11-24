@@ -71,6 +71,7 @@ function SignInPage() {
 const serverNames: Record<MediaServer, () => string> = {
   audiobookshelf: m.service_audiobookshelf,
   kavita: m.service_kavita,
+  komga: m.service_komga,
 };
 
 function useSignedIn() {
@@ -90,7 +91,7 @@ const signInErrors: Record<string, () => string> = {
   UNREACHABLE: m.sign_in_error_unreachable,
 };
 
-/** Sign in with an Audiobookshelf or Kavita account (username and password on that server). */
+/** Sign in with a media-server account (username, or email for Komga, and password on that server). */
 function MediaServerSignIn({ server }: { server: MediaServer }) {
   const signedIn = useSignedIn();
   const signIn = useMutation({
@@ -131,7 +132,8 @@ function MediaServerSignIn({ server }: { server: MediaServer }) {
         <form.Field name="username">
           {(field) => (
             <TextField
-              label={m.field_username()}
+              // Komga accounts sign in with their email.
+              label={server === "komga" ? m.field_email() : m.field_username()}
               name={field.name}
               autoComplete="username"
               value={field.state.value}

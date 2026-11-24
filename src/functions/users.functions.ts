@@ -173,7 +173,7 @@ export const importUsers = createServerFn({ method: "POST" })
     return { imported };
   });
 
-/** A media server's accounts, keyed like sign-in links (ABS id, Kavita lowercased username). */
+/** A media server's accounts, keyed like sign-in links (ABS and Komga ids, Kavita lowercased username). */
 async function serverAccounts(server: MediaServer) {
   if (server === "audiobookshelf") {
     const abs = await services.audiobookshelf();
@@ -181,6 +181,19 @@ async function serverAccounts(server: MediaServer) {
     const result = await abs.users();
     if (!result.ok) return result;
     return ok(result.value.map((u) => ({ key: u.id, name: u.username, email: u.email ?? null })));
+  }
+  if (server === "komga") {
+    const komga = await services.komga();
+    if (!komga) return fail("not_configured", "Komga is not configured");
+    const result = await komga.users();
+    if (!result.ok) return result;
+    return ok(
+      result.value.map((u) => ({
+        key: u.id,
+        name: u.email.split("@")[0] ?? u.email,
+        email: u.email,
+      })),
+    );
   }
   const kavita = await services.kavita();
   if (!kavita) return fail("not_configured", "Kavita is not configured");

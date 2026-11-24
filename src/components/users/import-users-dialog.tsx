@@ -28,6 +28,7 @@ import { m } from "#/paraglide/messages.js";
 const serverNames: Record<MediaServer, () => string> = {
   audiobookshelf: m.service_audiobookshelf,
   kavita: m.service_kavita,
+  komga: m.service_komga,
 };
 
 function AccountOption({

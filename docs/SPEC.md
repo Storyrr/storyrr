@@ -43,6 +43,7 @@ Shown when the database has no user.
    - Chaptarr: URL + API key (required for audiobooks and eBooks).
    - Audiobookshelf: URL + API key (audiobook availability).
    - Kavita: URL + auth key (optional, eBook availability).
+   - Komga: URL + API key (optional, eBook availability).
    - Metadata: Audible region (default `fr`), Hardcover token (optional).
 3. Defaults: default target per format (from the live lists):
    - audiobook → a Chaptarr root folder with `folderType` 1 (audiobook) or 0 (mixed);
@@ -53,7 +54,7 @@ Shown when the database has no user.
 
 - One search bar, with **tabs/filters: Audiobooks, Books** (default: All).
 - Result cards: cover, title, author (narrator for audiobooks), year, series badge, and a **status badge**: _Available_, _Requested_, _Processing_, or a **Request** button.
-- Owned detection: audiobooks by ASIN in Audiobookshelf; eBooks via Kavita (and Chaptarr files).
+- Owned detection: audiobooks by ASIN in Audiobookshelf; eBooks by title in Kavita and Komga, "probably owned" (and Chaptarr files). Any configured server counts (decided 2026-11-24).
 - Fast: debounce, cached metadata, no blocking on slow providers.
 
 ### 4.3 Media detail page
@@ -108,7 +109,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - On approval, submit to the backend:
   - audiobook/eBook → Chaptarr: ensure the author exists for that media type (with the write scope), monitor + search only the requested book, in the chosen root folder;
 - Status: `pending → approved → submitted → available`; failures go to `failed` with the upstream reason and a **Retry** action.
-- Availability updates from: Chaptarr webhook (import events), a periodic job (every ~15 min) checking Chaptarr files / Audiobookshelf / Kavita, and a manual "Check now".
+- Availability updates from: Chaptarr webhook (import events), a periodic job (every ~15 min) checking Chaptarr files and the media servers (Audiobookshelf, Kavita, Komga), and a manual "Check now".
 - Every transition is recorded (who, when, from → to, message) and shown in the request history.
 
 ### 4.7 Requests page (user view)
@@ -128,10 +129,10 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - **Profile:** avatar, name, email, role, member since; request counts (total, audiobooks, eBooks, available) and recent requests.
 - **Settings** (the user's own, tabs): **General** (display name, email read-only, display language: browser default or a fixed locale, stored per user and applied on any device), **Password** (current + new; signs out other sessions), **Permissions** (read-only: role, auto-approval, request limits left). Linked accounts and notifications come with those features.
 
-### 4.8e Sign in with Audiobookshelf / Kavita (decided 2026-11-24)
+### 4.8e Sign in with a media server (decided 2026-11-24; Komga added the same day)
 
-- Per server (Settings → Audiobookshelf / Kavita → Sign-in): on/off, and whether unknown accounts get a Storyrr account (off by default: only imported or matching accounts sign in).
-- The sign-in page then offers Storyrr account / Audiobookshelf / Kavita. Credentials are checked by the server (`POST /login`, `POST /api/Account/login`); the Storyrr account is found by link (ABS user id, Kavita username), else by email (then linked), else created with the default permissions when allowed. A better-auth plugin (`/api/auth/sign-in/media-server`) opens the session; bans apply.
+- Per server (Settings → Audiobookshelf / Kavita / Komga → Sign-in): on/off, and whether unknown accounts get a Storyrr account (off by default: only imported or matching accounts sign in).
+- The sign-in page then offers Storyrr account / Audiobookshelf / Kavita / Komga. Credentials are checked by the server (`POST /login`, `POST /api/Account/login`, Komga `GET /api/v2/users/me` with HTTP Basic: Komga accounts sign in with their email); the Storyrr account is found by link (`media_server_account`: ABS and Komga user ids, Kavita username), else by email (then linked), else created with the default permissions when allowed. A better-auth plugin (`/api/auth/sign-in/media-server`) opens the session; bans apply.
 - Users → Import users: lists a server's accounts and creates linked Storyrr accounts for the selected ones.
 
 ### 4.8d Forgot password (decided 2026-11-24)
@@ -154,7 +155,7 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **About:** version (and whether a newer GitHub release exists, checked hourly), total titles and requests, data directory, time zone; help links; the latest releases with their notes.
 - **Users:** auto-approve new users by default; global request limits per format ("Unlimited" or N requests every D days). Denied and cancelled requests give their slot back; joining an active request is free; admins are never limited.
 - **Services:** one Chaptarr server (decided: Chaptarr serves both formats), shown as a card (address, default folder and profile per format) with Edit (connection + defaults per format, in a dialog) and Delete, or an "Add a Chaptarr server" box; the webhook URL below.
-- **Audiobookshelf / Kavita** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
+- **Audiobookshelf / Kavita / Komga** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
 - **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
 - **Network:** an outbound HTTP(S) proxy for Storyrr's calls (with hosts reached directly), and an optional cover cache: covers served by Storyrr from the data folder (30 days), signed-in users only, provider image hosts only.
 - Later: health of each connection.
@@ -187,13 +188,14 @@ Uniqueness: one _active_ request per (media, format, target); a second requester
 
 ## 6. Integrations (summary)
 
-| Service                  | Used for                                                  | Auth           | Key endpoints (verify on install)                                                                                                                                            |
-| ------------------------ | --------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chaptarr                 | submit audiobooks/eBooks, folders, profiles, availability | `X-Api-Key`    | `/api/v1/rootfolder`, `/qualityprofile`, `/metadataprofile`, `/author/lookup`, `/book/lookup`, `POST/PUT /author?mediaType=`, `/book/monitor`, `/command`, `/queue`, webhook |
-| Audiobookshelf           | audiobook ownership, metadata proxy                       | Bearer API key | `/api/libraries`, `/api/libraries/:id/items`, `/api/search/books`                                                                                                            |
-| Kavita                   | eBook ownership                                           | Auth key → JWT | `/api/Plugin/authenticate`, library/series search                                                                                                                            |
-| Audible / Audnexus       | audiobook metadata                                        | none           | via ABS proxy or Audnexus                                                                                                                                                    |
-| Hardcover / Open Library | eBook metadata                                            | token / none   | GraphQL / `search.json`                                                                                                                                                      |
+| Service                  | Used for                                                  | Auth                           | Key endpoints (verify on install)                                                                                                                                            |
+| ------------------------ | --------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chaptarr                 | submit audiobooks/eBooks, folders, profiles, availability | `X-Api-Key`                    | `/api/v1/rootfolder`, `/qualityprofile`, `/metadataprofile`, `/author/lookup`, `/book/lookup`, `POST/PUT /author?mediaType=`, `/book/monitor`, `/command`, `/queue`, webhook |
+| Audiobookshelf           | audiobook ownership, metadata proxy                       | Bearer API key                 | `/api/libraries`, `/api/libraries/:id/items`, `/api/search/books`                                                                                                            |
+| Kavita                   | eBook ownership                                           | Auth key → JWT                 | `/api/Plugin/authenticate`, library/series search                                                                                                                            |
+| Komga                    | eBook ownership (comics, manga, eBooks), sign-in, users   | `X-API-Key` (user: HTTP Basic) | `GET /api/v1/libraries`, `POST /api/v1/series/list`, `GET /api/v2/users`, `GET /api/v2/users/me`                                                                             |
+| Audible / Audnexus       | audiobook metadata                                        | none                           | via ABS proxy or Audnexus                                                                                                                                                    |
+| Hardcover / Open Library | eBook metadata                                            | token / none                   | GraphQL / `search.json`                                                                                                                                                      |
 
 See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 

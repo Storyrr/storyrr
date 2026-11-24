@@ -10,6 +10,7 @@ import {
 } from "#/lib/schemas/settings";
 
 import { DiscoverLayoutSchema } from "#/lib/discover";
+import { MediaServerSignInSettingsSchema } from "#/lib/media-server-login";
 import { AGENT_DEFINITIONS, AgentCommonSchema, type NotificationAgent } from "#/lib/notifications";
 import { locales } from "#/paraglide/runtime.js";
 
@@ -44,6 +45,12 @@ export const kavitaConnection = defineSetting({
   secret: true,
 });
 
+export const komgaConnection = defineSetting({
+  key: "services.komga",
+  schema: StoredConnectionSchema,
+  secret: true,
+});
+
 /** Hardcover personal API token (eBook search). */
 export const hardcoverToken = defineSetting({
   key: "services.hardcover.token",
@@ -69,6 +76,7 @@ export const connectionSettings = {
   chaptarr: chaptarrConnection,
   audiobookshelf: audiobookshelfConnection,
   kavita: kavitaConnection,
+  komga: komgaConnection,
 } as const;
 
 /** Shared secret in the Chaptarr webhook URL (generated on first use). */
@@ -93,6 +101,7 @@ export const librarySelection = {
     secret: false,
   }),
   kavita: defineSetting({ key: "libraries.kavita", schema: LibrarySelectionSchema, secret: false }),
+  komga: defineSetting({ key: "libraries.komga", schema: LibrarySelectionSchema, secret: false }),
 } as const;
 
 const agentSetting = <TConfig extends v.GenericSchema>(agent: NotificationAgent, config: TConfig) =>
@@ -130,12 +139,10 @@ export const vapidKeys = defineSetting({
   secret: true,
 });
 
-const ServerSignInSchema = v.object({ enabled: v.boolean(), allowNew: v.boolean() });
-
-/** Sign in with Audiobookshelf / Kavita accounts, per server (off by default). */
+/** Sign in with media-server accounts, per server (off by default). */
 export const mediaServerSignIn = defineSetting({
   key: "auth.media-servers",
-  schema: v.object({ audiobookshelf: ServerSignInSchema, kavita: ServerSignInSchema }),
+  schema: MediaServerSignInSettingsSchema,
   secret: false,
 });
 

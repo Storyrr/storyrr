@@ -5,7 +5,7 @@ import { ASSIGNABLE_PERMISSIONS, DEFAULT_PERMISSIONS } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
 /** Services connected with a URL and an API / Auth key. */
-export const SERVICES = ["chaptarr", "audiobookshelf", "kavita"] as const;
+export const SERVICES = ["chaptarr", "audiobookshelf", "kavita", "komga"] as const;
 export type ServiceName = (typeof SERVICES)[number];
 
 /** Every external service whose errors the UI explains. */
@@ -13,6 +13,7 @@ export const EXTERNAL_SERVICES = [
   "chaptarr",
   "audiobookshelf",
   "kavita",
+  "komga",
   "hardcover",
   "audible",
 ] as const;
@@ -79,7 +80,7 @@ export const HardcoverTokenFormSchema = v.object({ token: v.pipe(v.string(), v.t
 export type HardcoverTokenForm = v.InferOutput<typeof HardcoverTokenFormSchema>;
 
 /** Libraries Storyrr reads from a media server. */
-export const LIBRARY_SERVICES = ["audiobookshelf", "kavita"] as const;
+export const LIBRARY_SERVICES = ["audiobookshelf", "kavita", "komga"] as const;
 export type LibraryService = (typeof LIBRARY_SERVICES)[number];
 
 /** Libraries left out of availability. Stored as exclusions so new libraries count by default. */

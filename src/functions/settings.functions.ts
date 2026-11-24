@@ -7,6 +7,7 @@ import {
   HardcoverTokenFormSchema,
   RevealSecretSchema,
   LibraryServiceInputSchema,
+  type LibraryService,
   NetworkSettingsSchema,
   MetadataSettingsSchema,
   SaveFormatDefaultsSchema,
@@ -16,13 +17,18 @@ import {
   UserSettingsFormSchema,
 } from "#/lib/schemas/settings";
 import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
+import {
+  DEFAULT_MEDIA_SERVER_SIGN_IN,
+  MEDIA_SERVERS,
+  ServerSignInSchema,
+} from "#/lib/media-server-login";
 import { m } from "#/paraglide/messages.js";
 import { requirePermission } from "#/server/auth/middleware";
 
 const requireSettings = requirePermission("manage_settings");
 import { getEnv } from "#/server/env";
 import { services } from "#/server/services";
-import type { ServiceError } from "#/server/services/result";
+import { fail, ok, type ServiceError, type ServiceResult } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import {
   connectionSettings,
@@ -76,11 +82,12 @@ async function connectionSummary(service: keyof typeof connectionSettings) {
 export const getServiceSettings = createServerFn({ method: "GET" })
   .middleware([requireSettings])
   .handler(async () => {
-    const [chaptarr, audiobookshelf, kavita, hardcover, metadata, audiobook, ebook] =
+    const [chaptarr, audiobookshelf, kavita, komga, hardcover, metadata, audiobook, ebook] =
       await Promise.all([
         connectionSummary("chaptarr"),
         connectionSummary("audiobookshelf"),
         connectionSummary("kavita"),
+        connectionSummary("komga"),
         settings.get(hardcoverToken),
         settings.get(metadataSettings),
         settings.get(formatDefaults.audiobook),
@@ -90,6 +97,7 @@ export const getServiceSettings = createServerFn({ method: "GET" })
       chaptarr,
       audiobookshelf,
       kavita,
+      komga,
       // Never send the token back: only whether one is stored.
       hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
@@ -229,28 +237,14 @@ export const getLibraries = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const excluded = new Set((await settings.get(librarySelection[data.service]))?.excluded ?? []);
     const stats = libraryStats(db, data.service);
-    let live: { id: string; name: string }[];
-    if (data.service === "audiobookshelf") {
-      const abs = await services.audiobookshelf();
-      if (!abs) return { ok: false as const, reason: "not_configured" as const };
-      const result = await abs.libraries();
-      if (!result.ok) return { ok: false as const, reason: "error" as const, error: result.error };
-      live = result.value
-        .filter((library) => library.mediaType === "book")
-        .map((library) => ({ id: library.id, name: library.name }));
-    } else {
-      const kavita = await services.kavita();
-      if (!kavita) return { ok: false as const, reason: "not_configured" as const };
-      const result = await kavita.libraries();
-      if (!result.ok) return { ok: false as const, reason: "error" as const, error: result.error };
-      live = result.value.map((library) => ({
-        id: String(library.id),
-        name: library.name ?? String(library.id),
-      }));
-    }
+    const live = await liveLibraries(data.service);
+    if (!live.ok)
+      return live.error.kind === "not_configured"
+        ? { ok: false as const, reason: "not_configured" as const }
+        : { ok: false as const, reason: "error" as const, error: live.error };
     return {
       ok: true as const,
-      libraries: live.map((library) => ({
+      libraries: live.value.map((library) => ({
         ...library,
         enabled: !excluded.has(library.id),
         items: stats.counts.get(library.id) ?? 0,
@@ -258,6 +252,44 @@ export const getLibraries = createServerFn({ method: "GET" })
       lastSyncedAt: stats.lastSyncedAt,
     };
   });
+
+/** A media server's libraries that can hold books, as `{ id, name }`. */
+async function liveLibraries(
+  service: LibraryService,
+): Promise<ServiceResult<{ id: string; name: string }[]>> {
+  switch (service) {
+    case "audiobookshelf": {
+      const abs = await services.audiobookshelf();
+      if (!abs) return fail("not_configured", "Audiobookshelf is not configured");
+      const result = await abs.libraries();
+      if (!result.ok) return result;
+      return ok(
+        result.value
+          .filter((library) => library.mediaType === "book")
+          .map((library) => ({ id: library.id, name: library.name })),
+      );
+    }
+    case "kavita": {
+      const kavita = await services.kavita();
+      if (!kavita) return fail("not_configured", "Kavita is not configured");
+      const result = await kavita.libraries();
+      if (!result.ok) return result;
+      return ok(
+        result.value.map((library) => ({
+          id: String(library.id),
+          name: library.name ?? String(library.id),
+        })),
+      );
+    }
+    default: {
+      const komga = await services.komga();
+      if (!komga) return fail("not_configured", "Komga is not configured");
+      const result = await komga.libraries();
+      if (!result.ok) return result;
+      return ok(result.value.map((library) => ({ id: library.id, name: library.name })));
+    }
+  }
+}
 
 export const saveLibrarySelection = createServerFn({ method: "POST" })
   .middleware([requireSettings])
@@ -367,29 +399,16 @@ export const getLogs = createServerFn({ method: "GET" })
   )
   .handler(({ data }) => readLogs(data));
 
-const ServerSignInSchema = v.object({ enabled: v.boolean(), allowNew: v.boolean() });
-
-/** Sign in with Audiobookshelf / Kavita: per server, on and whether new accounts are created. */
+/** Sign in with media-server accounts: per server, on and whether new accounts are created. */
 export const getMediaServerSignIn = createServerFn({ method: "GET" })
   .middleware([requireSettings])
-  .handler(
-    async () =>
-      (await settings.get(mediaServerSignIn)) ?? {
-        audiobookshelf: { enabled: false, allowNew: false },
-        kavita: { enabled: false, allowNew: false },
-      },
-  );
+  .handler(async () => (await settings.get(mediaServerSignIn)) ?? DEFAULT_MEDIA_SERVER_SIGN_IN);
 
 export const saveMediaServerSignIn = createServerFn({ method: "POST" })
   .middleware([requireSettings])
-  .validator(
-    v.object({ server: v.picklist(["audiobookshelf", "kavita"]), value: ServerSignInSchema }),
-  )
+  .validator(v.object({ server: v.picklist(MEDIA_SERVERS), value: ServerSignInSchema }))
   .handler(async ({ data }) => {
-    const current = (await settings.get(mediaServerSignIn)) ?? {
-      audiobookshelf: { enabled: false, allowNew: false },
-      kavita: { enabled: false, allowNew: false },
-    };
+    const current = (await settings.get(mediaServerSignIn)) ?? DEFAULT_MEDIA_SERVER_SIGN_IN;
     await settings.set(mediaServerSignIn, { ...current, [data.server]: data.value });
     return { ok: true };
   });
