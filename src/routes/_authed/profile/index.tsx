@@ -42,7 +42,6 @@ function QuotaCard({ label, quota }: { label: string; quota: RequestQuota }) {
 }
 
 function ProfilePage() {
-  const { user } = Route.useRouteContext();
   const { data: account } = useSuspenseQuery(accountQuery());
   const { data: all } = useSuspenseQuery(requestsQuery("mine", "all"));
   // Newest first (the requests page puts pending ones on top instead).
@@ -67,8 +66,7 @@ function ProfilePage() {
         </div>
       ) : null}
       <ProfileHeader
-        user={user}
-        createdAt={account.createdAt}
+        account={account}
         link={{
           to: "/profile/settings",
           label: m.profile_edit_settings(),

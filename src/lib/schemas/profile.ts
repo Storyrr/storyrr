@@ -8,9 +8,21 @@ import { locales } from "#/paraglide/runtime.js";
 export const LOCALE_CHOICES = ["default", ...locales] as const;
 export type LocaleChoice = (typeof LOCALE_CHOICES)[number];
 
-export const ProfileSchema = v.object({
+/** Whose account: omitted for the caller's own, a user id for admins editing someone else. */
+export const AccountTargetSchema = v.object({
+  userId: v.optional(v.pipe(v.string(), v.nonEmpty())),
+});
+
+export const ProfileFormSchema = v.object({
   name: SetupSchema.entries.name,
+  /** Only admins change it, and only on other accounts. */
+  email: SetupSchema.entries.email,
   locale: v.picklist(LOCALE_CHOICES),
+});
+
+export const ProfileSchema = v.object({
+  ...AccountTargetSchema.entries,
+  ...ProfileFormSchema.entries,
 });
 export type ProfileInput = v.InferOutput<typeof ProfileSchema>;
 
@@ -29,6 +41,24 @@ export const ChangePasswordSchema = v.object({
   newPassword,
 });
 export type ChangePasswordInput = v.InferOutput<typeof ChangePasswordSchema>;
+
+/** An admin setting another user's password: no current password needed. */
+export const SetPasswordSchema = v.object({
+  userId: v.pipe(v.string(), v.nonEmpty()),
+  newPassword,
+});
+
+export const SetPasswordFormSchema = v.pipe(
+  v.object({ newPassword, confirmPassword: v.string() }),
+  v.forward(
+    v.partialCheck(
+      [["newPassword"], ["confirmPassword"]],
+      (input) => input.newPassword === input.confirmPassword,
+      () => m.validation_password_mismatch(),
+    ),
+    ["confirmPassword"],
+  ),
+);
 
 /** The form: the new password typed twice. */
 export const ChangePasswordFormSchema = v.pipe(

@@ -1,15 +1,21 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PencilIcon,
+  SearchIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import type { SortDescriptor } from "react-aria-components";
 
 import { FormError } from "#/components/form/form-error";
+import { UserAvatar } from "#/components/layout/user-avatar";
 import { CreateUserDialog } from "#/components/users/create-user-dialog";
-import { RequestLimitsDialog } from "#/components/users/request-limits-dialog";
-import { roleLabels } from "#/components/users/role-labels";
 import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
+import { Button, buttonVariants } from "#/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -19,21 +25,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "#/components/ui/dialog";
-import { Spinner } from "#/components/ui/spinner";
-import { Switch } from "#/components/ui/switch";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "#/components/ui/input-group";
+import { Label } from "#/components/ui/label";
 import {
-  deleteUser,
-  setUserAutoApprove,
-  setUserBanned,
-  setUserRole,
-} from "#/functions/users.functions";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
+import { Spinner } from "#/components/ui/spinner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/components/ui/table";
+import { deleteUser, type getUsers } from "#/functions/users.functions";
 import { formatDate } from "#/lib/format";
 import { authKeys } from "#/lib/queries/auth";
 import { userSettingsQuery } from "#/lib/queries/settings";
 import { userKeys, usersQuery } from "#/lib/queries/users";
 import { m } from "#/paraglide/messages.js";
+import { getLocale } from "#/paraglide/runtime.js";
 
-export const Route = createFileRoute("/_authed/users")({
+export const Route = createFileRoute("/_authed/users/")({
   beforeLoad: ({ context }) => {
     if (!context.user.isAdmin) throw redirect({ to: "/" });
   },
@@ -46,130 +64,236 @@ export const Route = createFileRoute("/_authed/users")({
   component: UsersPage,
 });
 
-function useUsers() {
-  return useSuspenseQuery(usersQuery()).data;
+type Account = Awaited<ReturnType<typeof getUsers>>[number];
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+type SortColumn = "name" | "requests" | "role" | "createdAt";
+const isSortColumn = (key: unknown): key is SortColumn =>
+  key === "name" || key === "requests" || key === "role" || key === "createdAt";
+
+function compare(a: Account, b: Account, column: SortColumn): number {
+  switch (column) {
+    case "name":
+      return a.name.localeCompare(b.name, getLocale(), { sensitivity: "base" });
+    case "requests":
+      return a.requests - b.requests;
+    case "role":
+      return (a.role === "admin" ? 0 : 1) - (b.role === "admin" ? 0 : 1);
+    default:
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  }
 }
 
-/** One mutation per action; every change refreshes the list (and the caller's own auth state). */
-function useUserAction<TInput>(fn: (input: TInput) => Promise<unknown>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: fn,
-    onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: userKeys.all }),
-        queryClient.invalidateQueries({ queryKey: authKeys.all }),
-      ]),
-  });
-}
-
+/** Seerr-like users table: search, sortable columns, pages; Edit opens the user's settings. */
 function UsersPage() {
-  const users = useUsers();
+  const { data: users } = useSuspenseQuery(usersQuery());
   const { data: defaults } = useSuspenseQuery(userSettingsQuery());
   const { user: me } = Route.useRouteContext();
-  const roleFn = useServerFn(setUserRole);
-  const autoApproveFn = useServerFn(setUserAutoApprove);
-  const bannedFn = useServerFn(setUserBanned);
-  const setRole = useUserAction((data: { userId: string; role: "user" | "admin" }) =>
-    roleFn({ data }),
-  );
-  const setAutoApprove = useUserAction((data: { userId: string; autoApprove: boolean }) =>
-    autoApproveFn({ data }),
-  );
-  const setBanned = useUserAction((data: { userId: string; banned: boolean }) =>
-    bannedFn({ data }),
-  );
-  const error = setRole.error ?? setAutoApprove.error ?? setBanned.error;
+  const searchId = useId();
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortDescriptor>({ column: "name", direction: "ascending" });
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState(0);
+
+  const rows = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase();
+    const filtered = needle
+      ? users.filter(
+          (u) =>
+            u.name.toLocaleLowerCase().includes(needle) ||
+            u.email.toLocaleLowerCase().includes(needle),
+        )
+      : users;
+    const column = isSortColumn(sort.column) ? sort.column : "name";
+    const sorted = filtered.toSorted((a, b) => compare(a, b, column));
+    return sort.direction === "descending" ? sorted.toReversed() : sorted;
+  }, [users, query, sort]);
+
+  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const current = Math.min(page, pages - 1);
+  const visible = rows.slice(current * pageSize, (current + 1) * pageSize);
+  const from = rows.length === 0 ? 0 : current * pageSize + 1;
+  const to = current * pageSize + visible.length;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-semibold">{m.users_title()}</h1>
-          <p className="text-muted-foreground">{m.users_description()}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold">{m.users_title()}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <CreateUserDialog defaultAutoApprove={defaults.defaultAutoApprove} />
+          <Label htmlFor={searchId} className="sr-only">
+            {m.users_search()}
+          </Label>
+          <InputGroup className="w-64">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              id={searchId}
+              type="search"
+              placeholder={m.users_search()}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(0);
+              }}
+            />
+          </InputGroup>
         </div>
-        <CreateUserDialog defaultAutoApprove={defaults.defaultAutoApprove} />
       </div>
-      <FormError message={error ? error.message || m.error_generic() : null} />
-      <ul className="flex flex-col divide-y">
-        {users.map((account) => {
-          const isMe = account.id === me.id;
-          const isAdmin = account.role === "admin";
-          return (
-            <li key={account.id} className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4">
-              <div className="flex min-w-0 flex-1 basis-60 flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate font-medium">{account.name}</span>
-                  <Badge variant={isAdmin ? "default" : "secondary"}>
-                    {roleLabels[isAdmin ? "admin" : "user"]()}
-                  </Badge>
-                  {isMe ? <Badge variant="outline">{m.users_you()}</Badge> : null}
-                  {account.banned ? <Badge variant="destructive">{m.users_banned()}</Badge> : null}
-                </div>
-                <p className="truncate text-sm text-muted-foreground">{account.email}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(new Date(account.createdAt))} ·{" "}
-                  {m.users_requests({ count: account.requests })}
-                </p>
-              </div>
-              <Switch
-                isSelected={isAdmin || account.autoApprove}
-                isDisabled={isAdmin}
-                onChange={(autoApprove) =>
-                  setAutoApprove.mutate({ userId: account.id, autoApprove })
-                }
-              >
-                <span className="text-sm">{m.field_auto_approve()}</span>
-              </Switch>
-              {isMe ? null : (
-                <div className="flex flex-wrap gap-2">
-                  {isAdmin ? null : (
-                    <RequestLimitsDialog
-                      userId={account.id}
-                      name={account.name}
-                      current={account.requestLimits}
-                      global={defaults.requestLimits}
-                    />
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    isDisabled={setRole.isPending}
-                    onPress={() =>
-                      setRole.mutate({ userId: account.id, role: isAdmin ? "user" : "admin" })
-                    }
-                  >
-                    {isAdmin ? m.users_make_user() : m.users_make_admin()}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    isDisabled={setBanned.isPending}
-                    onPress={() =>
-                      setBanned.mutate({ userId: account.id, banned: !account.banned })
-                    }
-                  >
-                    {account.banned ? m.action_unban() : m.action_ban()}
-                  </Button>
-                  <DeleteUserButton id={account.id} name={account.name} />
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <p className="text-sm text-muted-foreground">{m.users_description()}</p>
+
+      <div className="overflow-hidden rounded-xl border bg-card">
+        <Table
+          aria-label={m.users_title()}
+          sortDescriptor={sort}
+          onSortChange={(descriptor) => {
+            setSort(descriptor);
+            setPage(0);
+          }}
+        >
+          <TableHeader className="bg-muted/50">
+            <TableHead id="name" isRowHeader allowsSorting className="px-4">
+              {m.users_column_user()}
+            </TableHead>
+            <TableHead id="requests" allowsSorting>
+              {m.users_column_requests()}
+            </TableHead>
+            <TableHead id="role" allowsSorting>
+              {m.field_role()}
+            </TableHead>
+            <TableHead id="createdAt" allowsSorting>
+              {m.users_column_joined()}
+            </TableHead>
+            <TableHead id="actions" className="px-4 text-right">
+              <span className="sr-only">{m.users_column_actions()}</span>
+            </TableHead>
+          </TableHeader>
+          <TableBody
+            items={visible}
+            renderEmptyState={() => (
+              <p className="py-6 text-muted-foreground">{m.users_none_found()}</p>
+            )}
+          >
+            {(account) => {
+              const isMe = account.id === me.id;
+              return (
+                <TableRow id={account.id}>
+                  <TableCell className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar name={account.name} className="size-9" />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="flex items-center gap-2 font-medium">
+                          {account.name}
+                          {isMe ? <Badge variant="outline">{m.users_you()}</Badge> : null}
+                          {account.banned ? (
+                            <Badge variant="destructive">{m.users_banned()}</Badge>
+                          ) : null}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{account.email}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{account.requests}</TableCell>
+                  <TableCell>{account.role === "admin" ? m.role_admin() : m.role_user()}</TableCell>
+                  <TableCell>{formatDate(new Date(account.createdAt))}</TableCell>
+                  <TableCell className="px-4">
+                    <div className="flex justify-end gap-2">
+                      {isMe ? (
+                        <Link
+                          to="/profile/settings/general"
+                          className={buttonVariants({ size: "sm" })}
+                        >
+                          <PencilIcon data-icon="inline-start" />
+                          {m.action_edit()}
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/users/$userId/settings/general"
+                          params={{ userId: account.id }}
+                          className={buttonVariants({ size: "sm" })}
+                        >
+                          <PencilIcon data-icon="inline-start" />
+                          {m.action_edit()}
+                        </Link>
+                      )}
+                      <DeleteUserButton id={account.id} name={account.name} disabled={isMe} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            }}
+          </TableBody>
+        </Table>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t px-4 py-3 text-sm">
+          <p className="text-muted-foreground">
+            {m.users_showing({ from, to, total: rows.length })}
+          </p>
+          <Select
+            aria-label={m.users_page_size()}
+            value={String(pageSize)}
+            onChange={(key) => {
+              setPageSize(Number(key));
+              setPage(0);
+            }}
+            className="flex flex-row items-center gap-2"
+          >
+            <Label>{m.users_page_size()}</Label>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} id={String(size)}>
+                  {String(size)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              isDisabled={current === 0}
+              onPress={() => setPage(current - 1)}
+            >
+              <ChevronLeftIcon data-icon="inline-start" />
+              {m.action_previous()}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              isDisabled={current >= pages - 1}
+              onPress={() => setPage(current + 1)}
+            >
+              {m.action_next()}
+              <ChevronRightIcon data-icon="inline-end" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function DeleteUserButton({ id, name }: { id: string; name: string }) {
+function DeleteUserButton({ id, name, disabled }: { id: string; name: string; disabled: boolean }) {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
   const deleteFn = useServerFn(deleteUser);
-  const remove = useUserAction(() => deleteFn({ data: { userId: id } }));
+  const remove = useMutation({
+    mutationFn: () => deleteFn({ data: { userId: id } }),
+    onSuccess: async () => {
+      setOpen(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: userKeys.all }),
+        queryClient.invalidateQueries({ queryKey: authKeys.all }),
+      ]);
+    },
+  });
 
   return (
     <DialogTrigger isOpen={open} onOpenChange={setOpen}>
-      <Button size="sm" variant="destructive">
+      <Button size="sm" variant="destructive" isDisabled={disabled}>
         <Trash2Icon data-icon="inline-start" />
         {m.action_delete()}
       </Button>
@@ -184,7 +308,7 @@ function DeleteUserButton({ id, name }: { id: string; name: string }) {
           <Button
             variant="destructive"
             isDisabled={remove.isPending}
-            onPress={() => remove.mutate(undefined, { onSuccess: () => setOpen(false) })}
+            onPress={() => remove.mutate()}
           >
             {remove.isPending ? <Spinner data-icon="inline-start" /> : null}
             {m.action_delete()}

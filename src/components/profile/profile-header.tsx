@@ -3,20 +3,18 @@ import { Link } from "@tanstack/react-router";
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { Badge } from "#/components/ui/badge";
 import { buttonVariants } from "#/components/ui/button";
-import type { SessionUser } from "#/functions/auth.functions";
 import { formatDate } from "#/lib/format";
 import { m } from "#/paraglide/messages.js";
 
 /** Avatar, name, email and membership, with a link to the other profile page. */
 export function ProfileHeader({
-  user,
-  createdAt,
+  account: user,
   link,
 }: {
-  user: SessionUser;
-  createdAt: Date | string;
-  link: { to: "/profile" | "/profile/settings"; label: string; icon: React.ReactNode };
+  account: { name: string; email: string; isAdmin: boolean; createdAt: Date | string };
+  link?: { to: "/profile" | "/profile/settings"; label: string; icon: React.ReactNode };
 }) {
+  const { createdAt } = user;
   return (
     <div className="flex flex-wrap items-center gap-6">
       <UserAvatar name={user.name} className="size-20 text-2xl" />
@@ -32,10 +30,12 @@ export function ProfileHeader({
           {m.profile_member_since({ date: formatDate(new Date(createdAt), { dateStyle: "long" }) })}
         </p>
       </div>
-      <Link to={link.to} className={buttonVariants({ variant: "outline" })}>
-        {link.icon}
-        {link.label}
-      </Link>
+      {link ? (
+        <Link to={link.to} className={buttonVariants({ variant: "outline" })}>
+          {link.icon}
+          {link.label}
+        </Link>
+      ) : null}
     </div>
   );
 }

@@ -19,7 +19,6 @@ import { Route as AuthedBooksRouteImport } from './routes/_authed/books'
 import { Route as AuthedRequestsRouteImport } from './routes/_authed/requests'
 import { Route as AuthedSearchRouteImport } from './routes/_authed/search'
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
-import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
@@ -31,12 +30,17 @@ import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/sett
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settings/users'
+import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 import { Route as AuthedProfileSettingsGeneralRouteImport } from './routes/_authed/profile/settings/general'
 import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
 import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
+import { Route as AuthedUsersUserIdSettingsRouteImport } from './routes/_authed/users/$userId/settings'
+import { Route as AuthedUsersUserIdSettingsGeneralRouteImport } from './routes/_authed/users/$userId/settings/general'
+import { Route as AuthedUsersUserIdSettingsPasswordRouteImport } from './routes/_authed/users/$userId/settings/password'
+import { Route as AuthedUsersUserIdSettingsPermissionsRouteImport } from './routes/_authed/users/$userId/settings/permissions'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -85,11 +89,6 @@ const AuthedSearchRoute = AuthedSearchRouteImport.update({
 const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedUsersRoute = AuthedUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedWelcomeRoute = AuthedWelcomeRouteImport.update({
@@ -148,6 +147,11 @@ const AuthedSettingsUsersRoute = AuthedSettingsUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -181,6 +185,30 @@ const AuthedProfileSettingsPermissionsRoute =
     path: '/permissions',
     getParentRoute: () => AuthedProfileSettingsRoute,
   } as any)
+const AuthedUsersUserIdSettingsRoute =
+  AuthedUsersUserIdSettingsRouteImport.update({
+    id: '/users/$userId/settings',
+    path: '/users/$userId/settings',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedUsersUserIdSettingsGeneralRoute =
+  AuthedUsersUserIdSettingsGeneralRouteImport.update({
+    id: '/general',
+    path: '/general',
+    getParentRoute: () => AuthedUsersUserIdSettingsRoute,
+  } as any)
+const AuthedUsersUserIdSettingsPasswordRoute =
+  AuthedUsersUserIdSettingsPasswordRouteImport.update({
+    id: '/password',
+    path: '/password',
+    getParentRoute: () => AuthedUsersUserIdSettingsRoute,
+  } as any)
+const AuthedUsersUserIdSettingsPermissionsRoute =
+  AuthedUsersUserIdSettingsPermissionsRouteImport.update({
+    id: '/permissions',
+    path: '/permissions',
+    getParentRoute: () => AuthedUsersUserIdSettingsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -192,7 +220,6 @@ export interface FileRoutesByFullPath {
   '/requests': typeof AuthedRequestsRoute
   '/search': typeof AuthedSearchRoute
   '/settings': typeof AuthedSettingsRouteWithChildren
-  '/users': typeof AuthedUsersRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
@@ -206,10 +233,15 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/issues/': typeof AuthedIssuesIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
+  '/users/': typeof AuthedUsersIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
+  '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
+  '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
+  '/users/$userId/settings/permissions': typeof AuthedUsersUserIdSettingsPermissionsRoute
 }
 export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
@@ -220,7 +252,6 @@ export interface FileRoutesByTo {
   '/requests': typeof AuthedRequestsRoute
   '/search': typeof AuthedSearchRoute
   '/settings': typeof AuthedSettingsRouteWithChildren
-  '/users': typeof AuthedUsersRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
@@ -235,10 +266,15 @@ export interface FileRoutesByTo {
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/issues': typeof AuthedIssuesIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
+  '/users': typeof AuthedUsersIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
+  '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
+  '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
+  '/users/$userId/settings/permissions': typeof AuthedUsersUserIdSettingsPermissionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,7 +287,6 @@ export interface FileRoutesById {
   '/_authed/requests': typeof AuthedRequestsRoute
   '/_authed/search': typeof AuthedSearchRoute
   '/_authed/settings': typeof AuthedSettingsRouteWithChildren
-  '/_authed/users': typeof AuthedUsersRoute
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -266,10 +301,15 @@ export interface FileRoutesById {
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/_authed/issues/': typeof AuthedIssuesIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
+  '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/_authed/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/_authed/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
+  '/_authed/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
+  '/_authed/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
+  '/_authed/users/$userId/settings/permissions': typeof AuthedUsersUserIdSettingsPermissionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -283,7 +323,6 @@ export interface FileRouteTypes {
     | '/requests'
     | '/search'
     | '/settings'
-    | '/users'
     | '/welcome'
     | '/api/health'
     | '/issues/$id'
@@ -297,10 +336,15 @@ export interface FileRouteTypes {
     | '/api/webhooks/chaptarr'
     | '/issues/'
     | '/profile/'
+    | '/users/'
     | '/media/$type/$id'
     | '/profile/settings/general'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/users/$userId/settings'
+    | '/users/$userId/settings/general'
+    | '/users/$userId/settings/password'
+    | '/users/$userId/settings/permissions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/setup'
@@ -311,7 +355,6 @@ export interface FileRouteTypes {
     | '/requests'
     | '/search'
     | '/settings'
-    | '/users'
     | '/welcome'
     | '/api/health'
     | '/'
@@ -326,10 +369,15 @@ export interface FileRouteTypes {
     | '/api/webhooks/chaptarr'
     | '/issues'
     | '/profile'
+    | '/users'
     | '/media/$type/$id'
     | '/profile/settings/general'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/users/$userId/settings'
+    | '/users/$userId/settings/general'
+    | '/users/$userId/settings/password'
+    | '/users/$userId/settings/permissions'
   id:
     | '__root__'
     | '/_authed'
@@ -341,7 +389,6 @@ export interface FileRouteTypes {
     | '/_authed/requests'
     | '/_authed/search'
     | '/_authed/settings'
-    | '/_authed/users'
     | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
@@ -356,10 +403,15 @@ export interface FileRouteTypes {
     | '/api/webhooks/chaptarr'
     | '/_authed/issues/'
     | '/_authed/profile/'
+    | '/_authed/users/'
     | '/_authed/media/$type/$id'
     | '/_authed/profile/settings/general'
     | '/_authed/profile/settings/password'
     | '/_authed/profile/settings/permissions'
+    | '/_authed/users/$userId/settings'
+    | '/_authed/users/$userId/settings/general'
+    | '/_authed/users/$userId/settings/password'
+    | '/_authed/users/$userId/settings/permissions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -443,13 +495,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/users': {
-      id: '/_authed/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AuthedUsersRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/welcome': {
       id: '/_authed/welcome'
       path: '/welcome'
@@ -527,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsUsersRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    '/_authed/users/': {
+      id: '/_authed/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AuthedUsersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -569,6 +621,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProfileSettingsPermissionsRouteImport
       parentRoute: typeof AuthedProfileSettingsRoute
     }
+    '/_authed/users/$userId/settings': {
+      id: '/_authed/users/$userId/settings'
+      path: '/users/$userId/settings'
+      fullPath: '/users/$userId/settings'
+      preLoaderRoute: typeof AuthedUsersUserIdSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/users/$userId/settings/general': {
+      id: '/_authed/users/$userId/settings/general'
+      path: '/general'
+      fullPath: '/users/$userId/settings/general'
+      preLoaderRoute: typeof AuthedUsersUserIdSettingsGeneralRouteImport
+      parentRoute: typeof AuthedUsersUserIdSettingsRoute
+    }
+    '/_authed/users/$userId/settings/password': {
+      id: '/_authed/users/$userId/settings/password'
+      path: '/password'
+      fullPath: '/users/$userId/settings/password'
+      preLoaderRoute: typeof AuthedUsersUserIdSettingsPasswordRouteImport
+      parentRoute: typeof AuthedUsersUserIdSettingsRoute
+    }
+    '/_authed/users/$userId/settings/permissions': {
+      id: '/_authed/users/$userId/settings/permissions'
+      path: '/permissions'
+      fullPath: '/users/$userId/settings/permissions'
+      preLoaderRoute: typeof AuthedUsersUserIdSettingsPermissionsRouteImport
+      parentRoute: typeof AuthedUsersUserIdSettingsRoute
+    }
   }
 }
 
@@ -609,6 +689,27 @@ const AuthedProfileSettingsRouteWithChildren =
     AuthedProfileSettingsRouteChildren,
   )
 
+interface AuthedUsersUserIdSettingsRouteChildren {
+  AuthedUsersUserIdSettingsGeneralRoute: typeof AuthedUsersUserIdSettingsGeneralRoute
+  AuthedUsersUserIdSettingsPasswordRoute: typeof AuthedUsersUserIdSettingsPasswordRoute
+  AuthedUsersUserIdSettingsPermissionsRoute: typeof AuthedUsersUserIdSettingsPermissionsRoute
+}
+
+const AuthedUsersUserIdSettingsRouteChildren: AuthedUsersUserIdSettingsRouteChildren =
+  {
+    AuthedUsersUserIdSettingsGeneralRoute:
+      AuthedUsersUserIdSettingsGeneralRoute,
+    AuthedUsersUserIdSettingsPasswordRoute:
+      AuthedUsersUserIdSettingsPasswordRoute,
+    AuthedUsersUserIdSettingsPermissionsRoute:
+      AuthedUsersUserIdSettingsPermissionsRoute,
+  }
+
+const AuthedUsersUserIdSettingsRouteWithChildren =
+  AuthedUsersUserIdSettingsRoute._addFileChildren(
+    AuthedUsersUserIdSettingsRouteChildren,
+  )
+
 interface AuthedRouteChildren {
   AuthedAudiobooksRoute: typeof AuthedAudiobooksRoute
   AuthedBlocklistRoute: typeof AuthedBlocklistRoute
@@ -616,14 +717,15 @@ interface AuthedRouteChildren {
   AuthedRequestsRoute: typeof AuthedRequestsRoute
   AuthedSearchRoute: typeof AuthedSearchRoute
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
-  AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedIssuesIdRoute: typeof AuthedIssuesIdRoute
   AuthedProfileSettingsRoute: typeof AuthedProfileSettingsRouteWithChildren
   AuthedIssuesIndexRoute: typeof AuthedIssuesIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
+  AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
+  AuthedUsersUserIdSettingsRoute: typeof AuthedUsersUserIdSettingsRouteWithChildren
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -633,14 +735,15 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedRequestsRoute: AuthedRequestsRoute,
   AuthedSearchRoute: AuthedSearchRoute,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
-  AuthedUsersRoute: AuthedUsersRoute,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedIssuesIdRoute: AuthedIssuesIdRoute,
   AuthedProfileSettingsRoute: AuthedProfileSettingsRouteWithChildren,
   AuthedIssuesIndexRoute: AuthedIssuesIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
+  AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
+  AuthedUsersUserIdSettingsRoute: AuthedUsersUserIdSettingsRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =

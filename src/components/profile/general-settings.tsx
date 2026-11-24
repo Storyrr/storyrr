@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import type * as v from "valibot";
 import { useServerFn } from "@tanstack/react-start";
 import { useId } from "react";
 
@@ -18,13 +18,9 @@ import { Input } from "#/components/ui/input";
 import { Spinner } from "#/components/ui/spinner";
 import { updateProfile } from "#/functions/profile.functions";
 import { authKeys } from "#/lib/queries/auth";
-import { profileKeys } from "#/lib/queries/profile";
-import {
-  LOCALE_CHOICES,
-  ProfileSchema,
-  type LocaleChoice,
-  type ProfileInput,
-} from "#/lib/schemas/profile";
+import { accountQuery, profileKeys } from "#/lib/queries/profile";
+import { userKeys } from "#/lib/queries/users";
+import { LOCALE_CHOICES, ProfileFormSchema, type LocaleChoice } from "#/lib/schemas/profile";
 import { m } from "#/paraglide/messages.js";
 import {
   baseLocale,
@@ -38,6 +34,8 @@ import {
 
 /** Each language in its own language, whatever the current one. */
 const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
+
+type ProfileForm = v.InferOutput<typeof ProfileFormSchema>;
 
 const isChoice = (value: string | null): value is LocaleChoice =>
   LOCALE_CHOICES.some((choice) => choice === value);
@@ -53,25 +51,29 @@ function applyLocale(choice: LocaleChoice) {
   if (browser !== getLocale()) window.location.reload();
 }
 
-export function GeneralSettings() {
-  const { user } = useRouteContext({ from: "/_authed" });
+/** General tab: the caller's own account, or (admins) another user's. */
+export function GeneralSettings({ userId }: { userId?: string }) {
+  const { data: account } = useSuspenseQuery(accountQuery(userId));
   const queryClient = useQueryClient();
   const updateFn = useServerFn(updateProfile);
   const emailId = useId();
   const save = useMutation({
-    mutationFn: (data: ProfileInput) => updateFn({ data }),
+    mutationFn: (data: ProfileForm) => updateFn({ data: { ...data, userId } }),
     onSuccess: async (_, data) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: authKeys.all }),
         queryClient.invalidateQueries({ queryKey: profileKeys.all }),
+        queryClient.invalidateQueries({ queryKey: userKeys.all }),
       ]);
-      applyLocale(data.locale);
+      // Someone else's language applies when they next sign in.
+      if (account.self) applyLocale(data.locale);
     },
   });
-  const locale: LocaleChoice = user.locale && isLocale(user.locale) ? user.locale : "default";
+  const locale: LocaleChoice =
+    account.locale && isLocale(account.locale) ? account.locale : "default";
   const form = useForm({
-    defaultValues: { name: user.name, locale },
-    validators: { onSubmit: ProfileSchema },
+    defaultValues: { name: account.name, email: account.email, locale },
+    validators: { onSubmit: ProfileFormSchema },
     onSubmit: async ({ value }) => {
       await save.mutateAsync(value).catch(() => undefined);
     },
@@ -92,7 +94,7 @@ export function GeneralSettings() {
         <FieldGroup>
           <FormError message={save.error ? save.error.message || m.error_generic() : null} />
           <SettingsRow label={m.field_role()}>
-            <p className="text-sm">{user.isAdmin ? m.role_admin() : m.role_user()}</p>
+            <p className="text-sm">{account.isAdmin ? m.role_admin() : m.role_user()}</p>
           </SettingsRow>
           <form.Field name="name">
             {(field) => (
@@ -108,13 +110,31 @@ export function GeneralSettings() {
               />
             )}
           </form.Field>
-          <SettingsRow
-            label={m.field_email()}
-            description={m.profile_email_description()}
-            htmlFor={emailId}
-          >
-            <Input id={emailId} readOnly value={user.email} />
-          </SettingsRow>
+          {account.self ? (
+            <SettingsRow
+              label={m.field_email()}
+              description={m.profile_email_description()}
+              htmlFor={emailId}
+            >
+              <Input id={emailId} readOnly value={account.email} />
+            </SettingsRow>
+          ) : (
+            <form.Field name="email">
+              {(field) => (
+                <TextField
+                  label={m.field_email()}
+                  layout="row"
+                  type="email"
+                  name={field.name}
+                  autoComplete="off"
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                  errors={field.state.meta.errors}
+                />
+              )}
+            </form.Field>
+          )}
           <form.Field name="locale">
             {(field) => (
               <SelectField

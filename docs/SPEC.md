@@ -108,6 +108,7 @@ Shown when the database has no user.
 
 - List, create/invite (email + temporary password; invite links later), set role, toggle auto-approve, disable/remove.
 - Per-user request limits overriding the global ones (decided 2026-11-24).
+- Seerr-like table (decided 2026-11-24): user (avatar, name, email), requests, role, joined; search, sortable columns, pages. **Edit** opens that user's settings (the same General / Password / Permissions tabs as one's own): admins change their name, email and language, set a new password, and edit role, auto-approval, ban and request limits there. Admins can't demote, ban or delete themselves.
 - Optional link to an Audiobookshelf user (future: "already listened").
 
 ### 4.8b Account menu and profile (decided 2026-11-24)
