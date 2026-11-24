@@ -569,5 +569,18 @@
   "push_unsupported": "Ce navigateur ne prend pas en charge les notifications push. Sur iPhone, ajoutez d’abord Storyrr à l’écran d’accueil.",
   "push_permission_denied": "Les notifications sont bloquées pour ce site dans les réglages du navigateur.",
   "mobile_nav_label": "Pages principales",
-  "mobile_nav_more": "Plus"
+  "mobile_nav_more": "Plus",
+  "password_reset_email_subject": "Réinitialiser votre mot de passe Storyrr",
+  "password_reset_email_message": "Bonjour {name}, quelqu’un (vous, espérons-le) a demandé à réinitialiser votre mot de passe Storyrr. Le bouton ci-dessous permet d’en choisir un nouveau ; il fonctionne une fois, pendant une heure. Si ce n’était pas vous, ignorez cet e-mail.",
+  "forgot_password_link": "Mot de passe oublié ?",
+  "forgot_password_title": "Mot de passe oublié ?",
+  "forgot_password_description": "Saisissez l’e-mail de votre compte : nous vous enverrons un lien pour en choisir un nouveau.",
+  "forgot_password_submit": "Envoyer le lien",
+  "forgot_password_sent": "Si un compte utilise cette adresse, un lien est en route. Vérifiez votre boîte de réception (et les indésirables).",
+  "back_to_sign_in": "Retour à la connexion",
+  "reset_password_title": "Choisir un nouveau mot de passe",
+  "reset_password_description": "Vos autres sessions seront déconnectées.",
+  "reset_password_submit": "Enregistrer le mot de passe",
+  "reset_password_invalid": "Ce lien a expiré ou a déjà servi. Demandez-en un nouveau.",
+  "reset_password_done": "Mot de passe modifié. Vous pouvez maintenant vous connecter avec."
 }

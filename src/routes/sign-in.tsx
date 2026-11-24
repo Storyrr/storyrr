@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import * as v from "valibot";
 
 import { AuthCard } from "#/components/auth-card";
@@ -31,6 +31,7 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
   const router = useRouter();
+  const { passwordReset } = Route.useRouteContext().authState;
   const queryClient = useQueryClient();
   const search = Route.useSearch();
 
@@ -80,6 +81,14 @@ function SignInPage() {
               />
             )}
           </form.Field>
+          {passwordReset ? (
+            <Link
+              to="/forgot-password"
+              className="-mb-4 self-end text-sm text-muted-foreground hover:underline"
+            >
+              {m.forgot_password_link()}
+            </Link>
+          ) : null}
           <form.Field name="password">
             {(field) => (
               <TextField

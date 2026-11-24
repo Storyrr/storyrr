@@ -126,6 +126,10 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - **Profile:** avatar, name, email, role, member since; request counts (total, audiobooks, eBooks, available) and recent requests.
 - **Settings** (the user's own, tabs): **General** (display name, email read-only, display language: browser default or a fixed locale, stored per user and applied on any device), **Password** (current + new; signs out other sessions), **Permissions** (read-only: role, auto-approval, request limits left). Linked accounts and notifications come with those features.
 
+### 4.8d Forgot password (decided 2026-11-24)
+
+When the Email notification agent is set up, the sign-in page offers "Forgot password?": an email with a one-time link valid for an hour (better-auth's reset flow, sent through the agent's SMTP server, in the visitor's language), leading to a page to choose a new password; other sessions are signed out. The form answers the same whether the address has an account or not.
+
 ### 4.8c Notifications (decided 2026-11-24)
 
 - Events: request waiting for approval, auto-approved, approved, declined, available, failed; issue reported, commented, resolved, reopened.

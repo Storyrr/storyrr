@@ -5,6 +5,7 @@ import type { Permission } from "#/lib/permissions";
 import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
+import { passwordResetAvailable } from "#/server/auth/password-reset";
 import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
 import { permissionsOf } from "#/server/permissions";
@@ -44,7 +45,14 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
       }
     : null;
   // The public URL is no secret: link previews need absolute URLs (og:image, og:url).
-  return { setupComplete, user, version: APP_VERSION, appUrl: getEnv().BETTER_AUTH_URL };
+  return {
+    setupComplete,
+    user,
+    version: APP_VERSION,
+    appUrl: getEnv().BETTER_AUTH_URL,
+    /** "Forgot password?" works (email is set up). */
+    passwordReset: await passwordResetAvailable(),
+  };
 });
 
 /**

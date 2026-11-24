@@ -569,5 +569,18 @@
   "push_unsupported": "This browser doesn't support push notifications. On iPhone, add Storyrr to the home screen first.",
   "push_permission_denied": "Notifications are blocked for this site in the browser's settings.",
   "mobile_nav_label": "Main pages",
-  "mobile_nav_more": "More"
+  "mobile_nav_more": "More",
+  "password_reset_email_subject": "Reset your Storyrr password",
+  "password_reset_email_message": "Hi {name}, someone (hopefully you) asked to reset your Storyrr password. The button below lets you choose a new one; it works once, for an hour. If it wasn't you, ignore this email.",
+  "forgot_password_link": "Forgot password?",
+  "forgot_password_title": "Forgot your password?",
+  "forgot_password_description": "Enter your account's email: we'll send you a link to choose a new password.",
+  "forgot_password_submit": "Send the link",
+  "forgot_password_sent": "If an account uses this address, a link is on its way. Check your inbox (and spam).",
+  "back_to_sign_in": "Back to sign in",
+  "reset_password_title": "Choose a new password",
+  "reset_password_description": "Your other sessions will be signed out.",
+  "reset_password_submit": "Save the password",
+  "reset_password_invalid": "This link has expired or was already used. Ask for a new one.",
+  "reset_password_done": "Password changed. You can sign in with it now."
 }

@@ -72,3 +72,9 @@ export const ChangePasswordFormSchema = v.pipe(
     ["confirmPassword"],
   ),
 );
+
+/** "Forgot password?": the account's email. */
+export const ForgotPasswordSchema = v.object({ email: SetupSchema.entries.email });
+
+/** The reset page: the new password typed twice. */
+export const ResetPasswordFormSchema = SetPasswordFormSchema;
