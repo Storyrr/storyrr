@@ -14,7 +14,10 @@ export type MediaSummary = {
   publisher?: string;
   /** ISO date (YYYY-MM-DD). */
   releaseDate?: string;
-  series: { name: string; position?: string }[];
+  /** `id`: the provider's series id (Audible series ASIN, Hardcover series id), for its page. */
+  series: { name: string; position?: string; id?: string }[];
+  /** Authors with the provider's id, for author pages (when the provider gives one). */
+  authorRefs?: { id: string; name: string }[];
   coverUrl?: string;
   language?: string;
   durationMinutes?: number;
@@ -30,4 +33,12 @@ export type MediaSummary = {
 export type MediaDetails = MediaSummary & {
   /** Plain text (provider HTML is stripped). */
   description?: string;
+};
+
+/** A series or an author page: its works in order, with what the provider says about it. */
+export type MediaCollection = {
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  items: MediaSummary[];
 };

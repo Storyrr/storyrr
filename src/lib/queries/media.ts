@@ -1,6 +1,13 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
-import { getMedia, getTitleAdmin, getTrending, searchMedia } from "#/functions/media.functions";
+import {
+  getAuthor,
+  getMedia,
+  getSeries,
+  getTitleAdmin,
+  getTrending,
+  searchMedia,
+} from "#/functions/media.functions";
 import type { SearchableType } from "#/lib/media-types";
 
 export const mediaKeys = {
@@ -9,7 +16,24 @@ export const mediaKeys = {
     [...mediaKeys.all, "search", type, query] as const,
   detail: (type: SearchableType, id: string) => [...mediaKeys.all, "detail", type, id] as const,
   admin: (type: SearchableType, id: string) => [...mediaKeys.all, "admin", type, id] as const,
+  series: (type: SearchableType, id: string) => [...mediaKeys.all, "series", type, id] as const,
+  author: (type: SearchableType, id: string) => [...mediaKeys.all, "author", type, id] as const,
 };
+
+export const seriesQuery = (type: SearchableType, id: string) =>
+  queryOptions({
+    queryKey: mediaKeys.series(type, id),
+    queryFn: () => getSeries({ data: { type, id } }),
+    staleTime: 5 * 60_000,
+  });
+
+/** `name`: Audible looks an author's books up by name. */
+export const authorQuery = (type: SearchableType, id: string, name: string) =>
+  queryOptions({
+    queryKey: mediaKeys.author(type, id),
+    queryFn: () => getAuthor({ data: { type, id, name } }),
+    staleTime: 5 * 60_000,
+  });
 
 export const titleAdminQuery = (type: SearchableType, id: string) =>
   queryOptions({

@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
-import type { MediaDetails, MediaSummary } from "#/lib/media";
+import type { MediaCollection, MediaDetails, MediaSummary } from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { canonicalLanguage } from "#/lib/languages";
@@ -68,7 +68,13 @@ const BookSchema = v.looseObject({
   pages: v.optional(v.nullable(v.number())),
   image: v.optional(v.nullable(v.looseObject({ url: v.optional(v.nullable(v.string())) }))),
   contributions: v.optional(
-    v.array(v.looseObject({ author: v.optional(v.nullable(v.looseObject({ name: v.string() }))) })),
+    v.array(
+      v.looseObject({
+        author: v.optional(
+          v.nullable(v.looseObject({ name: v.string(), id: v.optional(v.number()) })),
+        ),
+      }),
+    ),
     [],
   ),
   featured_book_series: v.optional(
@@ -76,7 +82,9 @@ const BookSchema = v.looseObject({
       v.looseObject({
         position: v.optional(v.nullable(v.number())),
         details: v.optional(v.nullable(v.string())),
-        series: v.optional(v.nullable(v.looseObject({ name: v.string() }))),
+        series: v.optional(
+          v.nullable(v.looseObject({ name: v.string(), id: v.optional(v.number()) })),
+        ),
       }),
     ),
   ),
@@ -92,6 +100,40 @@ const BookSchema = v.looseObject({
 });
 type HardcoverBook = v.InferOutput<typeof BookSchema>;
 const BookDataSchema = v.object({ books_by_pk: v.nullable(BookSchema) });
+
+// UNVERIFIED: series_by_pk / authors_by_pk shapes follow the docs repo's schema
+// pages and examples (hardcover-docs, Series.mdx, Authors.mdx, GettingBooksInSeries.mdx),
+// not a recorded response.
+const SeriesDataSchema = v.object({
+  series_by_pk: v.nullable(
+    v.looseObject({
+      id: v.number(),
+      name: v.string(),
+      description: v.optional(v.nullable(v.string())),
+      book_series: v.optional(
+        v.array(
+          v.looseObject({
+            position: v.optional(v.nullable(v.number())),
+            details: v.optional(v.nullable(v.string())),
+            book: v.nullable(BookSchema),
+          }),
+        ),
+        [],
+      ),
+    }),
+  ),
+});
+const AuthorDataSchema = v.object({
+  authors_by_pk: v.nullable(
+    v.looseObject({
+      id: v.number(),
+      name: v.string(),
+      bio: v.optional(v.nullable(v.string())),
+      image: v.optional(v.nullable(v.looseObject({ url: v.optional(v.nullable(v.string())) }))),
+      contributions: v.optional(v.array(v.looseObject({ book: v.nullable(BookSchema) })), []),
+    }),
+  ),
+});
 
 const LanguagesDataSchema = v.object({
   books: v.array(v.looseObject({ id: v.number(), editions: EditionLanguagesSchema })),
@@ -121,14 +163,37 @@ const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
   books_trending(duration: month, limit: $limit) { ids error }
 }`;
 
-// Card fields for a list of books (trending), languages included.
-const BOOKS_QUERY = `query StoryrrBooks($ids: [Int!]!) {
-  books(where: {id: {_in: $ids}}) {
-    id title subtitle release_date
+// Card fields for a list of books (trending, series, author), languages included.
+const BOOK_CARD = `id title subtitle release_date
     image { url }
-    contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { name } }
-    featured_book_series { position details series { name } }
-    ${EDITION_LANGUAGES}
+    contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
+    featured_book_series { position details series { id name } }
+    ${EDITION_LANGUAGES}`;
+
+const BOOKS_QUERY = `query StoryrrBooks($ids: [Int!]!) {
+  books(where: {id: {_in: $ids}}) { ${BOOK_CARD} }
+}`;
+
+// Main books only (no compilations or duplicates), one per position, the most read first.
+const SERIES_QUERY = `query StoryrrSeries($id: Int!) {
+  series_by_pk(id: $id) {
+    id name description
+    book_series(
+      where: {compilation: {_eq: false}, book: {canonical_id: {_is_null: true}}}
+      distinct_on: position
+      order_by: [{position: asc}, {book: {users_count: desc}}]
+    ) { position details book { ${BOOK_CARD} } }
+  }
+}`;
+
+const AUTHOR_QUERY = `query StoryrrAuthor($id: Int!) {
+  authors_by_pk(id: $id) {
+    id name bio image { url }
+    contributions(
+      where: {contributable_type: {_eq: "Book"}, book: {canonical_id: {_is_null: true}}}
+      order_by: {book: {users_count: desc}}
+      limit: 60
+    ) { book { ${BOOK_CARD} } }
   }
 }`;
 
@@ -144,8 +209,8 @@ const BOOK_QUERY = `query StoryrrBook($id: Int!) {
   books_by_pk(id: $id) {
     id title subtitle description release_date pages
     image { url }
-    contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { name } }
-    featured_book_series { position details series { name } }
+    contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
+    featured_book_series { position details series { id name } }
     default_ebook_edition { publisher { name } language { language } }
     ${EDITION_LANGUAGES}
   }
@@ -219,6 +284,55 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       );
     },
 
+    /** A series' main books in reading order. */
+    async series(id: string): Promise<ServiceResult<MediaCollection>> {
+      const numericId = Number(id);
+      if (!Number.isInteger(numericId) || numericId <= 0)
+        return fail("not_found", `No Hardcover series ${id}`);
+      const result = await graphql(SERIES_QUERY, { id: numericId }, SeriesDataSchema);
+      if (!result.ok) return result;
+      const series = result.value.series_by_pk;
+      if (!series) return fail("not_found", `No Hardcover series ${id}`);
+      return ok({
+        name: series.name,
+        description: series.description ? htmlToText(series.description) : undefined,
+        items: series.book_series.flatMap(({ book, details, position }) => {
+          if (!book?.title) return [];
+          const { description: _description, ...summary } = toDetails(book);
+          // The position in *this* series (a book's featured series may be another one).
+          return [
+            {
+              ...summary,
+              series: [{ name: series.name, id, position: details ?? positionText(position) }],
+            },
+          ];
+        }),
+      });
+    },
+
+    /** An author's books, the most read first, with their bio and photo. */
+    async author(id: string): Promise<ServiceResult<MediaCollection>> {
+      const numericId = Number(id);
+      if (!Number.isInteger(numericId) || numericId <= 0)
+        return fail("not_found", `No Hardcover author ${id}`);
+      const result = await graphql(AUTHOR_QUERY, { id: numericId }, AuthorDataSchema);
+      if (!result.ok) return result;
+      const author = result.value.authors_by_pk;
+      if (!author) return fail("not_found", `No Hardcover author ${id}`);
+      const seen = new Set<number>();
+      return ok({
+        name: author.name,
+        description: author.bio ? htmlToText(author.bio) : undefined,
+        imageUrl: author.image?.url ?? undefined,
+        items: author.contributions.flatMap(({ book }) => {
+          if (!book?.title || seen.has(book.id)) return [];
+          seen.add(book.id);
+          const { description: _description, ...summary } = toDetails(book);
+          return [summary];
+        }),
+      });
+    },
+
     async getById(id: string): Promise<ServiceResult<MediaDetails>> {
       const numericId = Number(id);
       if (!Number.isInteger(numericId) || numericId <= 0)
@@ -266,11 +380,20 @@ function toDetails(book: HardcoverBook): MediaDetails {
     title: book.title ?? "",
     subtitle: book.subtitle ?? undefined,
     authors: book.contributions.flatMap((c) => (c.author ? [c.author.name] : [])),
+    authorRefs: book.contributions.flatMap((c) =>
+      c.author?.id === undefined ? [] : [{ id: String(c.author.id), name: c.author.name }],
+    ),
     narrators: [],
     publisher: edition?.publisher?.name,
     releaseDate: book.release_date ?? undefined,
     series: series?.series
-      ? [{ name: series.series.name, position: series.details ?? positionText(series.position) }]
+      ? [
+          {
+            name: series.series.name,
+            position: series.details ?? positionText(series.position),
+            id: series.series.id === undefined ? undefined : String(series.series.id),
+          },
+        ]
       : [],
     coverUrl: book.image?.url ?? undefined,
     language: edition?.language?.language,

@@ -36,11 +36,13 @@ import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settin
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
+import { Route as AuthedAuthorsTypeIdRouteImport } from './routes/_authed/authors/$type/$id'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 import { Route as AuthedProfileSettingsGeneralRouteImport } from './routes/_authed/profile/settings/general'
 import { Route as AuthedProfileSettingsNotificationsRouteImport } from './routes/_authed/profile/settings/notifications'
 import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
 import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
+import { Route as AuthedSeriesTypeIdRouteImport } from './routes/_authed/series/$type/$id'
 import { Route as AuthedSettingsNotificationsAgentRouteImport } from './routes/_authed/settings/notifications/$agent'
 import { Route as AuthedUsersUserIdRequestsRouteImport } from './routes/_authed/users/$userId/requests'
 import { Route as AuthedUsersUserIdSettingsRouteImport } from './routes/_authed/users/$userId/settings'
@@ -184,6 +186,11 @@ const ApiWebhooksChaptarrRoute = ApiWebhooksChaptarrRouteImport.update({
   path: '/api/webhooks/chaptarr',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedAuthorsTypeIdRoute = AuthedAuthorsTypeIdRouteImport.update({
+  id: '/authors/$type/$id',
+  path: '/authors/$type/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedMediaTypeIdRoute = AuthedMediaTypeIdRouteImport.update({
   id: '/media/$type/$id',
   path: '/media/$type/$id',
@@ -213,6 +220,11 @@ const AuthedProfileSettingsPermissionsRoute =
     path: '/permissions',
     getParentRoute: () => AuthedProfileSettingsRoute,
   } as any)
+const AuthedSeriesTypeIdRoute = AuthedSeriesTypeIdRouteImport.update({
+  id: '/series/$type/$id',
+  path: '/series/$type/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsNotificationsAgentRoute =
   AuthedSettingsNotificationsAgentRouteImport.update({
     id: '/$agent',
@@ -277,11 +289,13 @@ export interface FileRoutesByFullPath {
   '/issues/': typeof AuthedIssuesIndexRoute
   '/profile/': typeof AuthedProfileIndexRoute
   '/users/': typeof AuthedUsersIndexRoute
+  '/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/series/$type/$id': typeof AuthedSeriesTypeIdRoute
   '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
@@ -316,11 +330,13 @@ export interface FileRoutesByTo {
   '/issues': typeof AuthedIssuesIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/users': typeof AuthedUsersIndexRoute
+  '/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/series/$type/$id': typeof AuthedSeriesTypeIdRoute
   '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
@@ -357,11 +373,13 @@ export interface FileRoutesById {
   '/_authed/issues/': typeof AuthedIssuesIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
+  '/_authed/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/_authed/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
   '/_authed/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/_authed/series/$type/$id': typeof AuthedSeriesTypeIdRoute
   '/_authed/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/_authed/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/_authed/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
@@ -398,11 +416,13 @@ export interface FileRouteTypes {
     | '/issues/'
     | '/profile/'
     | '/users/'
+    | '/authors/$type/$id'
     | '/media/$type/$id'
     | '/profile/settings/general'
     | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/series/$type/$id'
     | '/settings/notifications/$agent'
     | '/users/$userId/requests'
     | '/users/$userId/settings'
@@ -437,11 +457,13 @@ export interface FileRouteTypes {
     | '/issues'
     | '/profile'
     | '/users'
+    | '/authors/$type/$id'
     | '/media/$type/$id'
     | '/profile/settings/general'
     | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/series/$type/$id'
     | '/settings/notifications/$agent'
     | '/users/$userId/requests'
     | '/users/$userId/settings'
@@ -477,11 +499,13 @@ export interface FileRouteTypes {
     | '/_authed/issues/'
     | '/_authed/profile/'
     | '/_authed/users/'
+    | '/_authed/authors/$type/$id'
     | '/_authed/media/$type/$id'
     | '/_authed/profile/settings/general'
     | '/_authed/profile/settings/notifications'
     | '/_authed/profile/settings/password'
     | '/_authed/profile/settings/permissions'
+    | '/_authed/series/$type/$id'
     | '/_authed/settings/notifications/$agent'
     | '/_authed/users/$userId/requests'
     | '/_authed/users/$userId/settings'
@@ -690,6 +714,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksChaptarrRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/authors/$type/$id': {
+      id: '/_authed/authors/$type/$id'
+      path: '/authors/$type/$id'
+      fullPath: '/authors/$type/$id'
+      preLoaderRoute: typeof AuthedAuthorsTypeIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/media/$type/$id': {
       id: '/_authed/media/$type/$id'
       path: '/media/$type/$id'
@@ -724,6 +755,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/settings/permissions'
       preLoaderRoute: typeof AuthedProfileSettingsPermissionsRouteImport
       parentRoute: typeof AuthedProfileSettingsRoute
+    }
+    '/_authed/series/$type/$id': {
+      id: '/_authed/series/$type/$id'
+      path: '/series/$type/$id'
+      fullPath: '/series/$type/$id'
+      preLoaderRoute: typeof AuthedSeriesTypeIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/settings/notifications/$agent': {
       id: '/_authed/settings/notifications/$agent'
@@ -867,7 +905,9 @@ interface AuthedRouteChildren {
   AuthedIssuesIndexRoute: typeof AuthedIssuesIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
+  AuthedAuthorsTypeIdRoute: typeof AuthedAuthorsTypeIdRoute
   AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
+  AuthedSeriesTypeIdRoute: typeof AuthedSeriesTypeIdRoute
   AuthedUsersUserIdRequestsRoute: typeof AuthedUsersUserIdRequestsRoute
   AuthedUsersUserIdSettingsRoute: typeof AuthedUsersUserIdSettingsRouteWithChildren
 }
@@ -886,7 +926,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIssuesIndexRoute: AuthedIssuesIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
+  AuthedAuthorsTypeIdRoute: AuthedAuthorsTypeIdRoute,
   AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
+  AuthedSeriesTypeIdRoute: AuthedSeriesTypeIdRoute,
   AuthedUsersUserIdRequestsRoute: AuthedUsersUserIdRequestsRoute,
   AuthedUsersUserIdSettingsRoute: AuthedUsersUserIdSettingsRouteWithChildren,
 }

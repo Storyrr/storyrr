@@ -523,5 +523,17 @@
   "manage_in_library": "Déjà dans la bibliothèque.",
   "manage_clear_data": "Effacer les données",
   "manage_clear_data_title": "Effacer les données de « {title} » ?",
-  "manage_clear_data_description": "Storyrr oublie les demandes de ce titre (avec leur historique), ses problèmes et sa disponibilité manuelle. Rien ne change dans Chaptarr ni dans vos bibliothèques."
+  "manage_clear_data_description": "Storyrr oublie les demandes de ce titre (avec leur historique), ses problèmes et sa disponibilité manuelle. Rien ne change dans Chaptarr ni dans vos bibliothèques.",
+  "collection_series": "Série",
+  "collection_author": "Auteur",
+  "collection_count": "{count} titres",
+  "collection_empty": "Rien trouvé.",
+  "collection_volume": "Tome {position}",
+  "collection_volume_title": "{position}. {title}",
+  "collection_request_series": "Demander la série",
+  "collection_request_series_description": "Choisissez les tomes à demander ; ceux que vous avez ou déjà demandés ne peuvent pas l’être.",
+  "collection_select_all": "Tout sélectionner",
+  "collection_select_none": "Ne rien sélectionner",
+  "collection_request_count": "Demander ({count})",
+  "media_by_prefix": "De"
 }

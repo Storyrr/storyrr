@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 
 import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
@@ -111,7 +111,24 @@ function MediaPage() {
           </Badge>
           <h1 className="text-2xl font-semibold">{item.title}</h1>
           {item.subtitle ? <p className="text-lg text-muted-foreground">{item.subtitle}</p> : null}
-          {item.authors.length > 0 ? (
+          {item.authorRefs && item.authorRefs.length > 0 ? (
+            <p className="flex flex-wrap gap-x-1">
+              <span>{m.media_by_prefix()}</span>
+              {item.authorRefs.map((author, index) => (
+                <span key={author.id}>
+                  <Link
+                    to="/authors/$type/$id"
+                    params={{ type, id: author.id }}
+                    search={{ name: author.name }}
+                    className="font-medium hover:underline"
+                  >
+                    {author.name}
+                  </Link>
+                  {index < (item.authorRefs?.length ?? 0) - 1 ? "," : null}
+                </span>
+              ))}
+            </p>
+          ) : item.authors.length > 0 ? (
             <p>{m.media_by({ authors: formatList(item.authors) })}</p>
           ) : null}
           {item.narrators.length > 0 ? (
@@ -120,13 +137,22 @@ function MediaPage() {
             </p>
           ) : null}
           <div className="flex flex-wrap gap-1">
-            {item.series.map((series) => (
-              <Badge key={series.name} variant="secondary">
-                {series.position
-                  ? m.media_series({ name: series.name, position: series.position })
-                  : m.media_series_no_position({ name: series.name })}
-              </Badge>
-            ))}
+            {item.series.map((series) => {
+              const label = series.position
+                ? m.media_series({ name: series.name, position: series.position })
+                : m.media_series_no_position({ name: series.name });
+              return series.id ? (
+                <Link key={series.name} to="/series/$type/$id" params={{ type, id: series.id }}>
+                  <Badge variant="secondary" className="hover:bg-secondary/70">
+                    {label}
+                  </Badge>
+                </Link>
+              ) : (
+                <Badge key={series.name} variant="secondary">
+                  {label}
+                </Badge>
+              );
+            })}
           </div>
         </header>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

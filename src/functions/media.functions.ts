@@ -42,7 +42,7 @@ function availabilityOf(
 }
 
 /** Each item's status for this library and Chaptarr's language acceptance; accepted first. */
-async function annotate(type: SearchableType, items: MediaSummary[]) {
+async function annotate(type: SearchableType, items: MediaSummary[], sortAccepted = true) {
   const source = mediaSources[type];
   const policy = await getLanguagePolicy({ services, settings }, type);
   const owned = source.owned(db, items);
@@ -68,9 +68,10 @@ async function annotate(type: SearchableType, items: MediaSummary[]) {
     accepted: isLanguageAccepted(policy, item.languages),
   }));
   // Array.prototype.sort is stable: provider order is kept within each group.
-  results.sort(
-    (x, y) => (ACCEPTANCE_ORDER.get(x.accepted) ?? 1) - (ACCEPTANCE_ORDER.get(y.accepted) ?? 1),
-  );
+  if (sortAccepted)
+    results.sort(
+      (x, y) => (ACCEPTANCE_ORDER.get(x.accepted) ?? 1) - (ACCEPTANCE_ORDER.get(y.accepted) ?? 1),
+    );
   return { ok: true as const, results, ...languageInfo(policy) };
 }
 
@@ -163,4 +164,38 @@ export const clearTitle = createServerFn({ method: "POST" })
   .handler(({ data }) => {
     clearTitleData(db, mediaSources[data.type].source, data.id);
     return { ok: true };
+  });
+
+const CollectionInputSchema = v.object({
+  type: v.picklist(SEARCHABLE_TYPES),
+  id: v.pipe(v.string(), v.nonEmpty(), v.maxLength(64)),
+  /** Author name (Audible finds an author's books by name). */
+  name: v.optional(v.pipe(v.string(), v.maxLength(200)), ""),
+});
+
+/** A series page: its works in order, each with its status. Signed-in users. */
+export const getSeries = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(CollectionInputSchema)
+  .handler(async ({ data }) => {
+    const result = await mediaSources[data.type].series(services, data.id);
+    if (!result.ok) return { ok: false as const, error: result.error };
+    const { name, description, imageUrl } = result.value;
+    return {
+      ...(await annotate(data.type, result.value.items, false)),
+      name,
+      description,
+      imageUrl,
+    };
+  });
+
+/** An author page: bio and works, each with its status. Signed-in users. */
+export const getAuthor = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(CollectionInputSchema)
+  .handler(async ({ data }) => {
+    const result = await mediaSources[data.type].author(services, data.id, data.name);
+    if (!result.ok) return { ok: false as const, error: result.error };
+    const { name, description, imageUrl } = result.value;
+    return { ...(await annotate(data.type, result.value.items)), name, description, imageUrl };
   });

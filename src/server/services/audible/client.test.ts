@@ -27,10 +27,11 @@ describe("Audible client", () => {
       subtitle: "Dune 1",
       // The translator ("Michel Demuth - traducteur") is not an author.
       authors: ["Frank Herbert"],
+      authorRefs: [{ id: "B000APO5OM", name: "Frank Herbert" }],
       narrators: ["Benjamin Jungers"],
       publisher: "Lizzie",
       releaseDate: "2019-04-11",
-      series: [{ name: "Dune", position: "1.1" }],
+      series: [{ name: "Dune", position: "1.1", id: "B07R989K55" }],
       coverUrl: "https://m.media-amazon.com/images/I/41ZARrCWHRL._SL500_.jpg",
       language: "french",
       languages: ["fra"],
@@ -96,5 +97,46 @@ describe("Audible bestsellers", () => {
     expect(calls[0]?.url.searchParams.get("products_sort_by")).toBe("BestSellers");
     expect(calls[0]?.url.searchParams.has("keywords")).toBe(false);
     expect(result.ok && result.value).toHaveLength(2);
+  });
+
+  it("lists a series' volumes in reading order", async () => {
+    const { fetch, calls } = fakeFetch((url) => {
+      if (url.pathname.endsWith("/B07R989K55"))
+        return json({
+          product: {
+            asin: "B07R989K55",
+            title: "Dune",
+            relationships: [
+              {
+                asin: "B000000002",
+                relationship_to_product: "child",
+                relationship_type: "series",
+                sort: "2",
+              },
+              {
+                asin: "B000000001",
+                relationship_to_product: "child",
+                relationship_type: "series",
+                sort: "1",
+              },
+              {
+                asin: "B000000009",
+                relationship_to_product: "parent",
+                relationship_type: "series",
+              },
+            ],
+          },
+        });
+      return json({
+        products: [
+          { asin: "B000000002", title: "Dune Messiah" },
+          { asin: "B000000001", title: "Dune" },
+        ],
+      });
+    });
+    const result = await createAudibleClient({ fetch, region: "fr" }).series("B07R989K55");
+
+    expect(result.ok && result.value.items.map((i) => i.title)).toEqual(["Dune", "Dune Messiah"]);
+    expect(calls[1]?.url.searchParams.get("asins")).toBe("B000000001,B000000002");
   });
 });

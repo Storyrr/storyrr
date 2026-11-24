@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { desc, eq, inArray } from "drizzle-orm";
+import type * as v from "valibot";
 
 import {
   ApproveRequestSchema,
   CreateRequestSchema,
+  RequestManySchema,
   DenyRequestSchema,
   ListRequestsSchema,
   BlockIdSchema,
@@ -14,7 +16,7 @@ import {
 } from "#/lib/schemas/requests";
 import { FormatInputSchema as FormatQuotaSchema } from "#/lib/schemas/settings";
 import { formatList } from "#/lib/format";
-import { hasPermission } from "#/lib/permissions";
+import { hasPermission, type Permission } from "#/lib/permissions";
 import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
@@ -73,78 +75,119 @@ function notFound(): never {
   throw new Error(m.request_not_found());
 }
 
+type RequestCaller = {
+  session: { user: { id: string; role?: string | null } };
+  permissions: readonly Permission[];
+};
+
 /**
- * Requests an audiobook or an eBook. Admins may pick the target folder and
- * quality profile; everyone else gets the format's defaults. Signed-in users.
+ * Requests one title for the caller, with every check (permission, blocklist,
+ * language, limits). Throws with the reason, the HTTP status set.
+ */
+async function requestTitle(
+  context: RequestCaller,
+  data: v.InferOutput<typeof CreateRequestSchema>,
+) {
+  const { user } = context.session;
+  const { permissions } = context;
+  const isAdmin = user.role === "admin";
+  const format = data.media.type;
+  if (!hasPermission(permissions, `request_${format}`)) {
+    setResponseStatus(403);
+    throw new Error(m.request_not_allowed());
+  }
+  // Picking the folder and profile is an advanced request option.
+  const advanced = hasPermission(permissions, "request_advanced");
+  const defaults = await settings.get(formatDefaults[format]);
+  const rootFolderPath = (advanced ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
+  if (!rootFolderPath) {
+    throw new Error(
+      format === "ebook"
+        ? m.request_error_ebook_defaults_missing()
+        : m.request_error_defaults_missing(),
+    );
+  }
+
+  const details = await mediaSources[format].getDetails(services, data.media.id);
+  if (!details.ok) throw new Error(details.error.message);
+  if (findBlock(db, details.value.source, details.value.externalId)) {
+    setResponseStatus(409);
+    throw new Error(m.request_blocked());
+  }
+  // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
+  const policy = await getLanguagePolicy({ services, settings }, format);
+  if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
+    setResponseStatus(422);
+    throw new Error(
+      m.request_language_not_accepted({
+        languages: formatList(policy.allowed.map(languageName)),
+      }),
+    );
+  }
+
+  // Joining someone else's active request costs nothing; a new one counts against the limit.
+  const joins = activeRequestsByExternalId(db, {
+    source: details.value.source,
+    format,
+    externalIds: [details.value.externalId],
+  }).has(details.value.externalId);
+  if (!joins) {
+    const quota = await requestQuota({ db, settings }, { id: user.id, isAdmin }, format);
+    if (quota.remaining === 0 && quota.limit !== null) {
+      setResponseStatus(429);
+      throw new Error(m.request_quota_exceeded({ limit: quota.limit, days: quota.days }));
+    }
+  }
+
+  const mediaId = upsertMedia(db, details.value);
+  const result = createRequest(db, {
+    mediaId,
+    userId: user.id,
+    format,
+    target: { service: "chaptarr", rootFolderPath },
+    qualityProfileId: advanced ? (data.qualityProfileId ?? null) : null,
+    autoApprove: hasPermission(permissions, `auto_approve_${format}`),
+  });
+  if (result.kind === "created" && result.status === "approved") {
+    submitInBackground(result.requestId);
+  }
+  return result;
+}
+
+/**
+ * Requests an audiobook or an eBook. Users with Advanced requests may pick the
+ * target folder and quality profile; others get the format's defaults.
  */
 export const requestMedia = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(CreateRequestSchema)
+  .handler(({ data, context }) => requestTitle(context, data));
+
+/**
+ * Requests several titles at once (a series' volumes), each with the same
+ * checks as one request; reports what each one did instead of stopping at the
+ * first failure.
+ */
+export const requestMany = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(RequestManySchema)
   .handler(async ({ data, context }) => {
-    const { user } = context.session;
-    const { permissions } = context;
-    const isAdmin = user.role === "admin";
-    const format = data.media.type;
-    if (!hasPermission(permissions, `request_${format}`)) {
-      setResponseStatus(403);
-      throw new Error(m.request_not_allowed());
-    }
-    // Picking the folder and profile is an advanced request option.
-    const advanced = hasPermission(permissions, "request_advanced");
-    const defaults = await settings.get(formatDefaults[format]);
-    const rootFolderPath = (advanced ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
-    if (!rootFolderPath) {
-      throw new Error(
-        format === "ebook"
-          ? m.request_error_ebook_defaults_missing()
-          : m.request_error_defaults_missing(),
-      );
-    }
-
-    const details = await mediaSources[format].getDetails(services, data.media.id);
-    if (!details.ok) throw new Error(details.error.message);
-    if (findBlock(db, details.value.source, details.value.externalId)) {
-      setResponseStatus(409);
-      throw new Error(m.request_blocked());
-    }
-    // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
-    const policy = await getLanguagePolicy({ services, settings }, format);
-    if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
-      setResponseStatus(422);
-      throw new Error(
-        m.request_language_not_accepted({
-          languages: formatList(policy.allowed.map(languageName)),
-        }),
-      );
-    }
-
-    // Joining someone else's active request costs nothing; a new one counts against the limit.
-    const joins = activeRequestsByExternalId(db, {
-      source: details.value.source,
-      format,
-      externalIds: [details.value.externalId],
-    }).has(details.value.externalId);
-    if (!joins) {
-      const quota = await requestQuota({ db, settings }, { id: user.id, isAdmin }, format);
-      if (quota.remaining === 0 && quota.limit !== null) {
-        setResponseStatus(429);
-        throw new Error(m.request_quota_exceeded({ limit: quota.limit, days: quota.days }));
+    const results: { id: string; ok: boolean; error?: string }[] = [];
+    for (const id of data.ids) {
+      try {
+        await requestTitle(context, { media: { type: data.type, id } });
+        results.push({ id, ok: true });
+      } catch (error) {
+        results.push({
+          id,
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
-
-    const mediaId = upsertMedia(db, details.value);
-    const result = createRequest(db, {
-      mediaId,
-      userId: user.id,
-      format,
-      target: { service: "chaptarr", rootFolderPath },
-      qualityProfileId: advanced ? (data.qualityProfileId ?? null) : null,
-      autoApprove: hasPermission(permissions, `auto_approve_${format}`),
-    });
-    if (result.kind === "created" && result.status === "approved") {
-      submitInBackground(result.requestId);
-    }
-    return result;
+    // A failed item set the status; the batch itself succeeded.
+    setResponseStatus(200);
+    return results;
   });
 
 /** The caller's requests (and those they watch), or every request for admins. */

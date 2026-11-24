@@ -76,6 +76,11 @@ Shown when the database has no user.
 
 - Any user reports a problem on an available item: wrong language, wrong edition, missing or broken content, bad audio, other; with a comment. Admins and the reporter discuss it in comments; admins resolve or reopen it. The Issues page lists open issues first (users see their own, admins all).
 
+### 4.3f Series and authors (decided 2026-11-24)
+
+- Series pages (`/series/<type>/<id>`, Audible series ASIN or Hardcover series id), linked from a title's series badge: the volumes in reading order with their status, and **Request the series**: a dialog to pick the volumes (those you have or already requested are disabled), each requested with the usual checks (permissions, blocklist, language, limits).
+- Author pages (`/authors/<type>/<id>`), linked from a title's authors: photo and bio (Audnexus for audiobooks, Hardcover for eBooks) and their works.
+
 ### 4.3e Manage a title (decided 2026-11-24)
 
 Request managers get a "Manage" side panel on title pages (Seerr's): the title's requests and issues, **Mark as available** (when the library sync can't match a title you have: it counts as owned and its open requests turn available) and **Clear data** (forgets its requests, issues and manual availability; Chaptarr and the libraries are untouched).

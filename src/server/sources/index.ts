@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import type { MediaDetails, MediaSummary } from "#/lib/media";
+import type { MediaCollection, MediaDetails, MediaSummary } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
 import { ownedAsins, ownedTitles } from "#/server/library";
@@ -21,6 +21,10 @@ export type MediaSource = {
   getDetails(services: Services, id: string): Promise<ServiceResult<MediaDetails>>;
   /** What's popular right now, for Discover. */
   trending(services: Services): Promise<ServiceResult<MediaSummary[]>>;
+  /** A series' works in reading order. */
+  series(services: Services, id: string): Promise<ServiceResult<MediaCollection>>;
+  /** An author's works (`name`: Audible searches by name). */
+  author(services: Services, id: string, name: string): Promise<ServiceResult<MediaCollection>>;
   /** External ids of the items a library already holds. */
   owned(db: AppDatabase, items: readonly Pick<MediaSummary, "externalId" | "title">[]): Set<string>;
 };
@@ -36,6 +40,12 @@ const audiobooks: MediaSource = {
   },
   async trending(services) {
     return (await services.audible()).bestsellers();
+  },
+  async series(services, id) {
+    return (await services.audible()).series(id);
+  },
+  async author(services, id, name) {
+    return (await services.audible()).author(id, name);
   },
   // By ASIN in Audiobookshelf: titles in libraries are often wrong.
   owned(db, items) {
@@ -64,6 +74,14 @@ const ebooks: MediaSource = {
   async trending(services) {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.trending() : fail("not_configured", "Hardcover token missing");
+  },
+  async series(services, id) {
+    const hardcover = await services.hardcover();
+    return hardcover ? hardcover.series(id) : fail("not_configured", "Hardcover token missing");
+  },
+  async author(services, id) {
+    const hardcover = await services.hardcover();
+    return hardcover ? hardcover.author(id) : fail("not_configured", "Hardcover token missing");
   },
   // By normalized title in Kavita (no shared ID): "probably owned".
   owned(db, items) {

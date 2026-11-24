@@ -523,5 +523,17 @@
   "manage_in_library": "Already in the library.",
   "manage_clear_data": "Clear data",
   "manage_clear_data_title": "Clear data of “{title}”?",
-  "manage_clear_data_description": "Storyrr forgets this title's requests (with their history), issues and manual availability. Nothing changes in Chaptarr or your libraries."
+  "manage_clear_data_description": "Storyrr forgets this title's requests (with their history), issues and manual availability. Nothing changes in Chaptarr or your libraries.",
+  "collection_series": "Series",
+  "collection_author": "Author",
+  "collection_count": "{count} titles",
+  "collection_empty": "Nothing found.",
+  "collection_volume": "Volume {position}",
+  "collection_volume_title": "{position}. {title}",
+  "collection_request_series": "Request the series",
+  "collection_request_series_description": "Pick the volumes to request; those you have or already requested can't be picked.",
+  "collection_select_all": "Select all",
+  "collection_select_none": "Select none",
+  "collection_request_count": "Request {count}",
+  "media_by_prefix": "By"
 }
