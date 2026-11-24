@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
+import { SwitchField } from "#/components/form/switch-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
 import {
@@ -18,7 +19,6 @@ import {
 } from "#/components/ui/dialog";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import { Switch } from "#/components/ui/switch";
 import { createUser } from "#/functions/users.functions";
 import { userKeys } from "#/lib/queries/users";
 import { PASSWORD_MIN_LENGTH } from "#/lib/schemas/auth";
@@ -136,9 +136,11 @@ export function CreateUserDialog({ defaultAutoApprove }: { defaultAutoApprove: b
             </form.Field>
             <form.Field name="autoApprove">
               {(field) => (
-                <Switch isSelected={field.state.value} onChange={field.handleChange}>
-                  <span className="text-sm">{m.field_auto_approve()}</span>
-                </Switch>
+                <SwitchField
+                  label={m.field_auto_approve()}
+                  isSelected={field.state.value}
+                  onChange={field.handleChange}
+                />
               )}
             </form.Field>
           </FieldGroup>

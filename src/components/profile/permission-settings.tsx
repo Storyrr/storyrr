@@ -5,6 +5,7 @@ import { CheckIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
+import { SwitchField } from "#/components/form/switch-field";
 import { RequestLimitFields } from "#/components/settings/request-limit-fields";
 import {
   SettingsActions,
@@ -160,13 +161,11 @@ function EditPermissions({ userId }: { userId: string }) {
           <FieldGroup>
             {limits.isSuccess ? <FormSuccess message={m.action_saved()} /> : null}
             <SettingsRow label={m.users_limits_custom()}>
-              <Switch
-                aria-label={m.users_limits_override()}
+              <SwitchField
+                label={m.users_limits_override()}
                 isSelected={override}
                 onChange={setOverride}
-              >
-                <span className="text-sm">{m.users_limits_override()}</span>
-              </Switch>
+              />
             </SettingsRow>
             {override ? (
               <>
