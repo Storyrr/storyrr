@@ -42,6 +42,7 @@ import { Route as AuthedProfileSettingsNotificationsRouteImport } from './routes
 import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
 import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
 import { Route as AuthedSettingsNotificationsAgentRouteImport } from './routes/_authed/settings/notifications/$agent'
+import { Route as AuthedUsersUserIdRequestsRouteImport } from './routes/_authed/users/$userId/requests'
 import { Route as AuthedUsersUserIdSettingsRouteImport } from './routes/_authed/users/$userId/settings'
 import { Route as AuthedUsersUserIdSettingsGeneralRouteImport } from './routes/_authed/users/$userId/settings/general'
 import { Route as AuthedUsersUserIdSettingsPasswordRouteImport } from './routes/_authed/users/$userId/settings/password'
@@ -218,6 +219,12 @@ const AuthedSettingsNotificationsAgentRoute =
     path: '/$agent',
     getParentRoute: () => AuthedSettingsNotificationsRoute,
   } as any)
+const AuthedUsersUserIdRequestsRoute =
+  AuthedUsersUserIdRequestsRouteImport.update({
+    id: '/users/$userId/requests',
+    path: '/users/$userId/requests',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedUsersUserIdSettingsRoute =
   AuthedUsersUserIdSettingsRouteImport.update({
     id: '/users/$userId/settings',
@@ -276,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
   '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
+  '/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -314,6 +322,7 @@ export interface FileRoutesByTo {
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
   '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
+  '/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -354,6 +363,7 @@ export interface FileRoutesById {
   '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
   '/_authed/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
+  '/_authed/users/$userId/requests': typeof AuthedUsersUserIdRequestsRoute
   '/_authed/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/_authed/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/_authed/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/profile/settings/password'
     | '/profile/settings/permissions'
     | '/settings/notifications/$agent'
+    | '/users/$userId/requests'
     | '/users/$userId/settings'
     | '/users/$userId/settings/general'
     | '/users/$userId/settings/password'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/profile/settings/password'
     | '/profile/settings/permissions'
     | '/settings/notifications/$agent'
+    | '/users/$userId/requests'
     | '/users/$userId/settings'
     | '/users/$userId/settings/general'
     | '/users/$userId/settings/password'
@@ -471,6 +483,7 @@ export interface FileRouteTypes {
     | '/_authed/profile/settings/password'
     | '/_authed/profile/settings/permissions'
     | '/_authed/settings/notifications/$agent'
+    | '/_authed/users/$userId/requests'
     | '/_authed/users/$userId/settings'
     | '/_authed/users/$userId/settings/general'
     | '/_authed/users/$userId/settings/password'
@@ -719,6 +732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsNotificationsAgentRouteImport
       parentRoute: typeof AuthedSettingsNotificationsRoute
     }
+    '/_authed/users/$userId/requests': {
+      id: '/_authed/users/$userId/requests'
+      path: '/users/$userId/requests'
+      fullPath: '/users/$userId/requests'
+      preLoaderRoute: typeof AuthedUsersUserIdRequestsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/users/$userId/settings': {
       id: '/_authed/users/$userId/settings'
       path: '/users/$userId/settings'
@@ -848,6 +868,7 @@ interface AuthedRouteChildren {
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
+  AuthedUsersUserIdRequestsRoute: typeof AuthedUsersUserIdRequestsRoute
   AuthedUsersUserIdSettingsRoute: typeof AuthedUsersUserIdSettingsRouteWithChildren
 }
 
@@ -866,6 +887,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
+  AuthedUsersUserIdRequestsRoute: AuthedUsersUserIdRequestsRoute,
   AuthedUsersUserIdSettingsRoute: AuthedUsersUserIdSettingsRouteWithChildren,
 }
 

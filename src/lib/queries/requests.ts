@@ -4,19 +4,27 @@ import {
   getMyQuota,
   getDiscoverRequests,
   getRequestHistory,
+  getPendingCount,
   getRequests,
 } from "#/functions/requests.functions";
 import { IN_FLIGHT_STATUSES } from "#/lib/request-status";
-import type { MediaType } from "#/lib/requests";
+import type { MediaType, RequestFilter } from "#/lib/requests";
+import type { ListRequestsInput } from "#/lib/schemas/requests";
 
 export type RequestScope = "mine" | "all";
-export type RequestFilter = "all" | "pending" | "processing" | "available" | "failed";
+export type { RequestFilter } from "#/lib/requests";
+
+/** Everything the request list can be narrowed and sorted by. */
+export type RequestListParams = Omit<ListRequestsInput, "scope" | "filter"> & {
+  scope: RequestScope;
+  filter: RequestFilter;
+};
 
 export const requestKeys = {
   all: ["requests"] as const,
   lists: () => [...requestKeys.all, "list"] as const,
-  list: (scope: RequestScope, filter: RequestFilter) =>
-    [...requestKeys.lists(), scope, filter] as const,
+  list: (params: RequestListParams) => [...requestKeys.lists(), params] as const,
+  pending: () => [...requestKeys.all, "pending-count"] as const,
   history: (id: string) => [...requestKeys.all, "history", id] as const,
   quota: (format: MediaType) => [...requestKeys.all, "quota", format] as const,
 };
@@ -28,10 +36,10 @@ export const quotaQuery = (format: MediaType) =>
     queryFn: () => getMyQuota({ data: { format } }),
   });
 
-export const requestsQuery = (scope: RequestScope, filter: RequestFilter) =>
+export const requestsQuery = (params: RequestListParams) =>
   queryOptions({
-    queryKey: requestKeys.list(scope, filter),
-    queryFn: () => getRequests({ data: { scope, filter } }),
+    queryKey: requestKeys.list(params),
+    queryFn: () => getRequests({ data: params }),
     // Poll only while something is on its way.
     refetchInterval: (query) =>
       query.state.data?.some((r) => IN_FLIGHT_STATUSES.includes(r.status)) ? 10_000 : false,
@@ -47,4 +55,12 @@ export const discoverRequestsQuery = () =>
   queryOptions({
     queryKey: [...requestKeys.all, "discover"] as const,
     queryFn: () => getDiscoverRequests(),
+  });
+
+/** Pending requests count for the sidebar badge, refreshed every minute. */
+export const pendingCountQuery = () =>
+  queryOptions({
+    queryKey: requestKeys.pending(),
+    queryFn: () => getPendingCount(),
+    refetchInterval: 60_000,
   });

@@ -1,8 +1,14 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { MediaDetails, MediaSummary } from "#/lib/media";
-import { ACTIVE_REQUEST_STATUSES, type MediaType, type RequestStatus } from "#/lib/requests";
+import {
+  ACTIVE_REQUEST_STATUSES,
+  type MediaType,
+  type RequestFilter,
+  type RequestSort,
+  type RequestStatus,
+} from "#/lib/requests";
 import type { AppDatabase } from "#/server/db/client";
 import { media, request, requestEvent, requestWatcher, user } from "#/server/db/schema";
 
@@ -66,20 +72,32 @@ export function activeRequestsByExternalId(
   return byId;
 }
 
-export type RequestListFilter = "all" | "pending" | "processing" | "available" | "failed";
+export type RequestListFilter = RequestFilter;
 
-const filterStatuses: Record<Exclude<RequestListFilter, "all">, RequestStatus[]> = {
+const filterStatuses: Record<Exclude<RequestFilter, "all">, RequestStatus[]> = {
   pending: ["pending"],
   processing: ["approved", "submitted"],
   available: ["available"],
-  failed: ["failed", "denied"],
+  declined: ["denied"],
+  failed: ["failed"],
+  cancelled: ["cancelled"],
 };
 
-/** Requests with their media and requester, pending first then newest. */
+export type RequestListOptions = {
+  /** Requests of (or watched by) this user; all when unset. */
+  userId?: string;
+  filter: RequestFilter;
+  format?: MediaType;
+  sort?: RequestSort;
+  order?: "asc" | "desc";
+};
+
+/** Requests with their media and requester; by default pending first, then newest. */
 export function listRequests(
   db: AppDatabase,
-  { userId, filter }: { userId?: string; filter: RequestListFilter },
+  { userId, filter, format, sort = "status", order = "desc" }: RequestListOptions,
 ) {
+  const direction = order === "asc" ? asc : desc;
   const statuses = filter === "all" ? undefined : filterStatuses[filter];
   const rows = db
     .select({
@@ -117,11 +135,17 @@ export function listRequests(
           ? sql`(${request.userId} = ${userId} or exists (select 1 from ${requestWatcher} where ${requestWatcher.requestId} = ${request.id} and ${requestWatcher.userId} = ${userId}))`
           : undefined,
         statuses ? inArray(request.status, statuses) : undefined,
+        format ? eq(request.format, format) : undefined,
       ),
     )
     .orderBy(
-      sql`case when ${request.status} = 'pending' then 0 else 1 end`,
-      desc(request.createdAt),
+      ...(sort === "status"
+        ? [sql`case when ${request.status} = 'pending' then 0 else 1 end`, desc(request.createdAt)]
+        : // The id breaks ties between requests made in the same millisecond.
+          [
+            direction(sort === "added" ? request.createdAt : request.updatedAt),
+            direction(request.id),
+          ]),
     )
     .all();
   // Sent, but Chaptarr only queued it (author metadata not ready): not downloading yet.
@@ -152,4 +176,14 @@ export function requestHistory(db: AppDatabase, requestId: string) {
 
 export function getRequestRow(db: AppDatabase, requestId: string) {
   return db.select().from(request).where(eq(request.id, requestId)).get();
+}
+
+export function countPending(db: AppDatabase): number {
+  return (
+    db
+      .select({ count: sql`count(*)`.mapWith(Number) })
+      .from(request)
+      .where(eq(request.status, "pending"))
+      .get()?.count ?? 0
+  );
 }

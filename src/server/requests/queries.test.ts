@@ -81,4 +81,19 @@ describe("listRequests", () => {
     expect(listRequests(db, { filter: "all" }).map((r) => r.id)).toEqual([pending, approved]);
     expect(listRequests(db, { filter: "processing" }).map((r) => r.id)).toEqual([approved]);
   });
+
+  it("filters declined requests and format, and sorts by date either way", () => {
+    const a = upsertMedia(db, item("B000000001"));
+    const b = upsertMedia(db, item("B000000002"));
+    const first = request(a, "alice").requestId;
+    const second = request(b, "alice").requestId;
+    transitionRequest(db, first, { to: "denied", actor: "admin" });
+
+    expect(listRequests(db, { filter: "declined" }).map((r) => r.id)).toEqual([first]);
+    expect(listRequests(db, { filter: "all", format: "ebook" })).toHaveLength(0);
+    const added = (order: "asc" | "desc") =>
+      listRequests(db, { filter: "all", sort: "added", order }).map((r) => r.id);
+    expect(added("asc")).toEqual(added("desc").toReversed());
+    expect(added("asc")).toContain(second);
+  });
 });

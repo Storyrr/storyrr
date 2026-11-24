@@ -1,62 +1,55 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { InboxIcon, RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 import type { Key } from "react-aria-components";
 import * as v from "valibot";
 
-import { RequestRow } from "#/components/requests/request-row";
+import { RequestList } from "#/components/requests/request-list";
 import { Button } from "#/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "#/components/ui/empty";
 import { Spinner } from "#/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { checkAvailabilityNow } from "#/functions/requests.functions";
-import { requestKeys, requestsQuery, type RequestFilter } from "#/lib/queries/requests";
+import { requestKeys, requestsQuery } from "#/lib/queries/requests";
+import { MEDIA_TYPES, REQUEST_FILTERS, REQUEST_SORTS } from "#/lib/requests";
 import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
-const FILTERS = ["all", "pending", "processing", "available", "failed"] as const;
-const filterLabels: Record<RequestFilter, () => string> = {
-  all: m.requests_filter_all,
-  pending: m.requests_filter_pending,
-  processing: m.requests_filter_processing,
-  available: m.requests_filter_available,
-  failed: m.requests_filter_failed,
-};
+const SearchSchema = v.object({
+  scope: v.optional(v.picklist(["mine", "all"])),
+  filter: v.optional(v.picklist(REQUEST_FILTERS)),
+  format: v.optional(v.picklist(MEDIA_TYPES)),
+  sort: v.optional(v.picklist(REQUEST_SORTS)),
+  order: v.optional(v.picklist(["asc", "desc"])),
+});
 
 export const Route = createFileRoute("/_authed/requests")({
-  validateSearch: v.object({
-    scope: v.optional(v.picklist(["mine", "all"])),
-    filter: v.optional(v.picklist(FILTERS)),
-  }),
-  // Admins see everyone's requests by default (pending first), users their own.
+  validateSearch: SearchSchema,
+  // Those who can see everyone's requests get them by default (pending first), others their own.
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>
     context.queryClient.ensureQueryData(
-      requestsQuery(
-        deps.scope ?? (can(context.user, "view_requests") ? "all" : "mine"),
-        deps.filter ?? "all",
-      ),
+      requestsQuery({
+        ...deps,
+        scope: deps.scope ?? (can(context.user, "view_requests") ? "all" : "mine"),
+        filter: deps.filter ?? "all",
+      }),
     ),
   head: () => ({ meta: [{ title: `${m.requests_title()} · ${m.app_name()}` }] }),
   component: RequestsPage,
 });
 
-const firstKey = (keys: Set<Key>) => [...keys][0];
+const firstKey = (keys: Set<Key> | "all") => (keys === "all" ? undefined : [...keys][0]);
 
 function RequestsPage() {
   const { user } = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const scope = search.scope ?? (can(user, "view_requests") ? "all" : "mine");
-  const activeFilter = search.filter ?? "all";
-  const { data: requests } = useSuspenseQuery(requestsQuery(scope, activeFilter));
+  const params = {
+    ...search,
+    scope: search.scope ?? (can(user, "view_requests") ? "all" : "mine"),
+    filter: search.filter ?? "all",
+  } as const;
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,60 +57,29 @@ function RequestsPage() {
         <h1 className="text-2xl font-semibold">{m.requests_title()}</h1>
         {can(user, "manage_requests") ? <CheckNowButton /> : null}
       </div>
-      <div className="flex flex-wrap gap-4">
-        {can(user, "view_requests") ? (
-          <ToggleGroup
-            aria-label={m.requests_scope_label()}
-            selectionMode="single"
-            disallowEmptySelection
-            selectedKeys={[scope]}
-            onSelectionChange={(keys) => {
-              const key = firstKey(keys);
-              if (key === "mine" || key === "all")
-                void navigate({ search: { ...search, scope: key } });
-            }}
-            variant="outline"
-          >
-            <ToggleGroupItem id="all">{m.requests_scope_all()}</ToggleGroupItem>
-            <ToggleGroupItem id="mine">{m.requests_scope_mine()}</ToggleGroupItem>
-          </ToggleGroup>
-        ) : null}
-        <ToggleGroup
-          aria-label={m.requests_filter_label()}
-          selectionMode="single"
-          disallowEmptySelection
-          selectedKeys={[activeFilter]}
-          onSelectionChange={(keys) => {
-            const filter = FILTERS.find((f) => f === firstKey(keys));
-            if (filter) void navigate({ search: { ...search, filter } });
-          }}
-          variant="outline"
-          className="flex-wrap"
-        >
-          {FILTERS.map((filter) => (
-            <ToggleGroupItem key={filter} id={filter}>
-              {filterLabels[filter]()}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-      {requests.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <InboxIcon />
-            </EmptyMedia>
-            <EmptyTitle>{m.requests_empty_title()}</EmptyTitle>
-            <EmptyDescription>{m.requests_empty_description()}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <ul className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-          {requests.map((request) => (
-            <RequestRow key={request.id} request={request} />
-          ))}
-        </ul>
-      )}
+      <RequestList
+        params={params}
+        onChange={(next) => void navigate({ search: { ...search, ...next } })}
+        toolbar={
+          can(user, "view_requests") ? (
+            <ToggleGroup
+              aria-label={m.requests_scope_label()}
+              selectionMode="single"
+              disallowEmptySelection
+              selectedKeys={[params.scope]}
+              onSelectionChange={(keys) => {
+                const key = firstKey(keys);
+                if (key === "mine" || key === "all")
+                  void navigate({ search: { ...search, scope: key } });
+              }}
+              variant="outline"
+            >
+              <ToggleGroupItem id="all">{m.requests_scope_all()}</ToggleGroupItem>
+              <ToggleGroupItem id="mine">{m.requests_scope_mine()}</ToggleGroupItem>
+            </ToggleGroup>
+          ) : null
+        }
+      />
     </div>
   );
 }

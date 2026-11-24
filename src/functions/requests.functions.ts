@@ -25,6 +25,7 @@ import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
   activeRequestsByExternalId,
+  countPending,
   listRequests,
   requestHistory,
   upsertMedia,
@@ -151,13 +152,18 @@ export const getRequests = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(ListRequestsSchema)
   .handler(async ({ data, context }) => {
-    if (data.scope === "all" && !hasPermission(context.permissions, "view_requests")) {
+    const self = context.session.user.id;
+    const others = data.scope === "all" || (data.userId !== undefined && data.userId !== self);
+    if (others && !hasPermission(context.permissions, "view_requests")) {
       setResponseStatus(403);
       throw new Error("Forbidden");
     }
     const rows = listRequests(db, {
-      userId: data.scope === "mine" ? context.session.user.id : undefined,
+      userId: data.userId ?? (data.scope === "mine" ? self : undefined),
       filter: data.filter,
+      format: data.format,
+      sort: data.sort,
+      order: data.order,
     });
     // "Downloading" only when Chaptarr's queue says so; otherwise a sent request is just requested.
     const sentIds = rows
@@ -392,3 +398,8 @@ export const getMyQuota = createServerFn({ method: "GET" })
       data.format,
     ),
   );
+
+/** How many requests wait for approval (sidebar badge). Request managers. */
+export const getPendingCount = createServerFn({ method: "GET" })
+  .middleware([requireManageRequests])
+  .handler(() => ({ count: countPending(db) }));

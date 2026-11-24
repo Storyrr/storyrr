@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BanIcon,
@@ -19,12 +20,14 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "#/components/ui/sidebar";
 import type { SessionUser } from "#/functions/auth.functions";
 import { can, type Permission } from "#/lib/permissions";
+import { pendingCountQuery } from "#/lib/queries/requests";
 import { Logo } from "#/components/layout/logo";
 import { m } from "#/paraglide/messages.js";
 
@@ -43,6 +46,18 @@ const NAV: NavItem[] = [
 
 const isActive = (pathname: string, href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
+/** Requests waiting for approval, next to Requests (request managers). */
+function PendingBadge() {
+  const { data } = useQuery(pendingCountQuery());
+  if (!data?.count) return null;
+  return (
+    <SidebarMenuBadge className="rounded-full bg-primary px-1.5 text-primary-foreground">
+      {data.count}
+      <span className="sr-only">{m.requests_pending_badge({ count: data.count })}</span>
+    </SidebarMenuBadge>
+  );
+}
 
 /** Seerr-like navigation: a sidebar on desktop, a drawer on phones. */
 export function AppSidebar({ user, version }: { user: SessionUser; version: string }) {
@@ -76,6 +91,9 @@ export function AppSidebar({ user, version }: { user: SessionUser; version: stri
                           <item.icon />
                           <span>{item.label()}</span>
                         </SidebarMenuButton>
+                        {item.href === "/requests" && can(user, "manage_requests") ? (
+                          <PendingBadge />
+                        ) : null}
                       </SidebarMenuItem>
                     );
                   },

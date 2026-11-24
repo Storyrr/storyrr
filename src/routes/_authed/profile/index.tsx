@@ -17,7 +17,9 @@ export const Route = createFileRoute("/_authed/profile/")({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(accountQuery()),
-      context.queryClient.ensureQueryData(requestsQuery("mine", "all")),
+      context.queryClient.ensureQueryData(
+        requestsQuery({ scope: "mine", filter: "all", sort: "added" }),
+      ),
     ]),
   head: () => ({ meta: [{ title: `${m.nav_profile()} · ${m.app_name()}` }] }),
   component: ProfilePage,
@@ -43,7 +45,9 @@ function QuotaCard({ label, quota }: { label: string; quota: RequestQuota }) {
 
 function ProfilePage() {
   const { data: account } = useSuspenseQuery(accountQuery());
-  const { data: all } = useSuspenseQuery(requestsQuery("mine", "all"));
+  const { data: all } = useSuspenseQuery(
+    requestsQuery({ scope: "mine", filter: "all", sort: "added" }),
+  );
   // Newest first (the requests page puts pending ones on top instead).
   const recent = all
     .toSorted((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

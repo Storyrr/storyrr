@@ -116,7 +116,7 @@
   "requests_filter_pending": "En attente",
   "requests_filter_processing": "En cours",
   "requests_filter_available": "Disponibles",
-  "requests_filter_failed": "Échouées ou refusées",
+  "requests_filter_failed": "En échec",
   "requests_empty_title": "Aucune demande ici",
   "requests_empty_description": "Les demandes faites depuis la recherche apparaissent ici avec leur avancement.",
   "requests_requested_on": "Demandé par {name} le {date}",
@@ -495,5 +495,18 @@
   "my_notifications_pushover": "Clé utilisateur Pushover",
   "my_notifications_pushover_description": "Dans votre tableau de bord Pushover.",
   "my_notifications_pushbullet": "Jeton d’accès Pushbullet",
-  "my_notifications_pushbullet_description": "Pushbullet → Settings → Account → Create access token."
+  "my_notifications_pushbullet_description": "Pushbullet → Settings → Account → Create access token.",
+  "requests_filter_declined": "Refusées",
+  "requests_filter_cancelled": "Annulées",
+  "requests_sort_label": "Trier par",
+  "requests_sort_status": "En attente d’abord",
+  "requests_sort_added": "Date de demande",
+  "requests_sort_modified": "Dernière mise à jour",
+  "requests_order_desc": "Plus récentes d’abord",
+  "requests_order_asc": "Plus anciennes d’abord",
+  "requests_format_label": "Format",
+  "requests_format_all": "Tous les formats",
+  "users_requests_title": "Demandes de {name}",
+  "users_view_requests": "Demandes",
+  "requests_pending_badge": "{count} en attente d’approbation"
 }

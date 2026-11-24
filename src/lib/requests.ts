@@ -50,3 +50,19 @@ export type RequestQuota = {
   used: number;
   remaining: number | null;
 };
+
+/** Request list filters (Requests page). */
+export const REQUEST_FILTERS = [
+  "all",
+  "pending",
+  "processing",
+  "available",
+  "declined",
+  "failed",
+  "cancelled",
+] as const;
+export type RequestFilter = (typeof REQUEST_FILTERS)[number];
+
+/** "status": pending first, then newest (the default); the others by date. */
+export const REQUEST_SORTS = ["status", "added", "modified"] as const;
+export type RequestSort = (typeof REQUEST_SORTS)[number];

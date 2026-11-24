@@ -116,7 +116,7 @@
   "requests_filter_pending": "Pending",
   "requests_filter_processing": "Processing",
   "requests_filter_available": "Available",
-  "requests_filter_failed": "Failed or denied",
+  "requests_filter_failed": "Failed",
   "requests_empty_title": "No requests here",
   "requests_empty_description": "Requests you make from search show up here with their progress.",
   "requests_requested_on": "Requested by {name} on {date}",
@@ -495,5 +495,18 @@
   "my_notifications_pushover": "Pushover user key",
   "my_notifications_pushover_description": "From your Pushover dashboard.",
   "my_notifications_pushbullet": "Pushbullet access token",
-  "my_notifications_pushbullet_description": "Pushbullet → Settings → Account → Create access token."
+  "my_notifications_pushbullet_description": "Pushbullet → Settings → Account → Create access token.",
+  "requests_filter_declined": "Declined",
+  "requests_filter_cancelled": "Cancelled",
+  "requests_sort_label": "Sort by",
+  "requests_sort_status": "Pending first",
+  "requests_sort_added": "Date requested",
+  "requests_sort_modified": "Last update",
+  "requests_order_desc": "Newest first",
+  "requests_order_asc": "Oldest first",
+  "requests_format_label": "Format",
+  "requests_format_all": "All formats",
+  "users_requests_title": "Requests by {name}",
+  "users_view_requests": "Requests",
+  "requests_pending_badge": "{count} waiting for approval"
 }

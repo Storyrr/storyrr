@@ -1,6 +1,7 @@
 import * as v from "valibot";
 
 import { SEARCHABLE_TYPES } from "#/lib/media-types";
+import { MEDIA_TYPES, REQUEST_FILTERS, REQUEST_SORTS } from "#/lib/requests";
 import { m } from "#/paraglide/messages.js";
 
 export const AsinSchema = v.pipe(v.string(), v.trim(), v.toUpperCase(), v.regex(/^[A-Z0-9]{10}$/));
@@ -52,8 +53,14 @@ export const DenyRequestSchema = v.object({
 
 export const ListRequestsSchema = v.object({
   scope: v.picklist(["mine", "all"]),
-  filter: v.picklist(["all", "pending", "processing", "available", "failed"]),
+  filter: v.picklist(REQUEST_FILTERS),
+  format: v.optional(v.picklist(MEDIA_TYPES)),
+  sort: v.optional(v.picklist(REQUEST_SORTS)),
+  order: v.optional(v.picklist(["asc", "desc"])),
+  /** One user's requests (needs View requests unless it's the caller). */
+  userId: v.optional(v.pipe(v.string(), v.nonEmpty())),
 });
+export type ListRequestsInput = v.InferOutput<typeof ListRequestsSchema>;
 
 export const RemoveFromChaptarrSchema = v.object({
   ...RequestIdSchema.entries,

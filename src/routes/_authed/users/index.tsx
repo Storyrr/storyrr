@@ -189,7 +189,19 @@ function UsersPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="tabular-nums">{account.requests}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {can(me, "view_requests") ? (
+                      <Link
+                        to="/users/$userId/requests"
+                        params={{ userId: account.id }}
+                        className="hover:underline"
+                      >
+                        {account.requests}
+                      </Link>
+                    ) : (
+                      account.requests
+                    )}
+                  </TableCell>
                   <TableCell>{account.role === "admin" ? m.role_admin() : m.role_user()}</TableCell>
                   <TableCell>{formatDate(new Date(account.createdAt))}</TableCell>
                   <TableCell className="px-4">
