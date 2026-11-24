@@ -8,7 +8,10 @@ export function Logo({ className }: { className?: string }) {
   return (
     // The visible text ("storyrr") names it; the mark is decorative.
     <span
-      className={cn("inline-flex items-center gap-[0.3em] font-bold tracking-tight", className)}
+      className={cn(
+        "inline-flex items-center gap-[0.3em] font-heading font-bold tracking-tight",
+        className,
+      )}
     >
       <img src="/logo-mark.svg" alt="" className="h-[1.1em] w-auto dark:hidden" />
       <img src="/logo-mark-dark.svg" alt="" className="hidden h-[1.1em] w-auto dark:block" />
