@@ -1,11 +1,12 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { SecretField } from "#/components/form/secret-field";
-import { Button } from "#/components/ui/button";
+import { Button, LinkButton } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
@@ -14,6 +15,9 @@ import { settingsKeys } from "#/lib/queries/settings";
 import { HardcoverTokenFormSchema, type HardcoverTokenForm } from "#/lib/schemas/settings";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
+
+/** Hardcover's new-token page, with the one permission Storyrr needs pre-checked (from Hardcover's docs). */
+const NEW_TOKEN_URL = "https://hardcover.app/account/api/keys/new?scope=read%3Acatalog%3Asearch";
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
@@ -89,6 +93,10 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
         </form.Field>
       </FieldGroup>
       <SettingsActions>
+        <LinkButton variant="outline" href={NEW_TOKEN_URL} target="_blank" rel="noreferrer">
+          {m.settings_hardcover_create_token()}
+          <ExternalLinkIcon data-icon="inline-end" />
+        </LinkButton>
         <Button
           variant="outline"
           isDisabled={test.isPending}
