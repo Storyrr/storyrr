@@ -3,6 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import type { IssueStatus, IssueType } from "#/lib/issues";
 import type { AppDatabase } from "#/server/db/client";
+import { emitAppEvent } from "#/server/events";
 import { issue, issueComment, media, user } from "#/server/db/schema";
 
 /** Opens an issue with the report as its first comment. */
@@ -10,7 +11,7 @@ export function createIssue(
   db: AppDatabase,
   input: { mediaId: string; userId: string; type: IssueType; message: string },
 ): string {
-  return db.transaction((tx) => {
+  const id = db.transaction((tx) => {
     const created = tx
       .insert(issue)
       .values({ mediaId: input.mediaId, userId: input.userId, type: input.type })
@@ -21,6 +22,8 @@ export function createIssue(
       .run();
     return created.id;
   });
+  emitAppEvent({ kind: "issue_created", issueId: id, userId: input.userId });
+  return id;
 }
 
 /** Issues, open first then most recently active; only the user's own when `userId` is set. */
@@ -110,17 +113,19 @@ export function addComment(
     tx.insert(issueComment).values(input).run();
     tx.update(issue).set({ updatedAt: new Date() }).where(eq(issue.id, input.issueId)).run();
   });
+  emitAppEvent({ kind: "issue_comment", ...input });
 }
 
 export function setIssueStatus(db: AppDatabase, id: string, status: IssueStatus): boolean {
-  return (
+  const updated =
     db
       .update(issue)
       .set({ status, updatedAt: new Date() })
       .where(eq(issue.id, id))
       .returning({ id: issue.id })
-      .all().length > 0
-  );
+      .all().length > 0;
+  if (updated) emitAppEvent({ kind: "issue_status", issueId: id, status });
+  return updated;
 }
 
 /** Whether the user may see and comment on the issue (its reporter, or an admin). */

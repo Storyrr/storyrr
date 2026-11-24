@@ -30,6 +30,7 @@ import { Route as AuthedSettingsAudiobookshelfRouteImport } from './routes/_auth
 import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/settings/general'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
 import { Route as AuthedSettingsMetadataRouteImport } from './routes/_authed/settings/metadata'
+import { Route as AuthedSettingsNotificationsRouteImport } from './routes/_authed/settings/notifications'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settings/users'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
@@ -37,8 +38,10 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 import { Route as AuthedProfileSettingsGeneralRouteImport } from './routes/_authed/profile/settings/general'
+import { Route as AuthedProfileSettingsNotificationsRouteImport } from './routes/_authed/profile/settings/notifications'
 import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
 import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
+import { Route as AuthedSettingsNotificationsAgentRouteImport } from './routes/_authed/settings/notifications/$agent'
 import { Route as AuthedUsersUserIdSettingsRouteImport } from './routes/_authed/users/$userId/settings'
 import { Route as AuthedUsersUserIdSettingsGeneralRouteImport } from './routes/_authed/users/$userId/settings/general'
 import { Route as AuthedUsersUserIdSettingsPasswordRouteImport } from './routes/_authed/users/$userId/settings/password'
@@ -149,6 +152,12 @@ const AuthedSettingsMetadataRoute = AuthedSettingsMetadataRouteImport.update({
   path: '/metadata',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
+const AuthedSettingsNotificationsRoute =
+  AuthedSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedSettingsServicesRoute = AuthedSettingsServicesRouteImport.update({
   id: '/services',
   path: '/services',
@@ -185,6 +194,12 @@ const AuthedProfileSettingsGeneralRoute =
     path: '/general',
     getParentRoute: () => AuthedProfileSettingsRoute,
   } as any)
+const AuthedProfileSettingsNotificationsRoute =
+  AuthedProfileSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
 const AuthedProfileSettingsPasswordRoute =
   AuthedProfileSettingsPasswordRouteImport.update({
     id: '/password',
@@ -196,6 +211,12 @@ const AuthedProfileSettingsPermissionsRoute =
     id: '/permissions',
     path: '/permissions',
     getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
+const AuthedSettingsNotificationsAgentRoute =
+  AuthedSettingsNotificationsAgentRouteImport.update({
+    id: '/$agent',
+    path: '/$agent',
+    getParentRoute: () => AuthedSettingsNotificationsRoute,
   } as any)
 const AuthedUsersUserIdSettingsRoute =
   AuthedUsersUserIdSettingsRouteImport.update({
@@ -241,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -250,8 +272,10 @@ export interface FileRoutesByFullPath {
   '/users/': typeof AuthedUsersIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -276,6 +300,7 @@ export interface FileRoutesByTo {
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -285,8 +310,10 @@ export interface FileRoutesByTo {
   '/users': typeof AuthedUsersIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -313,6 +340,7 @@ export interface FileRoutesById {
   '/_authed/settings/general': typeof AuthedSettingsGeneralRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/_authed/settings/metadata': typeof AuthedSettingsMetadataRoute
+  '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/_authed/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -322,8 +350,10 @@ export interface FileRoutesById {
   '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/_authed/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/_authed/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
+  '/_authed/settings/notifications/$agent': typeof AuthedSettingsNotificationsAgentRoute
   '/_authed/users/$userId/settings': typeof AuthedUsersUserIdSettingsRouteWithChildren
   '/_authed/users/$userId/settings/general': typeof AuthedUsersUserIdSettingsGeneralRoute
   '/_authed/users/$userId/settings/password': typeof AuthedUsersUserIdSettingsPasswordRoute
@@ -350,6 +380,7 @@ export interface FileRouteTypes {
     | '/settings/general'
     | '/settings/kavita'
     | '/settings/metadata'
+    | '/settings/notifications'
     | '/settings/services'
     | '/settings/users'
     | '/api/auth/$'
@@ -359,8 +390,10 @@ export interface FileRouteTypes {
     | '/users/'
     | '/media/$type/$id'
     | '/profile/settings/general'
+    | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/settings/notifications/$agent'
     | '/users/$userId/settings'
     | '/users/$userId/settings/general'
     | '/users/$userId/settings/password'
@@ -385,6 +418,7 @@ export interface FileRouteTypes {
     | '/settings/general'
     | '/settings/kavita'
     | '/settings/metadata'
+    | '/settings/notifications'
     | '/settings/services'
     | '/settings/users'
     | '/api/auth/$'
@@ -394,8 +428,10 @@ export interface FileRouteTypes {
     | '/users'
     | '/media/$type/$id'
     | '/profile/settings/general'
+    | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
+    | '/settings/notifications/$agent'
     | '/users/$userId/settings'
     | '/users/$userId/settings/general'
     | '/users/$userId/settings/password'
@@ -421,6 +457,7 @@ export interface FileRouteTypes {
     | '/_authed/settings/general'
     | '/_authed/settings/kavita'
     | '/_authed/settings/metadata'
+    | '/_authed/settings/notifications'
     | '/_authed/settings/services'
     | '/_authed/settings/users'
     | '/api/auth/$'
@@ -430,8 +467,10 @@ export interface FileRouteTypes {
     | '/_authed/users/'
     | '/_authed/media/$type/$id'
     | '/_authed/profile/settings/general'
+    | '/_authed/profile/settings/notifications'
     | '/_authed/profile/settings/password'
     | '/_authed/profile/settings/permissions'
+    | '/_authed/settings/notifications/$agent'
     | '/_authed/users/$userId/settings'
     | '/_authed/users/$userId/settings/general'
     | '/_authed/users/$userId/settings/password'
@@ -596,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsMetadataRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    '/_authed/settings/notifications': {
+      id: '/_authed/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AuthedSettingsNotificationsRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     '/_authed/settings/services': {
       id: '/_authed/settings/services'
       path: '/services'
@@ -645,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProfileSettingsGeneralRouteImport
       parentRoute: typeof AuthedProfileSettingsRoute
     }
+    '/_authed/profile/settings/notifications': {
+      id: '/_authed/profile/settings/notifications'
+      path: '/notifications'
+      fullPath: '/profile/settings/notifications'
+      preLoaderRoute: typeof AuthedProfileSettingsNotificationsRouteImport
+      parentRoute: typeof AuthedProfileSettingsRoute
+    }
     '/_authed/profile/settings/password': {
       id: '/_authed/profile/settings/password'
       path: '/password'
@@ -658,6 +711,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/settings/permissions'
       preLoaderRoute: typeof AuthedProfileSettingsPermissionsRouteImport
       parentRoute: typeof AuthedProfileSettingsRoute
+    }
+    '/_authed/settings/notifications/$agent': {
+      id: '/_authed/settings/notifications/$agent'
+      path: '/$agent'
+      fullPath: '/settings/notifications/$agent'
+      preLoaderRoute: typeof AuthedSettingsNotificationsAgentRouteImport
+      parentRoute: typeof AuthedSettingsNotificationsRoute
     }
     '/_authed/users/$userId/settings': {
       id: '/_authed/users/$userId/settings'
@@ -690,12 +750,28 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedSettingsNotificationsRouteChildren {
+  AuthedSettingsNotificationsAgentRoute: typeof AuthedSettingsNotificationsAgentRoute
+}
+
+const AuthedSettingsNotificationsRouteChildren: AuthedSettingsNotificationsRouteChildren =
+  {
+    AuthedSettingsNotificationsAgentRoute:
+      AuthedSettingsNotificationsAgentRoute,
+  }
+
+const AuthedSettingsNotificationsRouteWithChildren =
+  AuthedSettingsNotificationsRoute._addFileChildren(
+    AuthedSettingsNotificationsRouteChildren,
+  )
+
 interface AuthedSettingsRouteChildren {
   AuthedSettingsAboutRoute: typeof AuthedSettingsAboutRoute
   AuthedSettingsAudiobookshelfRoute: typeof AuthedSettingsAudiobookshelfRoute
   AuthedSettingsGeneralRoute: typeof AuthedSettingsGeneralRoute
   AuthedSettingsKavitaRoute: typeof AuthedSettingsKavitaRoute
   AuthedSettingsMetadataRoute: typeof AuthedSettingsMetadataRoute
+  AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRouteWithChildren
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
   AuthedSettingsUsersRoute: typeof AuthedSettingsUsersRoute
 }
@@ -706,6 +782,8 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsGeneralRoute: AuthedSettingsGeneralRoute,
   AuthedSettingsKavitaRoute: AuthedSettingsKavitaRoute,
   AuthedSettingsMetadataRoute: AuthedSettingsMetadataRoute,
+  AuthedSettingsNotificationsRoute:
+    AuthedSettingsNotificationsRouteWithChildren,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
   AuthedSettingsUsersRoute: AuthedSettingsUsersRoute,
 }
@@ -716,12 +794,15 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 
 interface AuthedProfileSettingsRouteChildren {
   AuthedProfileSettingsGeneralRoute: typeof AuthedProfileSettingsGeneralRoute
+  AuthedProfileSettingsNotificationsRoute: typeof AuthedProfileSettingsNotificationsRoute
   AuthedProfileSettingsPasswordRoute: typeof AuthedProfileSettingsPasswordRoute
   AuthedProfileSettingsPermissionsRoute: typeof AuthedProfileSettingsPermissionsRoute
 }
 
 const AuthedProfileSettingsRouteChildren: AuthedProfileSettingsRouteChildren = {
   AuthedProfileSettingsGeneralRoute: AuthedProfileSettingsGeneralRoute,
+  AuthedProfileSettingsNotificationsRoute:
+    AuthedProfileSettingsNotificationsRoute,
   AuthedProfileSettingsPasswordRoute: AuthedProfileSettingsPasswordRoute,
   AuthedProfileSettingsPermissionsRoute: AuthedProfileSettingsPermissionsRoute,
 }

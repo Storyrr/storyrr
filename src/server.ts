@@ -1,10 +1,21 @@
 import handler from "@tanstack/react-start/server-entry";
 
 import { paraglideMiddleware } from "./paraglide/server.js";
+import { db } from "./server/db";
+import { getEnv } from "./server/env";
 import { startScheduler } from "./server/jobs";
+import { startNotifications } from "./server/notifications";
+import { settings } from "./server/settings";
 
 // Background jobs (library sync, submissions, availability) run in-process.
 startScheduler();
+// Notifications follow request and issue changes.
+startNotifications(() => ({
+  db,
+  settings,
+  fetch: (input, init) => fetch(input, init),
+  appUrl: getEnv().BETTER_AUTH_URL.replace(/\/+$/, ""),
+}));
 
 /**
  * Custom server entry: Paraglide resolves the request's locale (cookie, then

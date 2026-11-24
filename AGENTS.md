@@ -95,6 +95,8 @@ src/
 │   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from Audiobookshelf
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
+│   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
+│   ├── notifications/      # notification agents (email via nodemailer, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook), started by src/server.ts
 │   └── jobs/               # croner scheduler started by src/server.ts: library-sync (15 min), submit-approved (5 min)
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template
@@ -196,7 +198,7 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 [Conventional Commits](https://www.conventionalcommits.org/), in English: `<type>(<optional scope>): <description>`, then an optional body and an optional footer, each after a blank line.
 
 - **Types:** `feat` (add, change or remove a user-facing feature), `fix` (bug fix), `refactor` (restructure without behavior change), `perf` (performance-only refactor), `style` (formatting only), `test`, `docs` (documentation only), `build` (tooling, dependencies, version), `ops` (CI/CD, Docker, deployment), `chore` (anything else: initial commit, `.gitignore`, …).
-- **Scopes** (optional, never an issue number): `requests`, `search`, `media`, `auth`, `users`, `settings`, `jobs`, `db`, `ui`, `i18n`, `chaptarr`, `audiobookshelf`, `kavita`, `metadata`, `deps`.
+- **Scopes** (optional, never an issue number): `requests`, `search`, `media`, `auth`, `users`, `settings`, `jobs`, `db`, `ui`, `i18n`, `chaptarr`, `audiobookshelf`, `kavita`, `metadata`, `notifications`, `deps`.
 - **Description:** imperative present tense ("add", not "added"/"adds"; read it as "this commit will …"), lowercase first letter, no trailing period, concise.
 - **Body:** the motivation and how behavior differs from before, imperative tense.
 - **Footer:** issue references (`Closes #12`) and breaking changes.

@@ -1,6 +1,8 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, inArray } from "drizzle-orm";
 
+import { emitAppEvent } from "#/server/events";
+
 import {
   ACTIVE_REQUEST_STATUSES,
   canTransition,
@@ -51,6 +53,22 @@ export type CreateRequestResult =
 
 /** Creates a request, or attaches the user to the active one for the same media, format and target. */
 export function createRequest(db: AppDatabase, input: CreateRequestInput): CreateRequestResult {
+  const result = insertRequest(db, input);
+  // One event per new request: pending, or approved straight away (auto-approval).
+  if (result.kind === "created") {
+    emitAppEvent({
+      kind: "request",
+      requestId: result.requestId,
+      from: null,
+      to: result.status,
+      actor: input.userId,
+      message: null,
+    });
+  }
+  return result;
+}
+
+function insertRequest(db: AppDatabase, input: CreateRequestInput): CreateRequestResult {
   const key = targetKey(input.target);
   return db.transaction((tx) => {
     const existing = tx
@@ -111,7 +129,7 @@ export function transitionRequest(
   requestId: string,
   input: TransitionInput,
 ): RequestStatus {
-  return db.transaction((tx) => {
+  const from = db.transaction((tx) => {
     const current = tx
       .select({ status: request.status })
       .from(request)
@@ -119,8 +137,17 @@ export function transitionRequest(
       .get();
     if (!current) throw new RequestNotFoundError(requestId);
     applyTransition(tx, requestId, current.status, input);
-    return input.to;
+    return current.status;
   });
+  emitAppEvent({
+    kind: "request",
+    requestId,
+    from,
+    to: input.to,
+    actor: input.actor,
+    message: input.message ?? null,
+  });
+  return input.to;
 }
 
 type Tx = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];

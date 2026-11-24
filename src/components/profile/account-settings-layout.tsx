@@ -25,6 +25,10 @@ export function AccountSettingsLayout({
     { to: `${basePath}/general`, label: m.settings_tab_general },
     { to: `${basePath}/password`, label: m.profile_tab_password },
     { to: `${basePath}/permissions`, label: m.profile_tab_permissions },
+    // Personal channels are set by each user for themselves.
+    ...(account.self
+      ? [{ to: `${basePath}/notifications`, label: m.settings_tab_notifications }]
+      : []),
   ];
   return (
     <div className="flex flex-col gap-8">

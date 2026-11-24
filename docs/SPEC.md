@@ -117,6 +117,13 @@ Shown when the database has no user.
 - **Profile:** avatar, name, email, role, member since; request counts (total, audiobooks, eBooks, available) and recent requests.
 - **Settings** (the user's own, tabs): **General** (display name, email read-only, display language: browser default or a fixed locale, stored per user and applied on any device), **Password** (current + new; signs out other sessions), **Permissions** (read-only: role, auto-approval, request limits left). Linked accounts and notifications come with those features.
 
+### 4.8c Notifications (decided 2026-11-24)
+
+- Events: request waiting for approval, auto-approved, approved, declined, available, failed; issue reported, commented, resolved, reopened.
+- Agents (Settings → Notifications, one sub-tab each, with Enable, events, fields, Test, Save): Email (SMTP), Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, and a webhook with a JSON template (`{{variables}}`). Web Push comes with the PWA. Tokens are stored encrypted; the eye button reveals them like API keys.
+- Shared delivery: each enabled agent posts the events it's set for to its own destination, in the instance's notification language.
+- Personal delivery: requesters and watchers get news of their requests, request managers of new requests, issue managers of new issues and comments, reporters of their issues. Each user picks their events and channels (email on/off, Discord user ID mentioned in the shared Discord message, Telegram chat ID, Pushover user key, Pushbullet token) in Profile → Settings → Notifications, in their own language.
+
 ### 4.9 Settings (admin)
 
 Seerr-like tabs (decided 2026-11-24), label column on the left, control on the right:

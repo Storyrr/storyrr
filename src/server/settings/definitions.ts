@@ -8,6 +8,9 @@ import {
   UserSettingsSchema,
 } from "#/lib/schemas/settings";
 
+import { AGENT_DEFINITIONS, AgentCommonSchema, type NotificationAgent } from "#/lib/notifications";
+import { locales } from "#/paraglide/runtime.js";
+
 import { defineSetting } from "./store";
 
 const StoredConnectionSchema = v.object({
@@ -89,3 +92,30 @@ export const librarySelection = {
   }),
   kavita: defineSetting({ key: "libraries.kavita", schema: LibrarySelectionSchema, secret: false }),
 } as const;
+
+const agentSetting = <TConfig extends v.GenericSchema>(agent: NotificationAgent, config: TConfig) =>
+  defineSetting({
+    key: `notifications.${agent}`,
+    schema: v.object({ ...AgentCommonSchema.entries, config }),
+    secret: true,
+  });
+
+/** One setting per notification agent: on/off, its events and its config (tokens: sealed). */
+export const notificationAgentSettings = {
+  email: agentSetting("email", AGENT_DEFINITIONS.email.schema),
+  discord: agentSetting("discord", AGENT_DEFINITIONS.discord.schema),
+  slack: agentSetting("slack", AGENT_DEFINITIONS.slack.schema),
+  telegram: agentSetting("telegram", AGENT_DEFINITIONS.telegram.schema),
+  ntfy: agentSetting("ntfy", AGENT_DEFINITIONS.ntfy.schema),
+  gotify: agentSetting("gotify", AGENT_DEFINITIONS.gotify.schema),
+  pushover: agentSetting("pushover", AGENT_DEFINITIONS.pushover.schema),
+  pushbullet: agentSetting("pushbullet", AGENT_DEFINITIONS.pushbullet.schema),
+  webhook: agentSetting("webhook", AGENT_DEFINITIONS.webhook.schema),
+} satisfies Record<NotificationAgent, unknown>;
+
+/** Language of notifications sent to shared channels (personal ones use each user's). */
+export const notificationGeneral = defineSetting({
+  key: "notifications.general",
+  schema: v.object({ locale: v.picklist(locales) }),
+  secret: false,
+});
