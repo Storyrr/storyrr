@@ -62,6 +62,20 @@ Shown when the database has no user.
 - Other formats of the same work when known (e.g. "Also available as eBook").
 - Request button (or current status + who requested it).
 
+### 4.3b Navigation and Discover (decided 2026-11-24)
+
+- Seerr-like layout: a sidebar with **Découvrir (Discover), Livres (eBooks), Livres audio (Audiobooks), Demandes (Requests), Blocages (Blocklist, admins), Problèmes (Issues), Utilisateurs (Users, admins), Paramètres (Settings, admins)**, a search bar at the top, the account menu at the top right. On phones the sidebar becomes a drawer.
+- **Discover** shows horizontal rows: **Trending** (Audible bestsellers in the configured region, Hardcover's trending books), **Recent requests** (with status), **Recently added** (requests that became available).
+- **Books** / **Audiobooks** pages: search and browse that type only.
+
+### 4.3c Blocklist (decided 2026-11-24)
+
+- Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. The Blocklist page lists them and unblocks.
+
+### 4.3d Issues (decided 2026-11-24)
+
+- Any user reports a problem on an available item: wrong language, wrong edition, missing or broken content, bad audio, other; with a comment. Admins and the reporter discuss it in comments; admins resolve or reopen it. The Issues page lists open issues first (users see their own, admins all).
+
 ### 4.4 Request modal (Seerr-like)
 
 - **Format** (audiobook / eBook) when the work exists in both.
@@ -144,7 +158,7 @@ See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 2. **Audiobooks end-to-end:** Settings → Services (Chaptarr, Audiobookshelf, Audible region, default audiobook target, with Test) and the same forms as an optional wizard step; Audible search, detail page, request modal (with admin target folder), approval, Chaptarr submit (write scope!), availability via ABS (ASIN) + Chaptarr webhook.
 3. **eBooks:** Hardcover/Open Library search, Chaptarr eBook submit to Books/Manga/Comics folders, availability via Kavita.
 4. ~~Podcasts~~: dropped (2026-11-24), see non-goals.
-5. **Polish:** users admin, settings + job history, retry/cancel, PWA manifest. (French translation: done early, with a language switcher in the account menu.)
+5. **Polish:** Seerr-like layout, Discover, blocklist, issues, users admin, settings + job history, retry/cancel, PWA manifest. (French translation: done early, with a language switcher in the account menu.)
 
 Later: OIDC login (better-auth `genericOAuth`, with implicit sign-up disabled), notifications (email / ntfy / Discord), recommendations, public REST API.
 
