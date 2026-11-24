@@ -37,8 +37,9 @@ function ProfileSettingsLayout() {
           icon: <UserIcon data-icon="inline-start" />,
         }}
       />
-      <TabNav label={m.nav_settings()} tabs={TABS} />
-      <Outlet />
+      <TabNav label={m.nav_settings()} tabs={TABS}>
+        <Outlet />
+      </TabNav>
     </div>
   );
 }

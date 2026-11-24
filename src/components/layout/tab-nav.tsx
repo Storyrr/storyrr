@@ -1,24 +1,42 @@
-import { Link } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
 
 export type Tab = { to: string; label: () => string };
 
-/** Seerr-like underlined tabs, one route per tab. */
-export function TabNav({ label, tabs }: { label: string; tabs: readonly Tab[] }) {
+/**
+ * Line tabs where each tab is a route (React Aria follows the links through the
+ * router); the current route's page is the selected tab's panel.
+ */
+export function TabNav({
+  label,
+  tabs,
+  children,
+}: {
+  label: string;
+  tabs: readonly Tab[];
+  children: React.ReactNode;
+}) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const selected = tabs.find((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`));
   return (
-    <nav aria-label={label} className="overflow-x-auto border-b">
-      <ul className="flex gap-6">
+    <Tabs selectedKey={selected?.to} className="gap-8">
+      <TabsList
+        variant="line"
+        aria-label={label}
+        className="h-auto w-full flex-wrap justify-start border-b pb-1"
+      >
         {tabs.map((tab) => (
-          <li key={tab.to}>
-            <Link
-              to={tab.to}
-              className="-mb-px block border-b-2 border-transparent py-3 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
-              activeProps={{ className: "border-primary text-primary", "aria-current": "page" }}
-            >
-              {tab.label()}
-            </Link>
-          </li>
+          <TabsTrigger key={tab.to} id={tab.to} href={tab.to} className="flex-none px-3">
+            {tab.label()}
+          </TabsTrigger>
         ))}
-      </ul>
-    </nav>
+      </TabsList>
+      {selected ? (
+        <TabsContent id={selected.to} className="text-base">
+          {children}
+        </TabsContent>
+      ) : null}
+    </Tabs>
   );
 }

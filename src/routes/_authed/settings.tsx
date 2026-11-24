@@ -25,8 +25,9 @@ const TABS = [
 function SettingsLayout() {
   return (
     <div className="flex flex-col gap-8">
-      <TabNav label={m.nav_settings()} tabs={TABS} />
-      <Outlet />
+      <TabNav label={m.nav_settings()} tabs={TABS}>
+        <Outlet />
+      </TabNav>
     </div>
   );
 }
