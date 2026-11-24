@@ -4,3 +4,4 @@ export * from "./settings";
 export * from "./requests";
 export * from "./library";
 export * from "./blocklist";
+export * from "./issues";

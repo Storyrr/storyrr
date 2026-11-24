@@ -20,6 +20,8 @@ import { Route as AuthedRequestsRouteImport } from './routes/_authed/requests'
 import { Route as AuthedSearchRouteImport } from './routes/_authed/search'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
+import { Route as AuthedIssuesIdRouteImport } from './routes/_authed/issues/$id'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
@@ -79,6 +81,16 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedIssuesIndexRoute = AuthedIssuesIndexRouteImport.update({
+  id: '/issues/',
+  path: '/issues/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedIssuesIdRoute = AuthedIssuesIdRouteImport.update({
+  id: '/issues/$id',
+  path: '/issues/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsServicesRoute = AuthedSettingsServicesRouteImport.update({
   id: '/settings/services',
   path: '/settings/services',
@@ -111,9 +123,11 @@ export interface FileRoutesByFullPath {
   '/search': typeof AuthedSearchRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
+  '/issues/$id': typeof AuthedIssuesIdRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
+  '/issues/': typeof AuthedIssuesIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesByTo {
@@ -127,9 +141,11 @@ export interface FileRoutesByTo {
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
+  '/issues/$id': typeof AuthedIssuesIdRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
+  '/issues': typeof AuthedIssuesIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRoutesById {
@@ -145,9 +161,11 @@ export interface FileRoutesById {
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/issues/$id': typeof AuthedIssuesIdRoute
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
+  '/_authed/issues/': typeof AuthedIssuesIndexRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
 }
 export interface FileRouteTypes {
@@ -163,9 +181,11 @@ export interface FileRouteTypes {
     | '/search'
     | '/welcome'
     | '/api/health'
+    | '/issues/$id'
     | '/settings/services'
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
+    | '/issues/'
     | '/media/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -179,9 +199,11 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/health'
     | '/'
+    | '/issues/$id'
     | '/settings/services'
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
+    | '/issues'
     | '/media/$type/$id'
   id:
     | '__root__'
@@ -196,9 +218,11 @@ export interface FileRouteTypes {
     | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
+    | '/_authed/issues/$id'
     | '/_authed/settings/services'
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
+    | '/_authed/issues/'
     | '/_authed/media/$type/$id'
   fileRoutesById: FileRoutesById
 }
@@ -290,6 +314,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/issues/': {
+      id: '/_authed/issues/'
+      path: '/issues'
+      fullPath: '/issues/'
+      preLoaderRoute: typeof AuthedIssuesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/issues/$id': {
+      id: '/_authed/issues/$id'
+      path: '/issues/$id'
+      fullPath: '/issues/$id'
+      preLoaderRoute: typeof AuthedIssuesIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/services': {
       id: '/_authed/settings/services'
       path: '/settings/services'
@@ -329,7 +367,9 @@ interface AuthedRouteChildren {
   AuthedSearchRoute: typeof AuthedSearchRoute
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedIssuesIdRoute: typeof AuthedIssuesIdRoute
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
+  AuthedIssuesIndexRoute: typeof AuthedIssuesIndexRoute
   AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
 }
 
@@ -341,7 +381,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSearchRoute: AuthedSearchRoute,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedIssuesIdRoute: AuthedIssuesIdRoute,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
+  AuthedIssuesIndexRoute: AuthedIssuesIndexRoute,
   AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
 }
 

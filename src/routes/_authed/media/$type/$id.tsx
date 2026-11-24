@@ -5,6 +5,7 @@ import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
 import { LanguageNotice } from "#/components/media/language-notice";
+import { ReportIssueDialog } from "#/components/issues/report-issue-dialog";
 import { BlockButton } from "#/components/media/block-button";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { Badge } from "#/components/ui/badge";
@@ -80,6 +81,9 @@ function MediaPage() {
           <p className="text-sm text-muted-foreground">
             {m.blocklist_reason_shown({ reason: block.reason })}
           </p>
+        ) : null}
+        {availability === "available" ? (
+          <ReportIssueDialog type={type} externalId={item.externalId} title={item.title} />
         ) : null}
         {user.isAdmin ? (
           <BlockButton
