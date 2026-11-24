@@ -156,10 +156,8 @@
   "request_error_ebook_defaults_missing": "Aucun dossier ni profil par défaut pour les eBooks. Un administrateur peut les définir dans Paramètres → Services.",
   "settings_ebook_defaults_title": "eBooks par défaut",
   "settings_ebook_defaults_description": "Où vont les demandes d’eBooks, de mangas et de BD, sauf si un administrateur choisit un autre dossier (par exemple Books, Manga ou Comics).",
-  "search_tab_all": "Tout",
   "search_tab_audiobooks": "Livres audio",
   "search_tab_books": "Livres",
-  "search_type_label": "Que rechercher",
   "media_pages": "Pages",
   "request_language_not_accepted": "Chaptarr n’accepte que les livres en {languages}, et celui-ci n’existe pas dans cette langue. Cherchez une édition en {languages}.",
   "media_language_not_accepted": "Pas en {languages} : Chaptarr ne l’ajoutera pas.",
@@ -183,5 +181,15 @@
   "status_downloading_progress": "En téléchargement ({percent})",
   "sidebar_title": "Navigation",
   "sidebar_description": "Les rubriques de Storyrr.",
-  "sidebar_toggle": "Afficher ou masquer le menu"
+  "sidebar_toggle": "Afficher ou masquer le menu",
+  "nav_discover": "Découvrir",
+  "nav_books": "Livres",
+  "nav_audiobooks": "Livres audio",
+  "nav_blocklist": "Blocages",
+  "nav_issues": "Problèmes",
+  "nav_users": "Utilisateurs",
+  "search_results_title": "Résultats pour « {query} »",
+  "search_placeholder_books": "Rechercher des livres, mangas, BD…",
+  "search_placeholder_audiobooks": "Rechercher des livres audio : titre, auteur, narrateur…",
+  "discover_welcome": "Bonjour {name}"
 }

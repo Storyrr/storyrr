@@ -7,6 +7,7 @@ import { auth } from "#/server/auth";
 import { db } from "#/server/db";
 import { isAutoApproved } from "#/server/requests/queries";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
+import { APP_VERSION } from "#/server/version";
 
 export type SessionUser = {
   id: string;
@@ -35,7 +36,7 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
         autoApproved: isAutoApproved(db, session.user.id, session.user.role === "admin"),
       }
     : null;
-  return { setupComplete, user };
+  return { setupComplete, user, version: APP_VERSION };
 });
 
 /**

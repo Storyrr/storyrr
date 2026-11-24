@@ -156,10 +156,8 @@
   "request_error_ebook_defaults_missing": "No default folder and profiles for eBooks. An admin can set them in Settings → Services.",
   "settings_ebook_defaults_title": "eBook defaults",
   "settings_ebook_defaults_description": "Where eBook, manga and comics requests go unless an admin picks another folder (e.g. Books, Manga or Comics).",
-  "search_tab_all": "All",
   "search_tab_audiobooks": "Audiobooks",
   "search_tab_books": "Books",
-  "search_type_label": "What to search",
   "media_pages": "Pages",
   "request_language_not_accepted": "Chaptarr only accepts books in {languages}, and this one isn't available in it. Look for an edition in {languages}.",
   "media_language_not_accepted": "Not in {languages}: Chaptarr won't add it.",
@@ -183,5 +181,15 @@
   "status_downloading_progress": "Downloading ({percent})",
   "sidebar_title": "Navigation",
   "sidebar_description": "Storyrr's sections.",
-  "sidebar_toggle": "Show or hide the menu"
+  "sidebar_toggle": "Show or hide the menu",
+  "nav_discover": "Discover",
+  "nav_books": "Books",
+  "nav_audiobooks": "Audiobooks",
+  "nav_blocklist": "Blocklist",
+  "nav_issues": "Issues",
+  "nav_users": "Users",
+  "search_results_title": "Results for “{query}”",
+  "search_placeholder_books": "Search books, manga, comics…",
+  "search_placeholder_audiobooks": "Search audiobooks: title, author, narrator…",
+  "discover_welcome": "Hi {name}"
 }

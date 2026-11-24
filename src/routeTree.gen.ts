@@ -13,7 +13,10 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedAudiobooksRouteImport } from './routes/_authed/audiobooks'
+import { Route as AuthedBooksRouteImport } from './routes/_authed/books'
 import { Route as AuthedRequestsRouteImport } from './routes/_authed/requests'
+import { Route as AuthedSearchRouteImport } from './routes/_authed/search'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
@@ -40,9 +43,24 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAudiobooksRoute = AuthedAudiobooksRouteImport.update({
+  id: '/audiobooks',
+  path: '/audiobooks',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedBooksRoute = AuthedBooksRouteImport.update({
+  id: '/books',
+  path: '/books',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedRequestsRoute = AuthedRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSearchRoute = AuthedSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedWelcomeRoute = AuthedWelcomeRouteImport.update({
@@ -80,7 +98,10 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/audiobooks': typeof AuthedAudiobooksRoute
+  '/books': typeof AuthedBooksRoute
   '/requests': typeof AuthedRequestsRoute
+  '/search': typeof AuthedSearchRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
@@ -91,7 +112,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/audiobooks': typeof AuthedAudiobooksRoute
+  '/books': typeof AuthedBooksRoute
   '/requests': typeof AuthedRequestsRoute
+  '/search': typeof AuthedSearchRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
@@ -105,7 +129,10 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
+  '/_authed/audiobooks': typeof AuthedAudiobooksRoute
+  '/_authed/books': typeof AuthedBooksRoute
   '/_authed/requests': typeof AuthedRequestsRoute
+  '/_authed/search': typeof AuthedSearchRoute
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -120,7 +147,10 @@ export interface FileRouteTypes {
     | '/'
     | '/setup'
     | '/sign-in'
+    | '/audiobooks'
+    | '/books'
     | '/requests'
+    | '/search'
     | '/welcome'
     | '/api/health'
     | '/settings/services'
@@ -131,7 +161,10 @@ export interface FileRouteTypes {
   to:
     | '/setup'
     | '/sign-in'
+    | '/audiobooks'
+    | '/books'
     | '/requests'
+    | '/search'
     | '/welcome'
     | '/api/health'
     | '/'
@@ -144,7 +177,10 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/setup'
     | '/sign-in'
+    | '/_authed/audiobooks'
+    | '/_authed/books'
     | '/_authed/requests'
+    | '/_authed/search'
     | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
@@ -193,11 +229,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/audiobooks': {
+      id: '/_authed/audiobooks'
+      path: '/audiobooks'
+      fullPath: '/audiobooks'
+      preLoaderRoute: typeof AuthedAudiobooksRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/books': {
+      id: '/_authed/books'
+      path: '/books'
+      fullPath: '/books'
+      preLoaderRoute: typeof AuthedBooksRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/requests': {
       id: '/_authed/requests'
       path: '/requests'
       fullPath: '/requests'
       preLoaderRoute: typeof AuthedRequestsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/search': {
+      id: '/_authed/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AuthedSearchRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/welcome': {
@@ -246,7 +303,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAudiobooksRoute: typeof AuthedAudiobooksRoute
+  AuthedBooksRoute: typeof AuthedBooksRoute
   AuthedRequestsRoute: typeof AuthedRequestsRoute
+  AuthedSearchRoute: typeof AuthedSearchRoute
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
@@ -254,7 +314,10 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAudiobooksRoute: AuthedAudiobooksRoute,
+  AuthedBooksRoute: AuthedBooksRoute,
   AuthedRequestsRoute: AuthedRequestsRoute,
+  AuthedSearchRoute: AuthedSearchRoute,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,

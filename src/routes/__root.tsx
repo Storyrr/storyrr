@@ -1,4 +1,10 @@
-import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+  useRouter,
+} from "@tanstack/react-router";
+import { RouterProvider as AriaRouterProvider } from "react-aria-components";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
@@ -47,13 +53,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   return (
-    <html lang={getLocale()}>
+    // Dark-first, like Seerr.
+    <html lang={getLocale()} className="dark">
       <head>
         <HeadContent />
       </head>
       <body className="min-h-svh bg-background text-foreground antialiased">
-        {children}
+        {/* React Aria links and buttons with href navigate through TanStack Router (no full reloads). */}
+        <AriaRouterProvider
+          navigate={(href) => void router.navigate({ href })}
+          useHref={(href) => href}
+        >
+          {children}
+        </AriaRouterProvider>
         <TanStackDevtools
           config={{
             position: "bottom-right",

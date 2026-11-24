@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useRouter } from "@tanstack/react-router";
-import { InboxIcon, LogOutIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { LogOutIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
-import { Button, buttonVariants } from "#/components/ui/button";
+import { Button } from "#/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -21,49 +21,7 @@ import { getLocale, locales, setLocale, type Locale } from "#/paraglide/runtime.
 /** Each language in its own language, whatever the current one. */
 const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
 
-export function AppHeader({ user }: { user: SessionUser }) {
-  return (
-    <header className="border-b">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
-        <Link to="/" className="text-lg font-semibold">
-          {m.app_name()}
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Link
-            to="/"
-            className={buttonVariants({ variant: "ghost" })}
-            activeOptions={{ exact: true, includeSearch: false }}
-            aria-label={m.nav_search()}
-          >
-            <SearchIcon data-icon="inline-start" />
-            <span className="hidden sm:inline">{m.nav_search()}</span>
-          </Link>
-          <Link
-            to="/requests"
-            className={buttonVariants({ variant: "ghost" })}
-            aria-label={m.nav_requests()}
-          >
-            <InboxIcon data-icon="inline-start" />
-            <span className="hidden sm:inline">{m.nav_requests()}</span>
-          </Link>
-          {user.isAdmin ? (
-            <Link
-              to="/settings/services"
-              className={buttonVariants({ variant: "ghost" })}
-              aria-label={m.nav_settings()}
-            >
-              <SettingsIcon data-icon="inline-start" />
-              <span className="hidden sm:inline">{m.nav_settings()}</span>
-            </Link>
-          ) : null}
-          <UserMenu user={user} />
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-function UserMenu({ user }: { user: SessionUser }) {
+export function UserMenu({ user }: { user: SessionUser }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const signOut = useMutation({
