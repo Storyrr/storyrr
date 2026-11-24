@@ -53,9 +53,11 @@ export function MediaRow({
           </Button>
         </div>
       </div>
+      {/* A scrolling row clips on every side: the padding leaves room for a card that
+          grows on hover, the negative margin keeps the cards aligned with the title. */}
       <ul
         ref={listRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
+        className="-mx-3 flex scroll-px-3 snap-x snap-mandatory gap-4 overflow-x-auto px-3 py-3 [scrollbar-width:thin]"
       >
         {children}
       </ul>
