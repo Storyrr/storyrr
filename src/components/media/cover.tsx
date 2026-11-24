@@ -1,9 +1,9 @@
-import { useImageUrl } from "#/lib/images";
-import { BookAudioIcon, BookOpenIcon } from "lucide-react";
+import { useState } from "react";
 
+import { useImageUrl } from "#/lib/images";
 import { cn } from "#/lib/utils";
 
-/** Square cover art, with a placeholder when the provider has none. */
+/** Square cover art; Storyrr's mark, greyed, when the provider has none or it fails to load (like Seerr). */
 export function Cover({
   src,
   type = "audiobook",
@@ -14,6 +14,8 @@ export function Cover({
   className?: string;
 }) {
   const imageUrl = useImageUrl();
+  const [failed, setFailed] = useState<string | null>(null);
+  const showImage = Boolean(src) && failed !== src;
   return (
     // Audiobook covers are square, book covers portrait.
     <div
@@ -23,11 +25,18 @@ export function Cover({
         className,
       )}
     >
-      {src ? (
-        <img src={imageUrl(src)} alt="" loading="lazy" className="size-full object-cover" />
+      {src && showImage ? (
+        <img
+          src={imageUrl(src)}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(src)}
+          className="size-full object-cover"
+        />
       ) : (
-        <div className="flex size-full items-center justify-center text-muted-foreground">
-          {type === "ebook" ? <BookOpenIcon /> : <BookAudioIcon />}
+        <div className="flex size-full items-center justify-center">
+          {/* The mark as a mask: one flat tone whatever the theme. */}
+          <div className="aspect-[108/91] w-2/5 bg-muted-foreground/25 mask-[url(/logo-mark.svg)] mask-contain mask-center mask-no-repeat" />
         </div>
       )}
     </div>
