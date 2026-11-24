@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type * as v from "valibot";
+import * as v from "valibot";
 
 import {
   DEFAULT_USER_SETTINGS,
@@ -36,6 +36,8 @@ import { sql } from "drizzle-orm";
 
 import { compareVersions } from "#/lib/version";
 import { db } from "#/server/db";
+import { listJobs, runJob } from "#/server/jobs";
+import { readLogs } from "#/server/logs";
 import { media, request } from "#/server/db/schema";
 import { latestReleases, REPOSITORY_URL } from "#/server/releases";
 import { APP_VERSION } from "#/server/version";
@@ -329,3 +331,28 @@ export const revealSecret = createServerFn({ method: "POST" })
       return { secret: (await settings.get(hardcoverToken)) ?? null };
     return { secret: (await settings.get(connectionSettings[data.service]))?.apiKey ?? null };
   });
+
+/** Settings → Jobs: background jobs with their last and next runs. Manage settings. */
+export const getJobs = createServerFn({ method: "GET" })
+  .middleware([requireSettings])
+  .handler(() => listJobs());
+
+/** Starts a job now, in the background (its result shows in the list). Manage settings. */
+export const runJobNow = createServerFn({ method: "POST" })
+  .middleware([requireSettings])
+  .validator(v.object({ name: v.picklist(["library-sync", "submit-approved"]) }))
+  .handler(({ data }) => {
+    void runJob(data.name);
+    return { ok: true };
+  });
+
+/** Recent server logs, newest first. Manage settings. */
+export const getLogs = createServerFn({ method: "GET" })
+  .middleware([requireSettings])
+  .validator(
+    v.object({
+      minLevel: v.picklist(["debug", "info", "warn", "error"]),
+      search: v.optional(v.pipe(v.string(), v.maxLength(200)), ""),
+    }),
+  )
+  .handler(({ data }) => readLogs(data));

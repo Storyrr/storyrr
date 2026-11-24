@@ -49,6 +49,7 @@ export async function runJob(name: JobName): Promise<void> {
   lastRuns.set(name, run);
   try {
     await jobs[name].run();
+    console.info(`[jobs] ${name} done in ${Date.now() - run.startedAt.getTime()} ms`);
   } catch (error) {
     run.error = error instanceof Error ? error.message : String(error);
     console.error(`[jobs] ${name} failed: ${run.error}`);
@@ -61,6 +62,23 @@ export function jobStatus(name: JobName): JobRun | undefined {
   return lastRuns.get(name);
 }
 
+export const JOB_NAMES: readonly JobName[] = ["library-sync", "submit-approved"];
+
+/** Settings → Jobs: each job's schedule, last run and next run. */
+export function listJobs() {
+  return JOB_NAMES.map((name) => {
+    const cron = globalThis.storyrrScheduler?.find((c) => c.name === name);
+    const run = lastRuns.get(name);
+    return {
+      name,
+      pattern: jobs[name].pattern,
+      running: run !== undefined && run.finishedAt === undefined,
+      lastRun: run ? { ...run } : null,
+      nextRun: cron?.nextRun() ?? null,
+    };
+  });
+}
+
 declare global {
   // Survives dev HMR re-evaluating this module, so jobs are scheduled once per process.
   var storyrrScheduler: Cron[] | undefined;
@@ -69,8 +87,7 @@ declare global {
 /** Schedules every job once per process (`protect` skips a run while the previous one is busy). */
 export function startScheduler(): void {
   if (globalThis.storyrrScheduler) return;
-  const names: JobName[] = ["library-sync", "submit-approved"];
-  globalThis.storyrrScheduler = names.map(
+  globalThis.storyrrScheduler = JOB_NAMES.map(
     (name) => new Cron(jobs[name].pattern, { name, protect: true }, () => runJob(name)),
   );
 }

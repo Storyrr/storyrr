@@ -143,7 +143,8 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **Users:** auto-approve new users by default; global request limits per format ("Unlimited" or N requests every D days). Denied and cancelled requests give their slot back; joining an active request is free; admins are never limited.
 - **Services:** one Chaptarr server (decided: Chaptarr serves both formats), shown as a card (address, default folder and profile per format) with Edit (connection + defaults per format, in a dialog) and Delete, or an "Add a Chaptarr server" box; the webhook URL below.
 - **Audiobookshelf / Kavita** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
-- Later: jobs (last run, next run, run now), health of each connection.
+- **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
+- Later: health of each connection.
 
 ## 5. Data model (initial)
 

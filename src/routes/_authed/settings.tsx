@@ -23,6 +23,7 @@ const TABS = [
   { to: "/settings/kavita", label: m.service_kavita },
   { to: "/settings/notifications", label: m.settings_tab_notifications },
   { to: "/settings/metadata", label: m.settings_tab_metadata },
+  { to: "/settings/jobs", label: m.settings_tab_jobs },
   { to: "/settings/about", label: m.settings_tab_about },
 ] as const;
 

@@ -28,6 +28,7 @@ import { Route as AuthedProfileSettingsRouteImport } from './routes/_authed/prof
 import { Route as AuthedSettingsAboutRouteImport } from './routes/_authed/settings/about'
 import { Route as AuthedSettingsAudiobookshelfRouteImport } from './routes/_authed/settings/audiobookshelf'
 import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/settings/general'
+import { Route as AuthedSettingsJobsRouteImport } from './routes/_authed/settings/jobs'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
 import { Route as AuthedSettingsMetadataRouteImport } from './routes/_authed/settings/metadata'
 import { Route as AuthedSettingsNotificationsRouteImport } from './routes/_authed/settings/notifications'
@@ -143,6 +144,11 @@ const AuthedSettingsAudiobookshelfRoute =
 const AuthedSettingsGeneralRoute = AuthedSettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsJobsRoute = AuthedSettingsJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsKavitaRoute = AuthedSettingsKavitaRouteImport.update({
@@ -279,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
+  '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
@@ -320,6 +327,7 @@ export interface FileRoutesByTo {
   '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
+  '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
@@ -363,6 +371,7 @@ export interface FileRoutesById {
   '/_authed/settings/about': typeof AuthedSettingsAboutRoute
   '/_authed/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/_authed/settings/general': typeof AuthedSettingsGeneralRoute
+  '/_authed/settings/jobs': typeof AuthedSettingsJobsRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/_authed/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRouteWithChildren
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
+    | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/metadata'
     | '/settings/notifications'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
+    | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/metadata'
     | '/settings/notifications'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/_authed/settings/about'
     | '/_authed/settings/audiobookshelf'
     | '/_authed/settings/general'
+    | '/_authed/settings/jobs'
     | '/_authed/settings/kavita'
     | '/_authed/settings/metadata'
     | '/_authed/settings/notifications'
@@ -656,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/settings/general'
       preLoaderRoute: typeof AuthedSettingsGeneralRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/jobs': {
+      id: '/_authed/settings/jobs'
+      path: '/jobs'
+      fullPath: '/settings/jobs'
+      preLoaderRoute: typeof AuthedSettingsJobsRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     '/_authed/settings/kavita': {
@@ -827,6 +846,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsAboutRoute: typeof AuthedSettingsAboutRoute
   AuthedSettingsAudiobookshelfRoute: typeof AuthedSettingsAudiobookshelfRoute
   AuthedSettingsGeneralRoute: typeof AuthedSettingsGeneralRoute
+  AuthedSettingsJobsRoute: typeof AuthedSettingsJobsRoute
   AuthedSettingsKavitaRoute: typeof AuthedSettingsKavitaRoute
   AuthedSettingsMetadataRoute: typeof AuthedSettingsMetadataRoute
   AuthedSettingsNotificationsRoute: typeof AuthedSettingsNotificationsRouteWithChildren
@@ -838,6 +858,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsAboutRoute: AuthedSettingsAboutRoute,
   AuthedSettingsAudiobookshelfRoute: AuthedSettingsAudiobookshelfRoute,
   AuthedSettingsGeneralRoute: AuthedSettingsGeneralRoute,
+  AuthedSettingsJobsRoute: AuthedSettingsJobsRoute,
   AuthedSettingsKavitaRoute: AuthedSettingsKavitaRoute,
   AuthedSettingsMetadataRoute: AuthedSettingsMetadataRoute,
   AuthedSettingsNotificationsRoute:
