@@ -373,5 +373,6 @@
   "secret_show": "Afficher",
   "secret_hide": "Masquer",
   "meta_description": "Demandez des livres audio et des eBooks, et suivez-les jusqu’à leur arrivée dans votre bibliothèque.",
-  "meta_image_alt": "Le logo de Storyrr : demandez des livres audio et des eBooks pour votre bibliothèque."
+  "meta_image_alt": "Le logo de Storyrr : demandez des livres audio et des eBooks pour votre bibliothèque.",
+  "media_language_refused_short": "Pas dans une langue acceptée par Chaptarr"
 }

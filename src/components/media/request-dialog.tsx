@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDownIcon, InfoIcon } from "lucide-react";
+import { ChevronDownIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
@@ -33,11 +33,22 @@ import { m } from "#/paraglide/messages.js";
 type Item = { type: SearchableType; externalId: string; title: string; authors: string[] };
 
 /** "Request" button and its confirmation dialog (Seerr-like), for one audiobook or eBook. */
-export function RequestDialog({ item, size }: { item: Item; size?: "sm" | "default" }) {
+export function RequestDialog({
+  item,
+  size,
+  className,
+}: {
+  item: Item;
+  size?: "sm" | "default";
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <DialogTrigger isOpen={open} onOpenChange={setOpen}>
-      <Button size={size}>{m.action_request()}</Button>
+      <Button size={size} className={className}>
+        <DownloadIcon data-icon="inline-start" />
+        {m.action_request()}
+      </Button>
       <Dialog showCloseButton={false} className="sm:max-w-md">
         {open ? <RequestForm item={item} onDone={() => setOpen(false)} /> : null}
       </Dialog>

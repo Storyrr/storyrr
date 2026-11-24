@@ -2,12 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowRightIcon } from "lucide-react";
 
-import { Cover } from "#/components/media/cover";
+import { MediaPoster } from "#/components/media/media-poster";
 import { MediaRow, MediaRowItem } from "#/components/media/media-row";
 import { RequestCard } from "#/components/requests/request-card";
 import { TrendingRow } from "#/components/media/trending-row";
 import { Skeleton } from "#/components/ui/skeleton";
-import { formatList } from "#/lib/format";
 import { discoverRequestsQuery } from "#/lib/queries/requests";
 import { m } from "#/paraglide/messages.js";
 
@@ -33,25 +32,7 @@ function DiscoverPage() {
         <MediaRow title={m.discover_recently_added()}>
           {requests.data.recentlyAdded.map((item) => (
             <MediaRowItem key={`${item.type}:${item.externalId}`}>
-              <Link
-                to="/media/$type/$id"
-                params={{ type: item.type, id: item.externalId }}
-                className="group flex flex-col gap-2"
-              >
-                <Cover
-                  src={item.coverUrl}
-                  type={item.type}
-                  className="transition-opacity group-hover:opacity-90"
-                />
-                <span className="line-clamp-2 text-sm font-medium group-hover:underline">
-                  {item.title}
-                </span>
-                {item.authors.length > 0 ? (
-                  <span className="truncate text-xs text-muted-foreground">
-                    {formatList(item.authors)}
-                  </span>
-                ) : null}
-              </Link>
+              <MediaPoster type={item.type} item={item} availability="available" />
             </MediaRowItem>
           ))}
         </MediaRow>

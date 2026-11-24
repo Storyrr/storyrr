@@ -373,5 +373,6 @@
   "secret_show": "Show",
   "secret_hide": "Hide",
   "meta_description": "Request audiobooks and eBooks, and follow them until they're in your library.",
-  "meta_image_alt": "The Storyrr logo: request audiobooks and eBooks for your library."
+  "meta_image_alt": "The Storyrr logo: request audiobooks and eBooks for your library.",
+  "media_language_refused_short": "Not in a language Chaptarr accepts"
 }
