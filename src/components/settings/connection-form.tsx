@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
+import { SecretField } from "#/components/form/secret-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
@@ -18,8 +19,6 @@ import {
 } from "#/lib/schemas/settings";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
-
-import { SAVED_SECRET_PLACEHOLDER } from "./saved-secret";
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
@@ -129,14 +128,12 @@ export function ConnectionForm({
         </form.Field>
         <form.Field name="apiKey">
           {(field) => (
-            <TextField
+            <SecretField
               label={m.field_api_key()}
               layout={layout}
               description={current?.hasApiKey ? m.field_api_key_saved() : undefined}
+              saved={current?.hasApiKey ?? false}
               name={field.name}
-              type="password"
-              autoComplete="off"
-              placeholder={current?.hasApiKey ? SAVED_SECRET_PLACEHOLDER : undefined}
               value={field.state.value}
               onChange={field.handleChange}
               onBlur={field.handleBlur}

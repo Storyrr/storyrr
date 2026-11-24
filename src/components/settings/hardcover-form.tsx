@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
-import { TextField } from "#/components/form/text-field";
+import { SecretField } from "#/components/form/secret-field";
 import { Button } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
@@ -14,8 +14,6 @@ import { settingsKeys } from "#/lib/queries/settings";
 import { HardcoverTokenFormSchema, type HardcoverTokenForm } from "#/lib/schemas/settings";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
-
-import { SAVED_SECRET_PLACEHOLDER } from "./saved-secret";
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
@@ -70,7 +68,7 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
         {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
         <form.Field name="token">
           {(field) => (
-            <TextField
+            <SecretField
               label={m.settings_hardcover_title()}
               layout="row"
               description={
@@ -78,10 +76,8 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
                   ? `${m.settings_hardcover_description()} ${m.field_token_saved()}`
                   : m.settings_hardcover_description()
               }
+              saved={hasToken}
               name={field.name}
-              type="password"
-              autoComplete="off"
-              placeholder={hasToken ? SAVED_SECRET_PLACEHOLDER : undefined}
               value={field.state.value}
               onChange={field.handleChange}
               onBlur={field.handleBlur}

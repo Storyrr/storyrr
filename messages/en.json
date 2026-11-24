@@ -369,5 +369,7 @@
   "metadata_not_set_up": "Not set up",
   "metadata_working": "Working",
   "metadata_failing": "Failing",
-  "metadata_selection_title": "Provider settings"
+  "metadata_selection_title": "Provider settings",
+  "secret_show": "Show",
+  "secret_hide": "Hide"
 }

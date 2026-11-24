@@ -369,5 +369,7 @@
   "metadata_not_set_up": "Non configuré",
   "metadata_working": "Fonctionne",
   "metadata_failing": "En échec",
-  "metadata_selection_title": "Paramètres des fournisseurs"
+  "metadata_selection_title": "Paramètres des fournisseurs",
+  "secret_show": "Afficher",
+  "secret_hide": "Masquer"
 }
