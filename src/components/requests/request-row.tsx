@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
+import { UserAvatar } from "#/components/layout/user-avatar";
 import { Cover } from "#/components/media/cover";
 import { AdvancedOptions } from "#/components/media/request-dialog";
 import { Button } from "#/components/ui/button";
@@ -28,7 +29,7 @@ import {
   retryRequest,
   type getRequests,
 } from "#/functions/requests.functions";
-import { formatDate, formatList } from "#/lib/format";
+import { formatDate, formatList, yearOf } from "#/lib/format";
 import { isSearchableType } from "#/lib/media-types";
 import { describeRequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
@@ -45,6 +46,7 @@ type RequestListItem = Awaited<ReturnType<typeof getRequests>>[number];
 /** Statuses after which Chaptarr may hold the book (or a pending request for it). */
 const SENT_STATUSES: readonly RequestStatus[] = ["submitted", "available", "failed", "cancelled"];
 
+/** One request as a Seerr-like card: cover backdrop, details, status and the actions allowed. */
 export function RequestRow({ request }: { request: RequestListItem }) {
   const { user } = useRouteContext({ from: "/_authed" });
   const cancelFn = useServerFn(cancelRequest);
@@ -57,49 +59,81 @@ export function RequestRow({ request }: { request: RequestListItem }) {
     (request.status === "pending" && (user.isAdmin || request.requester.id === user.id)) ||
     (request.status === "submitted" && user.isAdmin);
 
+  const year = yearOf(request.media.releaseDate ?? undefined);
+
   return (
-    <li className="flex flex-col gap-3 border-b py-4 last:border-b-0">
-      <div className="flex gap-4">
-        <Cover src={request.media.coverUrl} type={request.media.type} className="w-16 shrink-0" />
+    <li className="relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-4">
+      {request.media.coverUrl ? (
+        <img
+          src={request.media.coverUrl}
+          alt=""
+          loading="lazy"
+          className="pointer-events-none absolute inset-0 size-full scale-110 object-cover opacity-25 blur-sm"
+        />
+      ) : null}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-card via-card/85 to-card/40"
+      />
+      <div className="relative flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {isSearchableType(request.media.type) ? (
-              <Link
-                to="/media/$type/$id"
-                params={{ type: request.media.type, id: request.media.externalId }}
-                className="truncate font-medium hover:underline"
-              >
-                {request.media.title}
-              </Link>
-            ) : (
-              <span className="truncate font-medium">{request.media.title}</span>
-            )}
-            <RequestStatusBadge
-              status={request.status}
-              waitingForChaptarr={request.waitingForChaptarr}
-              download={request.download}
-            />
-          </div>
+          {year ? <span className="text-xs font-medium">{year}</span> : null}
+          {isSearchableType(request.media.type) ? (
+            <Link
+              to="/media/$type/$id"
+              params={{ type: request.media.type, id: request.media.externalId }}
+              className="line-clamp-2 font-semibold hover:underline"
+            >
+              {request.media.title}
+            </Link>
+          ) : (
+            <span className="line-clamp-2 font-semibold">{request.media.title}</span>
+          )}
           {request.media.authors.length > 0 ? (
             <p className="truncate text-sm text-muted-foreground">
               {formatList(request.media.authors)}
             </p>
           ) : null}
-          <p className="text-xs text-muted-foreground">
-            {m.requests_requested_on({
-              name: request.requester.name,
-              date: formatDate(new Date(request.createdAt)),
-            })}
-            {request.watchers > 0 ? ` · ${m.requests_watchers({ count: request.watchers })}` : null}
-            {user.isAdmin && request.target.service === "chaptarr"
-              ? ` · ${request.target.rootFolderPath}`
-              : null}
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <UserAvatar name={request.requester.name} className="size-5 text-[0.6rem]" />
+            <span className="truncate">
+              {m.requests_requested_on({
+                name: request.requester.name,
+                date: formatDate(new Date(request.createdAt)),
+              })}
+              {request.watchers > 0
+                ? ` · ${m.requests_watchers({ count: request.watchers })}`
+                : null}
+            </span>
+          </p>
+          {user.isAdmin && request.target.service === "chaptarr" ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {request.target.rootFolderPath}
+            </p>
+          ) : null}
+          <p className="mt-auto flex items-center gap-2 pt-2 text-xs text-muted-foreground">
+            {m.request_card_status()}
+            <RequestStatusBadge
+              status={request.status}
+              waitingForChaptarr={request.waitingForChaptarr}
+              download={request.download}
+            />
           </p>
           {failure ? <p className="text-sm text-destructive">{failure}</p> : null}
         </div>
+        <Cover
+          src={request.media.coverUrl}
+          type={request.media.type}
+          className="w-24 shrink-0 self-start shadow-lg"
+        />
       </div>
-      <FormError message={error ? error.message || m.error_generic() : null} />
-      <div className="flex flex-wrap items-center gap-2">
+      {error ? (
+        // Positioned like the rest of the content, so it sits above the backdrop.
+        <div className="relative">
+          <FormError message={error.message || m.error_generic()} />
+        </div>
+      ) : null}
+      <div className="relative flex flex-wrap items-center gap-2">
         {user.isAdmin && request.status === "pending" ? (
           <>
             <ApproveDialog request={request} />

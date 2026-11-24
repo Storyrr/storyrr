@@ -108,7 +108,7 @@ function RequestsPage() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul>
+        <ul className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           {requests.map((request) => (
             <RequestRow key={request.id} request={request} />
           ))}
