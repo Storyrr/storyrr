@@ -1,24 +1,21 @@
 import { cn } from "#/lib/utils";
-import { m } from "#/paraglide/messages.js";
 
-/** The Storyrr wordmark: cream lettering on dark themes, ink lettering on light ones. */
+/**
+ * The Storyrr logo: the mark, then "story" in ink (cream on dark themes) and
+ * "rr" in the accent. Sized by the font size (`className="text-3xl"`).
+ */
 export function Logo({ className }: { className?: string }) {
   return (
-    <>
-      <img
-        src="/logo-light.svg"
-        alt={m.app_name()}
-        width={449}
-        height={101}
-        className={cn("h-8 w-auto dark:hidden", className)}
-      />
-      <img
-        src="/logo-dark.svg"
-        alt={m.app_name()}
-        width={449}
-        height={101}
-        className={cn("hidden h-8 w-auto dark:block", className)}
-      />
-    </>
+    // The visible text ("storyrr") names it; the mark is decorative.
+    <span
+      className={cn("inline-flex items-center gap-[0.3em] font-bold tracking-tight", className)}
+    >
+      <img src="/logo-mark.svg" alt="" className="h-[1.1em] w-auto dark:hidden" />
+      <img src="/logo-mark-dark.svg" alt="" className="hidden h-[1.1em] w-auto dark:block" />
+      <span className="leading-none">
+        <span className="text-foreground">story</span>
+        <span className="text-brand">rr</span>
+      </span>
+    </span>
   );
 }

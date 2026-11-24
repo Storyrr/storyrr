@@ -52,7 +52,7 @@ export function AppSidebar({ user, version }: { user: SessionUser; version: stri
     <Sidebar>
       <SidebarHeader>
         <Link to="/" className="flex px-2 py-4" onClick={() => setOpenMobile(false)}>
-          <Logo className="h-9" />
+          <Logo className="text-3xl" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
