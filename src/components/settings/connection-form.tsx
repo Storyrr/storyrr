@@ -19,6 +19,8 @@ import {
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
+import { SAVED_SECRET_PLACEHOLDER } from "./saved-secret";
+
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
 /** URL + API key of a service, with Test and Save (a blank key keeps the stored one). */
@@ -134,6 +136,7 @@ export function ConnectionForm({
               name={field.name}
               type="password"
               autoComplete="off"
+              placeholder={current?.hasApiKey ? SAVED_SECRET_PLACEHOLDER : undefined}
               value={field.state.value}
               onChange={field.handleChange}
               onBlur={field.handleBlur}

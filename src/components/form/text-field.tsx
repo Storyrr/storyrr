@@ -18,6 +18,7 @@ type TextFieldProps = {
   name: string;
   autoComplete?: string;
   disabled?: boolean;
+  placeholder?: string;
   /** "row": label left, input right (settings pages). */
   layout?: "stacked" | "row";
 };
@@ -34,6 +35,7 @@ export function TextField({
   name,
   autoComplete,
   disabled,
+  placeholder,
   layout = "stacked",
 }: TextFieldProps) {
   const row = layout === "row";
@@ -54,6 +56,7 @@ export function TextField({
         autoComplete={autoComplete}
         value={value}
         disabled={disabled}
+        placeholder={placeholder}
         aria-invalid={invalid || undefined}
         aria-describedby={description ? descriptionId : undefined}
         onChange={(event) => onChange(event.target.value)}

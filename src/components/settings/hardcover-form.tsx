@@ -15,6 +15,8 @@ import { HardcoverTokenFormSchema, type HardcoverTokenForm } from "#/lib/schemas
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
+import { SAVED_SECRET_PLACEHOLDER } from "./saved-secret";
+
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
 /** Hardcover API token for eBook search: stored encrypted, never shown back. */
@@ -79,6 +81,7 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
               name={field.name}
               type="password"
               autoComplete="off"
+              placeholder={hasToken ? SAVED_SECRET_PLACEHOLDER : undefined}
               value={field.state.value}
               onChange={field.handleChange}
               onBlur={field.handleBlur}
