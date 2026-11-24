@@ -4,8 +4,8 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { Cover } from "#/components/media/cover";
 import { MediaRow, MediaRowItem } from "#/components/media/media-row";
+import { RequestCard } from "#/components/requests/request-card";
 import { TrendingRow } from "#/components/media/trending-row";
-import { RequestStatusBadge } from "#/components/requests/request-status-badge";
 import { Skeleton } from "#/components/ui/skeleton";
 import { formatList } from "#/lib/format";
 import { discoverRequestsQuery } from "#/lib/queries/requests";
@@ -75,29 +75,7 @@ function DiscoverPage() {
         ) : null}
         {requests.data?.recentRequests.map((request) => (
           <MediaRowItem key={request.id} wide>
-            <Link
-              to="/media/$type/$id"
-              params={{ type: request.media.type, id: request.media.externalId }}
-              className="flex h-full gap-3 rounded-xl border bg-card p-3 transition-colors hover:bg-muted/50"
-            >
-              <Cover
-                src={request.media.coverUrl}
-                type={request.media.type}
-                className="w-20 shrink-0"
-              />
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="line-clamp-2 font-medium">{request.media.title}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {request.requester.name}
-                </span>
-                <span className="mt-auto">
-                  <RequestStatusBadge
-                    status={request.status}
-                    waitingForChaptarr={request.waitingForChaptarr}
-                  />
-                </span>
-              </div>
-            </Link>
+            <RequestCard request={request} />
           </MediaRowItem>
         ))}
       </MediaRow>

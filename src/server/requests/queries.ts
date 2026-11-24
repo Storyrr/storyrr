@@ -117,6 +117,8 @@ export function listRequests(
         title: media.title,
         authors: media.authors,
         coverUrl: media.coverUrl,
+        /** Stored with the provider's details (ISO date), when it had one. */
+        releaseDate: sql<string | null>`json_extract(${media.metadata}, '$.releaseDate')`,
       },
       watchers:
         sql`(select count(*) from ${requestWatcher} where ${requestWatcher.requestId} = ${request.id})`.mapWith(

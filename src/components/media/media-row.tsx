@@ -65,5 +65,7 @@ export function MediaRow({
 
 /** One item of a MediaRow, at a fixed card width. */
 export function MediaRowItem({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <li className={`shrink-0 snap-start ${wide ? "w-72" : "w-36 sm:w-44"}`}>{children}</li>;
+  return (
+    <li className={`shrink-0 snap-start ${wide ? "w-80 sm:w-96" : "w-36 sm:w-44"}`}>{children}</li>
+  );
 }

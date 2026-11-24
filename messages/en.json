@@ -306,8 +306,7 @@
   "profile_member_since": "Member since {date}",
   "profile_edit_settings": "Edit settings",
   "profile_view": "View profile",
-  "profile_stat_total": "Requests",
-  "profile_stat_available": "Available",
+  "profile_stat_total": "Total requests",
   "profile_recent_requests": "Recent requests",
   "profile_all_requests": "See all",
   "profile_tab_password": "Password",
@@ -330,5 +329,9 @@
   "profile_permission_admin": "Administrator: every permission",
   "profile_permission_auto_approve": "Requests approved automatically",
   "profile_yes": "Yes",
-  "profile_no": "No"
+  "profile_no": "No",
+  "profile_stat_audiobooks": "Audiobook requests",
+  "profile_stat_ebooks": "eBook requests",
+  "profile_quota_period": "Left for the next {days} days",
+  "request_card_status": "Status"
 }

@@ -22,16 +22,7 @@ export const getMyAccount = createServerFn({ method: "GET" })
     const { user } = context.session;
     const isAdmin = user.role === "admin";
     const counts = db
-      .select({
-        total: sql`count(*)`.mapWith(Number),
-        available: sql`sum(case when ${request.status} = 'available' then 1 else 0 end)`.mapWith(
-          Number,
-        ),
-        audiobook: sql`sum(case when ${request.format} = 'audiobook' then 1 else 0 end)`.mapWith(
-          Number,
-        ),
-        ebook: sql`sum(case when ${request.format} = 'ebook' then 1 else 0 end)`.mapWith(Number),
-      })
+      .select({ total: sql`count(*)`.mapWith(Number) })
       .from(request)
       .where(eq(request.userId, user.id))
       .get();
@@ -44,12 +35,7 @@ export const getMyAccount = createServerFn({ method: "GET" })
       createdAt: user.createdAt,
       isAdmin,
       autoApproved: isAutoApproved(db, user.id, isAdmin),
-      requests: {
-        total: counts?.total ?? 0,
-        available: counts?.available ?? 0,
-        audiobook: counts?.audiobook ?? 0,
-        ebook: counts?.ebook ?? 0,
-      },
+      requests: { total: counts?.total ?? 0 },
       quotas: { audiobook: quotas[0], ebook: quotas[1] },
     };
   });

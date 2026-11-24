@@ -1,15 +1,17 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { SettingsIcon } from "lucide-react";
+import { ArrowRightCircleIcon, SettingsIcon } from "lucide-react";
 
+import { MediaRow, MediaRowItem } from "#/components/media/media-row";
 import { ProfileHeader } from "#/components/profile/profile-header";
-import { RequestRow } from "#/components/requests/request-row";
+import { RequestCard } from "#/components/requests/request-card";
 import { Card, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
 import { accountQuery } from "#/lib/queries/profile";
 import { requestsQuery } from "#/lib/queries/requests";
+import type { RequestQuota } from "#/lib/requests";
 import { m } from "#/paraglide/messages.js";
 
-const RECENT = 10;
+const RECENT = 20;
 
 export const Route = createFileRoute("/_authed/profile/")({
   loader: ({ context }) =>
@@ -21,19 +23,49 @@ export const Route = createFileRoute("/_authed/profile/")({
   component: ProfilePage,
 });
 
+/** "Unlimited", or what's left like Seerr ("3 / 5", for the next 7 days). */
+function QuotaCard({ label, quota }: { label: string; quota: RequestQuota }) {
+  const limited = quota.limit !== null && quota.remaining !== null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription className="font-medium text-foreground">{label}</CardDescription>
+        <CardTitle className="text-3xl tabular-nums">
+          {limited ? `${quota.remaining} / ${quota.limit}` : m.settings_limit_unlimited()}
+        </CardTitle>
+        {limited ? (
+          <CardDescription>{m.profile_quota_period({ days: quota.days })}</CardDescription>
+        ) : null}
+      </CardHeader>
+    </Card>
+  );
+}
+
 function ProfilePage() {
   const { user } = Route.useRouteContext();
   const { data: account } = useSuspenseQuery(accountQuery());
-  const { data: requests } = useSuspenseQuery(requestsQuery("mine", "all"));
-  const stats = [
-    { label: m.profile_stat_total(), value: account.requests.total },
-    { label: m.settings_chaptarr_audiobooks(), value: account.requests.audiobook },
-    { label: m.settings_chaptarr_ebooks(), value: account.requests.ebook },
-    { label: m.profile_stat_available(), value: account.requests.available },
-  ];
+  const { data: all } = useSuspenseQuery(requestsQuery("mine", "all"));
+  // Newest first (the requests page puts pending ones on top instead).
+  const recent = all
+    .toSorted((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, RECENT);
+  const backdrop = recent.find((request) => request.media.coverUrl)?.media.coverUrl;
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="relative flex flex-col gap-10">
+      {backdrop ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-4 -top-6 -z-10 h-80 overflow-hidden md:-inset-x-8"
+        >
+          <img
+            src={backdrop}
+            alt=""
+            className="size-full scale-110 object-cover opacity-30 blur-md"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 to-background" />
+        </div>
+      ) : null}
       <ProfileHeader
         user={user}
         createdAt={account.createdAt}
@@ -43,37 +75,46 @@ function ProfilePage() {
           icon: <SettingsIcon data-icon="inline-start" />,
         }}
       />
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <li key={stat.label}>
-            <Card>
-              <CardHeader>
-                <CardDescription>{stat.label}</CardDescription>
-                <CardTitle className="text-3xl tabular-nums">{stat.value}</CardTitle>
-              </CardHeader>
-            </Card>
-          </li>
-        ))}
+      <ul className="grid gap-4 md:grid-cols-3">
+        <li>
+          <Card>
+            <CardHeader>
+              <CardDescription className="font-medium text-foreground">
+                {m.profile_stat_total()}
+              </CardDescription>
+              <CardTitle className="text-3xl tabular-nums">{account.requests.total}</CardTitle>
+            </CardHeader>
+          </Card>
+        </li>
+        <li>
+          <QuotaCard label={m.profile_stat_audiobooks()} quota={account.quotas.audiobook} />
+        </li>
+        <li>
+          <QuotaCard label={m.profile_stat_ebooks()} quota={account.quotas.ebook} />
+        </li>
       </ul>
-      <section className="flex flex-col gap-4">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-xl font-semibold">{m.profile_recent_requests()}</h2>
-          {requests.length > RECENT ? (
-            <Link to="/requests" search={{ scope: "mine" }} className="text-sm hover:underline">
-              {m.profile_all_requests()}
-            </Link>
-          ) : null}
-        </div>
-        {requests.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{m.requests_empty_description()}</p>
-        ) : (
-          <ul>
-            {requests.slice(0, RECENT).map((request) => (
-              <RequestRow key={request.id} request={request} />
-            ))}
-          </ul>
-        )}
-      </section>
+      <MediaRow
+        title={m.profile_recent_requests()}
+        action={
+          <Link
+            to="/requests"
+            search={{ scope: "mine" }}
+            aria-label={m.profile_all_requests()}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowRightCircleIcon className="size-5" />
+          </Link>
+        }
+      >
+        {recent.length === 0 ? (
+          <li className="text-sm text-muted-foreground">{m.requests_empty_description()}</li>
+        ) : null}
+        {recent.map((request) => (
+          <MediaRowItem key={request.id} wide>
+            <RequestCard request={request} />
+          </MediaRowItem>
+        ))}
+      </MediaRow>
     </div>
   );
 }
