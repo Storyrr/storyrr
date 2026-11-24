@@ -51,6 +51,7 @@ export const NOTIFICATION_AGENTS = [
   "pushover",
   "pushbullet",
   "webhook",
+  "webpush",
 ] as const;
 export type NotificationAgent = (typeof NOTIFICATION_AGENTS)[number];
 
@@ -268,6 +269,12 @@ export const AGENT_DEFINITIONS = {
       ),
     }),
   },
+  webpush: {
+    label: m.notification_agent_webpush,
+    // No settings: each user turns it on for their devices in their notification settings.
+    fields: [],
+    schema: v.object({}),
+  },
 } as const satisfies Record<
   NotificationAgent,
   { label: () => string; fields: readonly AgentField[]; schema: v.GenericSchema }
@@ -315,6 +322,8 @@ export const UserNotificationsSchema = v.object({
   telegramChatId: v.pipe(v.string(), v.trim()),
   pushoverUserKey: v.pipe(v.string(), v.trim()),
   pushbulletToken: v.pipe(v.string(), v.trim()),
+  /** Web Push to the devices the user enabled it on. */
+  webpush: v.boolean(),
   events: v.array(v.picklist(NOTIFICATION_EVENTS)),
 });
 export type UserNotifications = v.InferOutput<typeof UserNotificationsSchema>;
@@ -324,6 +333,15 @@ export const DEFAULT_USER_NOTIFICATIONS: UserNotifications = {
   telegramChatId: "",
   pushoverUserKey: "",
   pushbulletToken: "",
+  webpush: true,
   // Every event: a user only gets those about their requests and issues, or what they manage.
   events: [...NOTIFICATION_EVENTS],
 };
+
+/** A user's stored preferences, completed with the defaults (older rows lack newer fields). */
+export const withNotificationDefaults = (
+  stored: Partial<UserNotifications> | null | undefined,
+) => ({
+  ...DEFAULT_USER_NOTIFICATIONS,
+  ...stored,
+});

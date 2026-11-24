@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { FormError } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
 import { EventChecklist } from "#/components/notifications/event-checklist";
+import { PushDeviceToggle } from "#/components/pwa/push-device-toggle";
 import {
   SettingsActions,
   SettingsRow,
@@ -133,6 +134,25 @@ export function NotificationSettings() {
                 )}
               </form.Field>
             ))}
+          {enabled("webpush") ? (
+            <>
+              <form.Field name="webpush">
+                {(field) => (
+                  <SettingsRow
+                    label={m.my_notifications_webpush()}
+                    description={m.my_notifications_webpush_description()}
+                  >
+                    <Switch
+                      aria-label={m.my_notifications_webpush()}
+                      isSelected={field.state.value}
+                      onChange={field.handleChange}
+                    />
+                  </SettingsRow>
+                )}
+              </form.Field>
+              <PushDeviceToggle />
+            </>
+          ) : null}
           <form.Field name="events">
             {(field) => (
               <SettingsRow label={m.notification_events()}>

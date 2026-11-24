@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 import { eq } from "drizzle-orm";
 
 import {
-  DEFAULT_USER_NOTIFICATIONS,
+  withNotificationDefaults,
   type AgentTarget,
   type NotificationEvent,
 } from "#/lib/notifications";
@@ -26,6 +26,7 @@ import type { SettingsStore } from "#/server/settings/store";
 
 import { sendPersonal, sendShared, type Outgoing, type Recipient, type SendResult } from "./agents";
 import { renderNotification, type NotificationData } from "./render";
+import { sendWebPush } from "./webpush";
 
 export type NotifyDeps = {
   db: AppDatabase;
@@ -159,6 +160,7 @@ type RecipientInfo = Recipient & {
   id: string;
   locale: Locale;
   events: readonly NotificationEvent[];
+  webpush: boolean;
 };
 
 function recipientsFor(db: AppDatabase, ids: readonly string[]): RecipientInfo[] {
@@ -171,7 +173,7 @@ function recipientsFor(db: AppDatabase, ids: readonly string[]): RecipientInfo[]
       .where(eq(user.id, id))
       .get();
     if (!row || row.banned) return [];
-    const prefs = row.pref?.notifications ?? DEFAULT_USER_NOTIFICATIONS;
+    const prefs = withNotificationDefaults(row.pref?.notifications);
     const locale = row.pref?.locale && isLocale(row.pref.locale) ? row.pref.locale : null;
     return [
       {
@@ -183,6 +185,7 @@ function recipientsFor(db: AppDatabase, ids: readonly string[]): RecipientInfo[]
         telegramChatId: prefs.telegramChatId || null,
         pushoverUserKey: prefs.pushoverUserKey || null,
         pushbulletToken: prefs.pushbulletToken || null,
+        webpush: prefs.webpush,
       },
     ];
   });
@@ -199,18 +202,29 @@ const tag = (
 /** Every configured agent with its settings (one typed read per agent). */
 export async function loadAgents(settings: SettingsStore): Promise<StoredAgent[]> {
   const s = notificationAgentSettings;
-  const [email, discord, slack, telegram, ntfy, gotify, pushover, pushbullet, webhook] =
-    await Promise.all([
-      settings.get(s.email),
-      settings.get(s.discord),
-      settings.get(s.slack),
-      settings.get(s.telegram),
-      settings.get(s.ntfy),
-      settings.get(s.gotify),
-      settings.get(s.pushover),
-      settings.get(s.pushbullet),
-      settings.get(s.webhook),
-    ]);
+  const [
+    email,
+    discord,
+    slack,
+    telegram,
+    ntfy,
+    gotify,
+    pushover,
+    pushbullet,
+    webhook,
+    webpushAgent,
+  ] = await Promise.all([
+    settings.get(s.email),
+    settings.get(s.discord),
+    settings.get(s.slack),
+    settings.get(s.telegram),
+    settings.get(s.ntfy),
+    settings.get(s.gotify),
+    settings.get(s.pushover),
+    settings.get(s.pushbullet),
+    settings.get(s.webhook),
+    settings.get(s.webpush),
+  ]);
   return [
     ...tag(email, email ? { agent: "email", config: email.config } : null),
     ...tag(discord, discord ? { agent: "discord", config: discord.config } : null),
@@ -221,6 +235,7 @@ export async function loadAgents(settings: SettingsStore): Promise<StoredAgent[]
     ...tag(pushover, pushover ? { agent: "pushover", config: pushover.config } : null),
     ...tag(pushbullet, pushbullet ? { agent: "pushbullet", config: pushbullet.config } : null),
     ...tag(webhook, webhook ? { agent: "webhook", config: webhook.config } : null),
+    ...tag(webpushAgent, webpushAgent ? { agent: "webpush", config: webpushAgent.config } : null),
   ];
 }
 
@@ -258,6 +273,13 @@ async function sendThrough(
   personal: (r: RecipientInfo) => Outgoing,
 ): Promise<SendResult[]> {
   const results: SendResult[] = [];
+  if (target.agent === "webpush") {
+    // Personal only: each recipient's devices.
+    for (const recipient of recipients)
+      if (recipient.webpush)
+        results.push(...(await sendWebPush(deps, recipient.id, personal(recipient))));
+    return results;
+  }
   const mentions = recipients.flatMap((r) => (r.discordId ? [r.discordId] : []));
   const sharedResult = await sendShared(target, shared, { fetch: deps.fetch, mentions });
   if (sharedResult) results.push(sharedResult);

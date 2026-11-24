@@ -6,7 +6,7 @@ import * as v from "valibot";
 import {
   AGENT_DEFINITIONS,
   AgentCommonSchema,
-  DEFAULT_USER_NOTIFICATIONS,
+  withNotificationDefaults,
   NOTIFICATION_AGENTS,
   UserNotificationsSchema,
   type AgentTarget,
@@ -16,9 +16,14 @@ import { m } from "#/paraglide/messages.js";
 import { locales } from "#/paraglide/runtime.js";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
-import { userPreference } from "#/server/db/schema";
+import { pushSubscription, userPreference } from "#/server/db/schema";
 import { getEnv } from "#/server/env";
 import { loadAgents, testAgent } from "#/server/notifications";
+import {
+  getOrCreateVapidKeys,
+  removeSubscription,
+  saveSubscription,
+} from "#/server/notifications/webpush";
 import { settings } from "#/server/settings";
 import { notificationAgentSettings, notificationGeneral } from "#/server/settings/definitions";
 
@@ -42,6 +47,7 @@ const toTarget: { [A in NotificationAgent]: (config: unknown) => AgentTarget } =
     config: v.parse(AGENT_DEFINITIONS.pushbullet.schema, c),
   }),
   webhook: (c) => ({ agent: "webhook", config: v.parse(AGENT_DEFINITIONS.webhook.schema, c) }),
+  webpush: (c) => ({ agent: "webpush", config: v.parse(AGENT_DEFINITIONS.webpush.schema, c) }),
 };
 
 type Common = v.InferOutput<typeof AgentCommonSchema>;
@@ -66,8 +72,10 @@ function saveTarget(common: Common, target: AgentTarget): Promise<void> {
       return settings.set(s.pushover, { ...common, config: target.config });
     case "pushbullet":
       return settings.set(s.pushbullet, { ...common, config: target.config });
-    default:
+    case "webhook":
       return settings.set(s.webhook, { ...common, config: target.config });
+    default:
+      return settings.set(s.webpush, { ...common, config: target.config });
   }
 }
 
@@ -181,7 +189,7 @@ export const getMyNotifications = createServerFn({ method: "GET" })
     const enabled = (await loadAgents(settings))
       .filter((a) => a.enabled)
       .map((a) => a.target.agent);
-    return { prefs: pref?.notifications ?? DEFAULT_USER_NOTIFICATIONS, enabledAgents: enabled };
+    return { prefs: withNotificationDefaults(pref?.notifications), enabledAgents: enabled };
   });
 
 export const saveMyNotifications = createServerFn({ method: "POST" })
@@ -192,5 +200,43 @@ export const saveMyNotifications = createServerFn({ method: "POST" })
       .values({ userId: context.session.user.id, notifications: data })
       .onConflictDoUpdate({ target: userPreference.userId, set: { notifications: data } })
       .run();
+    return { ok: true };
+  });
+
+/** The public VAPID key, to subscribe a device (null while Web Push is off). */
+export const getPushPublicKey = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async () => {
+    const agent = (await loadAgents(settings)).find((a) => a.target.agent === "webpush");
+    if (!agent?.enabled) return { publicKey: null };
+    return { publicKey: (await getOrCreateVapidKeys(settings)).publicKey };
+  });
+
+const SubscriptionSchema = v.object({
+  endpoint: v.pipe(v.string(), v.url(), v.maxLength(2000)),
+  p256dh: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
+  auth: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
+});
+
+/** Remembers this device for the caller's Web Push notifications. */
+export const subscribePush = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(SubscriptionSchema)
+  .handler(({ data, context }) => {
+    saveSubscription(db, context.session.user.id, data);
+    return { ok: true };
+  });
+
+export const unsubscribePush = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(v.object({ endpoint: SubscriptionSchema.entries.endpoint }))
+  .handler(({ data, context }) => {
+    // Only the caller's own device.
+    const sub = db
+      .select({ userId: pushSubscription.userId })
+      .from(pushSubscription)
+      .where(eq(pushSubscription.endpoint, data.endpoint))
+      .get();
+    if (sub?.userId === context.session.user.id) removeSubscription(db, data.endpoint);
     return { ok: true };
   });

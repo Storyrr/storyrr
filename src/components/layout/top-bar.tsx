@@ -5,11 +5,10 @@ import { useId, useState } from "react";
 import { UserMenu } from "#/components/layout/user-menu";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "#/components/ui/input-group";
 import { Label } from "#/components/ui/label";
-import { SidebarTrigger } from "#/components/ui/sidebar";
 import type { SessionUser } from "#/functions/auth.functions";
 import { m } from "#/paraglide/messages.js";
 
-/** Search across audiobooks and books, the menu button on phones, and the account menu. */
+/** Search across audiobooks and books, and the account menu (phones open the menu from the bottom bar). */
 export function TopBar({ user }: { user: SessionUser }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -17,7 +16,6 @@ export function TopBar({ user }: { user: SessionUser }) {
 
   return (
     <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-      <SidebarTrigger className="md:hidden" />
       <search className="flex-1">
         <form
           onSubmit={(event) => {

@@ -16,6 +16,7 @@ import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import { RegisterServiceWorker } from "#/components/pwa/register-service-worker";
 import { authStateQuery } from "#/lib/queries/auth";
 
 interface MyRouterContext {
@@ -100,18 +101,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           {children}
         </AriaRouterProvider>
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
+        <RegisterServiceWorker />
+        {import.meta.env.DEV ? (
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
+        ) : null}
         <Scripts />
       </body>
     </html>

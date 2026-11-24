@@ -129,7 +129,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 ### 4.8c Notifications (decided 2026-11-24)
 
 - Events: request waiting for approval, auto-approved, approved, declined, available, failed; issue reported, commented, resolved, reopened.
-- Agents (Settings → Notifications, one sub-tab each, with Enable, events, fields, Test, Save): Email (SMTP), Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, and a webhook with a JSON template (`{{variables}}`). Web Push comes with the PWA. Tokens are stored encrypted; the eye button reveals them like API keys.
+- Agents (Settings → Notifications, one sub-tab each, with Enable, events, fields, Test, Save): Email (SMTP), Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, a webhook with a JSON template (`{{variables}}`), and Web Push (VAPID keys generated on first use; users turn it on per device). Tokens are stored encrypted; the eye button reveals them like API keys.
 - Shared delivery: each enabled agent posts the events it's set for to its own destination, in the instance's notification language.
 - Personal delivery: requesters and watchers get news of their requests, request managers of new requests, issue managers of new issues and comments, reporters of their issues. Each user picks their events and channels (email on/off, Discord user ID mentioned in the shared Discord message, Telegram chat ID, Pushover user key, Pushbullet token) in Profile → Settings → Notifications, in their own language.
 
@@ -145,6 +145,11 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **Audiobookshelf / Kavita** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
 - **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
 - Later: health of each connection.
+
+### 4.10 Installable app (decided 2026-11-24)
+
+- Web app manifest and icons; a service worker (`public/sw.js`) for installation and Web Push, without offline caching (pages always come from the server).
+- On phones, a bottom bar (Discover, Books, Audiobooks, Requests, More) replaces the menu button.
 
 ## 5. Data model (initial)
 

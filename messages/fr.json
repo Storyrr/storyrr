@@ -560,5 +560,14 @@
   "log_level_debug": "Débogage",
   "log_level_info": "Info",
   "log_level_warn": "Avertissement",
-  "log_level_error": "Erreur"
+  "log_level_error": "Erreur",
+  "notification_agent_webpush": "Web Push",
+  "my_notifications_webpush": "Notifications push",
+  "my_notifications_webpush_description": "Sur les appareils où vous les avez activées ci-dessous (navigateur ou application installée).",
+  "push_this_device": "Sur cet appareil",
+  "push_this_device_description": "Recevoir les notifications de Storyrr dans ce navigateur, même fermé (installez l’application sur téléphone).",
+  "push_unsupported": "Ce navigateur ne prend pas en charge les notifications push. Sur iPhone, ajoutez d’abord Storyrr à l’écran d’accueil.",
+  "push_permission_denied": "Les notifications sont bloquées pour ce site dans les réglages du navigateur.",
+  "mobile_nav_label": "Pages principales",
+  "mobile_nav_more": "Plus"
 }

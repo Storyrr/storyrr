@@ -111,6 +111,7 @@ export const notificationAgentSettings = {
   pushover: agentSetting("pushover", AGENT_DEFINITIONS.pushover.schema),
   pushbullet: agentSetting("pushbullet", AGENT_DEFINITIONS.pushbullet.schema),
   webhook: agentSetting("webhook", AGENT_DEFINITIONS.webhook.schema),
+  webpush: agentSetting("webpush", AGENT_DEFINITIONS.webpush.schema),
 } satisfies Record<NotificationAgent, unknown>;
 
 /** Language of notifications sent to shared channels (personal ones use each user's). */
@@ -118,4 +119,11 @@ export const notificationGeneral = defineSetting({
   key: "notifications.general",
   schema: v.object({ locale: v.picklist(locales) }),
   secret: false,
+});
+
+/** VAPID key pair signing Web Push messages (generated on first use). */
+export const vapidKeys = defineSetting({
+  key: "notifications.webpush.vapid",
+  schema: v.object({ publicKey: v.string(), privateKey: v.string() }),
+  secret: true,
 });
