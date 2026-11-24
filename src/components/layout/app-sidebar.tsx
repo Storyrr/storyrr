@@ -1,4 +1,4 @@
-import { useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BanIcon,
   BookAudioIcon,
@@ -24,6 +24,7 @@ import {
   useSidebar,
 } from "#/components/ui/sidebar";
 import type { SessionUser } from "#/functions/auth.functions";
+import { Logo } from "#/components/layout/logo";
 import { m } from "#/paraglide/messages.js";
 
 type NavItem = { href: string; label: () => string; icon: LucideIcon; adminOnly?: boolean };
@@ -50,10 +51,9 @@ export function AppSidebar({ user, version }: { user: SessionUser; version: stri
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-3 text-2xl font-semibold tracking-tight">
-          <BookOpenIcon className="size-7 text-primary" aria-hidden />
-          {m.app_name()}
-        </div>
+        <Link to="/" className="flex px-2 py-4" onClick={() => setOpenMobile(false)}>
+          <Logo className="h-9" />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
