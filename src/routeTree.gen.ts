@@ -24,6 +24,8 @@ import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
 import { Route as AuthedIssuesIdRouteImport } from './routes/_authed/issues/$id'
+import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
+import { Route as AuthedProfileSettingsRouteImport } from './routes/_authed/profile/settings'
 import { Route as AuthedSettingsAudiobookshelfRouteImport } from './routes/_authed/settings/audiobookshelf'
 import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/settings/general'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
@@ -32,6 +34,9 @@ import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settin
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/chaptarr'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
+import { Route as AuthedProfileSettingsGeneralRouteImport } from './routes/_authed/profile/settings/general'
+import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
+import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -107,6 +112,16 @@ const AuthedIssuesIdRoute = AuthedIssuesIdRouteImport.update({
   path: '/issues/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProfileSettingsRoute = AuthedProfileSettingsRouteImport.update({
+  id: '/profile/settings',
+  path: '/profile/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsAudiobookshelfRoute =
   AuthedSettingsAudiobookshelfRouteImport.update({
     id: '/audiobookshelf',
@@ -148,6 +163,24 @@ const AuthedMediaTypeIdRoute = AuthedMediaTypeIdRouteImport.update({
   path: '/media/$type/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProfileSettingsGeneralRoute =
+  AuthedProfileSettingsGeneralRouteImport.update({
+    id: '/general',
+    path: '/general',
+    getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
+const AuthedProfileSettingsPasswordRoute =
+  AuthedProfileSettingsPasswordRouteImport.update({
+    id: '/password',
+    path: '/password',
+    getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
+const AuthedProfileSettingsPermissionsRoute =
+  AuthedProfileSettingsPermissionsRouteImport.update({
+    id: '/permissions',
+    path: '/permissions',
+    getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -163,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
+  '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
@@ -171,7 +205,11 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/issues/': typeof AuthedIssuesIndexRoute
+  '/profile/': typeof AuthedProfileIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
+  '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
+  '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
 }
 export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
@@ -187,6 +225,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
+  '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
@@ -195,7 +234,11 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/issues': typeof AuthedIssuesIndexRoute
+  '/profile': typeof AuthedProfileIndexRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
+  '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
+  '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -213,6 +256,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/issues/$id': typeof AuthedIssuesIdRoute
+  '/_authed/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
   '/_authed/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/_authed/settings/general': typeof AuthedSettingsGeneralRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
@@ -221,7 +265,11 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/chaptarr': typeof ApiWebhooksChaptarrRoute
   '/_authed/issues/': typeof AuthedIssuesIndexRoute
+  '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
+  '/_authed/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
+  '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -239,6 +287,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/health'
     | '/issues/$id'
+    | '/profile/settings'
     | '/settings/audiobookshelf'
     | '/settings/general'
     | '/settings/kavita'
@@ -247,7 +296,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
     | '/issues/'
+    | '/profile/'
     | '/media/$type/$id'
+    | '/profile/settings/general'
+    | '/profile/settings/password'
+    | '/profile/settings/permissions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/setup'
@@ -263,6 +316,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/'
     | '/issues/$id'
+    | '/profile/settings'
     | '/settings/audiobookshelf'
     | '/settings/general'
     | '/settings/kavita'
@@ -271,7 +325,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
     | '/issues'
+    | '/profile'
     | '/media/$type/$id'
+    | '/profile/settings/general'
+    | '/profile/settings/password'
+    | '/profile/settings/permissions'
   id:
     | '__root__'
     | '/_authed'
@@ -288,6 +346,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/_authed/'
     | '/_authed/issues/$id'
+    | '/_authed/profile/settings'
     | '/_authed/settings/audiobookshelf'
     | '/_authed/settings/general'
     | '/_authed/settings/kavita'
@@ -296,7 +355,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/webhooks/chaptarr'
     | '/_authed/issues/'
+    | '/_authed/profile/'
     | '/_authed/media/$type/$id'
+    | '/_authed/profile/settings/general'
+    | '/_authed/profile/settings/password'
+    | '/_authed/profile/settings/permissions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -415,6 +478,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIssuesIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/profile/': {
+      id: '/_authed/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof AuthedProfileIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/profile/settings': {
+      id: '/_authed/profile/settings'
+      path: '/profile/settings'
+      fullPath: '/profile/settings'
+      preLoaderRoute: typeof AuthedProfileSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/audiobookshelf': {
       id: '/_authed/settings/audiobookshelf'
       path: '/audiobookshelf'
@@ -471,6 +548,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMediaTypeIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/profile/settings/general': {
+      id: '/_authed/profile/settings/general'
+      path: '/general'
+      fullPath: '/profile/settings/general'
+      preLoaderRoute: typeof AuthedProfileSettingsGeneralRouteImport
+      parentRoute: typeof AuthedProfileSettingsRoute
+    }
+    '/_authed/profile/settings/password': {
+      id: '/_authed/profile/settings/password'
+      path: '/password'
+      fullPath: '/profile/settings/password'
+      preLoaderRoute: typeof AuthedProfileSettingsPasswordRouteImport
+      parentRoute: typeof AuthedProfileSettingsRoute
+    }
+    '/_authed/profile/settings/permissions': {
+      id: '/_authed/profile/settings/permissions'
+      path: '/permissions'
+      fullPath: '/profile/settings/permissions'
+      preLoaderRoute: typeof AuthedProfileSettingsPermissionsRouteImport
+      parentRoute: typeof AuthedProfileSettingsRoute
+    }
   }
 }
 
@@ -494,6 +592,23 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
   AuthedSettingsRouteChildren,
 )
 
+interface AuthedProfileSettingsRouteChildren {
+  AuthedProfileSettingsGeneralRoute: typeof AuthedProfileSettingsGeneralRoute
+  AuthedProfileSettingsPasswordRoute: typeof AuthedProfileSettingsPasswordRoute
+  AuthedProfileSettingsPermissionsRoute: typeof AuthedProfileSettingsPermissionsRoute
+}
+
+const AuthedProfileSettingsRouteChildren: AuthedProfileSettingsRouteChildren = {
+  AuthedProfileSettingsGeneralRoute: AuthedProfileSettingsGeneralRoute,
+  AuthedProfileSettingsPasswordRoute: AuthedProfileSettingsPasswordRoute,
+  AuthedProfileSettingsPermissionsRoute: AuthedProfileSettingsPermissionsRoute,
+}
+
+const AuthedProfileSettingsRouteWithChildren =
+  AuthedProfileSettingsRoute._addFileChildren(
+    AuthedProfileSettingsRouteChildren,
+  )
+
 interface AuthedRouteChildren {
   AuthedAudiobooksRoute: typeof AuthedAudiobooksRoute
   AuthedBlocklistRoute: typeof AuthedBlocklistRoute
@@ -505,7 +620,9 @@ interface AuthedRouteChildren {
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedIssuesIdRoute: typeof AuthedIssuesIdRoute
+  AuthedProfileSettingsRoute: typeof AuthedProfileSettingsRouteWithChildren
   AuthedIssuesIndexRoute: typeof AuthedIssuesIndexRoute
+  AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedMediaTypeIdRoute: typeof AuthedMediaTypeIdRoute
 }
 
@@ -520,7 +637,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedIssuesIdRoute: AuthedIssuesIdRoute,
+  AuthedProfileSettingsRoute: AuthedProfileSettingsRouteWithChildren,
   AuthedIssuesIndexRoute: AuthedIssuesIndexRoute,
+  AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedMediaTypeIdRoute: AuthedMediaTypeIdRoute,
 }
 

@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, gte, notInArray, sql } from "drizzle-orm";
 
-import type { MediaType } from "#/lib/requests";
+import type { MediaType, RequestQuota } from "#/lib/requests";
 import {
   DEFAULT_USER_SETTINGS,
   type RequestLimit,
@@ -14,13 +14,7 @@ import type { SettingsStore } from "#/server/settings/store";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** What a user may still request of one format; `remaining: null` is unlimited. */
-export type RequestQuota = {
-  limit: number | null;
-  days: number;
-  used: number;
-  remaining: number | null;
-};
+export type { RequestQuota } from "#/lib/requests";
 
 /** The user's own limits, else the global ones. */
 export async function effectiveLimit(

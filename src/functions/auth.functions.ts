@@ -5,6 +5,7 @@ import { SetupSchema } from "#/lib/schemas/auth";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { db } from "#/server/db";
+import { userLocale } from "#/server/profile";
 import { isAutoApproved } from "#/server/requests/queries";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
 import { APP_VERSION } from "#/server/version";
@@ -16,6 +17,8 @@ export type SessionUser = {
   isAdmin: boolean;
   /** Requests skip approval (admins, or the per-user flag). */
   autoApproved: boolean;
+  /** Display language picked in their settings; null follows the browser. */
+  locale: string | null;
 };
 
 /**
@@ -34,6 +37,7 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
         email: session.user.email,
         isAdmin: session.user.role === "admin",
         autoApproved: isAutoApproved(db, session.user.id, session.user.role === "admin"),
+        locale: userLocale(db, session.user.id),
       }
     : null;
   return { setupComplete, user, version: APP_VERSION };

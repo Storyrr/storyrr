@@ -1,4 +1,6 @@
-import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+
+import { TabNav } from "#/components/layout/tab-nav";
 
 import { m } from "#/paraglide/messages.js";
 
@@ -23,21 +25,7 @@ const TABS = [
 function SettingsLayout() {
   return (
     <div className="flex flex-col gap-8">
-      <nav aria-label={m.nav_settings()} className="overflow-x-auto border-b">
-        <ul className="flex gap-6">
-          {TABS.map((tab) => (
-            <li key={tab.to}>
-              <Link
-                to={tab.to}
-                className="-mb-px block border-b-2 border-transparent py-3 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
-                activeProps={{ className: "border-primary text-primary", "aria-current": "page" }}
-              >
-                {tab.label()}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <TabNav label={m.nav_settings()} tabs={TABS} />
       <Outlet />
     </div>
   );

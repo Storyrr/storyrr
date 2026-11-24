@@ -110,6 +110,12 @@ Shown when the database has no user.
 - Per-user request limits overriding the global ones (decided 2026-11-24).
 - Optional link to an Audiobookshelf user (future: "already listened").
 
+### 4.8b Account menu and profile (decided 2026-11-24)
+
+- The avatar at the top right opens a Seerr-like menu: name and email, then Profile, Requests, Settings, Sign out.
+- **Profile:** avatar, name, email, role, member since; request counts (total, audiobooks, eBooks, available) and recent requests.
+- **Settings** (the user's own, tabs): **General** (display name, email read-only, display language: browser default or a fixed locale, stored per user and applied on any device), **Password** (current + new; signs out other sessions), **Permissions** (read-only: role, auto-approval, request limits left). Linked accounts and notifications come with those features.
+
 ### 4.9 Settings (admin)
 
 Seerr-like tabs (decided 2026-11-24), label column on the left, control on the right:

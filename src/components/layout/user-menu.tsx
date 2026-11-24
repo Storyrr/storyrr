@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { LogOutIcon } from "lucide-react";
+import { InboxIcon, LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "#/components/ui/avatar";
+import { UserAvatar } from "#/components/layout/user-avatar";
 import { Button } from "#/components/ui/button";
 import {
   DropdownMenu,
@@ -16,11 +16,8 @@ import type { SessionUser } from "#/functions/auth.functions";
 import { authClient } from "#/lib/auth-client";
 import { authKeys } from "#/lib/queries/auth";
 import { m } from "#/paraglide/messages.js";
-import { getLocale, locales, setLocale, type Locale } from "#/paraglide/runtime.js";
 
-/** Each language in its own language, whatever the current one. */
-const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
-
+/** Seerr-like account menu: who is signed in, profile, requests, settings, sign out. */
 export function UserMenu({ user }: { user: SessionUser }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -38,43 +35,38 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
   return (
     <DropdownMenuTrigger>
-      <Button variant="ghost" aria-label={m.user_menu_label({ name: user.name })}>
-        <Avatar className="size-6">
-          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <span className="hidden truncate sm:inline">{user.name}</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-full"
+        aria-label={m.user_menu_label({ name: user.name })}
+      >
+        <UserAvatar name={user.name} className="size-8" />
       </Button>
-      <DropdownMenu placement="bottom end" className="min-w-48">
+      <DropdownMenu placement="bottom end" className="min-w-64">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>
-            <div className="truncate text-sm text-foreground">{user.email}</div>
-            <div>{user.isAdmin ? m.role_admin() : m.role_user()}</div>
+          <DropdownMenuLabel className="flex items-center gap-3 py-2">
+            <UserAvatar name={user.name} className="size-10" />
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-base font-semibold text-foreground">{user.name}</span>
+              <span className="truncate text-xs">{user.email}</span>
+            </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup
-          aria-label={m.language_label()}
-          selectionMode="single"
-          selectedKeys={[getLocale()]}
-          onSelectionChange={(keys) => {
-            const locale = locales.find((l) => keys !== "all" && keys.has(l));
-            // Saves the choice in Paraglide's cookie and reloads in that language.
-            if (locale && locale !== getLocale()) void setLocale(locale);
-          }}
-        >
-          {locales.map((locale) => (
-            <DropdownMenuItem
-              key={locale}
-              id={locale}
-              textValue={languageLabels[locale]()}
-              lang={locale}
-            >
-              {languageLabels[locale]()}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          <DropdownMenuItem href="/profile" textValue={m.nav_profile()}>
+            <UserIcon />
+            {m.nav_profile()}
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/requests" textValue={m.nav_requests()}>
+            <InboxIcon />
+            {m.nav_requests()}
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/profile/settings" textValue={m.nav_settings()}>
+            <SettingsIcon />
+            {m.nav_settings()}
+          </DropdownMenuItem>
           <DropdownMenuItem textValue={m.sign_out()} onAction={() => signOut.mutate()}>
             <LogOutIcon />
             {m.sign_out()}

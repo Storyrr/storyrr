@@ -42,3 +42,11 @@ export const REQUEST_TRANSITIONS: Readonly<Record<RequestStatus, readonly Reques
 export function canTransition(from: RequestStatus, to: RequestStatus): boolean {
   return REQUEST_TRANSITIONS[from].includes(to);
 }
+
+/** What a user may still request of one format; `remaining: null` is unlimited. */
+export type RequestQuota = {
+  limit: number | null;
+  days: number;
+  used: number;
+  remaining: number | null;
+};
