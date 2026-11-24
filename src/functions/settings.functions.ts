@@ -5,6 +5,7 @@ import {
   DEFAULT_USER_SETTINGS,
   FormatInputSchema,
   HardcoverTokenFormSchema,
+  RevealSecretSchema,
   LibraryServiceInputSchema,
   MetadataSettingsSchema,
   SaveFormatDefaultsSchema,
@@ -311,4 +312,18 @@ export const testMetadataProviders = createServerFn({ method: "POST" })
       audible: audible.ok ? { ok: true as const } : { ok: false as const, error: audible.error },
       hardcover: hardcover,
     };
+  });
+
+/**
+ * The saved API key or token of a service, for the eye button of its field.
+ * The one place a stored secret goes back to the browser: admins only, on
+ * demand, never logged.
+ */
+export const revealSecret = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(RevealSecretSchema)
+  .handler(async ({ data }) => {
+    if (data.service === "hardcover")
+      return { secret: (await settings.get(hardcoverToken)) ?? null };
+    return { secret: (await settings.get(connectionSettings[data.service]))?.apiKey ?? null };
   });

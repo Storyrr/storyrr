@@ -9,7 +9,7 @@ import { Button } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import { saveHardcover, testHardcover } from "#/functions/settings.functions";
+import { revealSecret, saveHardcover, testHardcover } from "#/functions/settings.functions";
 import { settingsKeys } from "#/lib/queries/settings";
 import { HardcoverTokenFormSchema, type HardcoverTokenForm } from "#/lib/schemas/settings";
 import { serviceErrorMessage } from "#/lib/service-errors";
@@ -22,6 +22,7 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
   const queryClient = useQueryClient();
   const testFn = useServerFn(testHardcover);
   const saveFn = useServerFn(saveHardcover);
+  const revealFn = useServerFn(revealSecret);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const onError = (error: Error) =>
     setFeedback({ tone: "error", message: error.message || m.error_generic() });
@@ -77,6 +78,7 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
                   : m.settings_hardcover_description()
               }
               saved={hasToken}
+              onReveal={async () => (await revealFn({ data: { service: "hardcover" } })).secret}
               name={field.name}
               value={field.state.value}
               onChange={field.handleChange}

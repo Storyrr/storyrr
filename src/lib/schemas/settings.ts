@@ -36,6 +36,9 @@ export type ConnectionForm = v.InferOutput<typeof ConnectionFormSchema>;
 
 export const ServiceInputSchema = v.object({ service: v.picklist(SERVICES) });
 
+/** Services whose saved key or token an admin can reveal in its settings field. */
+export const RevealSecretSchema = v.object({ service: v.picklist([...SERVICES, "hardcover"]) });
+
 export const ServiceConnectionInputSchema = v.object({
   service: v.picklist(SERVICES),
   connection: ConnectionFormSchema,

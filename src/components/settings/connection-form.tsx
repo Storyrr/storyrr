@@ -10,7 +10,11 @@ import { Button } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
-import { saveServiceConnection, testServiceConnection } from "#/functions/settings.functions";
+import {
+  revealSecret,
+  saveServiceConnection,
+  testServiceConnection,
+} from "#/functions/settings.functions";
 import { settingsKeys } from "#/lib/queries/settings";
 import {
   ConnectionFormSchema,
@@ -37,6 +41,7 @@ export function ConnectionForm({
   const queryClient = useQueryClient();
   const testFn = useServerFn(testServiceConnection);
   const saveFn = useServerFn(saveServiceConnection);
+  const revealFn = useServerFn(revealSecret);
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   const test = useMutation({
@@ -133,6 +138,7 @@ export function ConnectionForm({
               layout={layout}
               description={current?.hasApiKey ? m.field_api_key_saved() : undefined}
               saved={current?.hasApiKey ?? false}
+              onReveal={async () => (await revealFn({ data: { service } })).secret}
               name={field.name}
               value={field.state.value}
               onChange={field.handleChange}

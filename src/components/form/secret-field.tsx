@@ -9,13 +9,14 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "#/components/ui/input-group";
+import { Spinner } from "#/components/ui/spinner";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
 /**
- * Seerr-like secret input: masked, with a button to show what's typed. A saved
- * secret is never sent back to the browser, so `saved` only shows a masked
- * placeholder; leaving the field blank keeps it.
+ * Seerr-like secret input: masked, with a button to show it. When a secret is
+ * saved, the field shows a masked placeholder and the button fetches the saved
+ * value (`onReveal`) into the field; leaving the field blank keeps it.
  */
 export function SecretField({
   label,
@@ -27,6 +28,7 @@ export function SecretField({
   errors,
   name,
   layout = "stacked",
+  onReveal,
 }: {
   label: string;
   description?: string;
@@ -37,10 +39,32 @@ export function SecretField({
   errors: ReadonlyArray<{ message?: string } | undefined>;
   name: string;
   layout?: "stacked" | "row";
+  /** Fetches the saved secret (admins). */
+  onReveal?: () => Promise<string | null>;
 }) {
   const id = useId();
   const descriptionId = `${id}-description`;
   const [visible, setVisible] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
+  const toggle = async () => {
+    if (visible) return setVisible(false);
+    // Nothing typed yet: show the saved one.
+    if (!value && saved && onReveal) {
+      setRevealing(true);
+      setRevealError(null);
+      try {
+        const secret = await onReveal();
+        if (secret) onChange(secret);
+      } catch (error) {
+        setRevealError(error instanceof Error && error.message ? error.message : m.error_generic());
+        return;
+      } finally {
+        setRevealing(false);
+      }
+    }
+    setVisible(true);
+  };
   const invalid = errors.length > 0;
   const row = layout === "row";
   return (
@@ -66,9 +90,10 @@ export function SecretField({
         <InputGroupAddon align="inline-end">
           <InputGroupButton
             aria-label={visible ? m.secret_hide() : m.secret_show()}
-            onPress={() => setVisible(!visible)}
+            isDisabled={revealing}
+            onPress={() => void toggle()}
           >
-            {visible ? <EyeOffIcon /> : <EyeIcon />}
+            {revealing ? <Spinner /> : visible ? <EyeOffIcon /> : <EyeIcon />}
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
@@ -77,7 +102,10 @@ export function SecretField({
           {description}
         </FieldDescription>
       ) : null}
-      <FieldError errors={[...errors]} className={row ? "md:col-start-2" : undefined} />
+      <FieldError
+        errors={revealError ? [...errors, { message: revealError }] : [...errors]}
+        className={row ? "md:col-start-2" : undefined}
+      />
     </Field>
   );
 }
