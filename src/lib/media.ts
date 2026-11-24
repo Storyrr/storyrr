@@ -25,6 +25,11 @@ export type MediaSummary = {
    * edition without one). Undefined when the provider didn't say.
    */
   languages?: (string | null)[];
+  /** Podcasts: the RSS feed (what Audiobookshelf subscribes to and ownership is matched by). */
+  feedUrl?: string;
+  /** Podcasts: number of episodes in the directory. */
+  episodeCount?: number;
+  genres?: string[];
 };
 
 export type MediaDetails = MediaSummary & {
