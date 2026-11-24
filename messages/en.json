@@ -199,5 +199,17 @@
   "discover_recent_requests": "Recent requests",
   "discover_recently_added": "Recently added",
   "discover_see_all": "See all",
-  "discover_empty_requests": "No requests yet. Find something in Books or Audiobooks."
+  "discover_empty_requests": "No requests yet. Find something in Books or Audiobooks.",
+  "availability_blocked": "Blocked",
+  "request_blocked": "An admin blocked this title: it can't be requested.",
+  "action_block": "Block",
+  "action_unblock": "Unblock",
+  "blocklist_title": "Blocklist",
+  "blocklist_description": "Titles nobody can request. Requests made before blocking are left as they are.",
+  "blocklist_empty": "Nothing is blocked.",
+  "blocklist_block_title": "Block {title}?",
+  "blocklist_reason": "Reason (optional, shown on its page)",
+  "blocklist_blocked_by": "Blocked by {name} on {date}",
+  "blocklist_blocked_on": "Blocked on {date}",
+  "blocklist_reason_shown": "Blocked: {reason}"
 }

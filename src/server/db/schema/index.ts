@@ -3,3 +3,4 @@ export * from "./auth";
 export * from "./settings";
 export * from "./requests";
 export * from "./library";
+export * from "./blocklist";

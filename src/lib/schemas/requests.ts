@@ -59,3 +59,18 @@ export const RemoveFromChaptarrSchema = v.object({
   ...RequestIdSchema.entries,
   deleteFiles: v.boolean(),
 });
+
+export const BlockMediaSchema = v.object({
+  media: MediaRefSchema,
+  reason: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(500))),
+});
+
+/** The block form: an optional reason, shown on the item's page. */
+export const BlockReasonSchema = v.object({
+  reason: v.pipe(
+    v.string(),
+    v.maxLength(500, () => m.validation_too_long({ max: 500 })),
+  ),
+});
+
+export const BlockIdSchema = v.object({ id: v.pipe(v.string(), v.uuid()) });

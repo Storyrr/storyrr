@@ -4,10 +4,12 @@ import * as v from "valibot";
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
 import type { MediaSummary } from "#/lib/media";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
-import { availabilityFromRequest } from "#/lib/request-status";
+import { availabilityFromRequest, type MediaAvailability } from "#/lib/request-status";
+import type { RequestStatus } from "#/lib/requests";
 import { MediaRefSchema, SearchInputSchema } from "#/lib/schemas/requests";
 import { requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
+import { blockedIds, findBlock } from "#/server/requests/blocklist";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { activeRequestsByExternalId, isAutoApproved } from "#/server/requests/queries";
 import { services } from "#/server/services";
@@ -25,6 +27,18 @@ const languageInfo = (policy: LanguagePolicy | null) => ({
   acceptedLanguages: policy?.allowed ?? null,
 });
 
+/** In the library first, then blocked, then the state of its active request. */
+function availabilityOf(
+  externalId: string,
+  owned: Set<string>,
+  blocked: Set<string>,
+  status: RequestStatus | undefined,
+): MediaAvailability {
+  if (owned.has(externalId)) return "available";
+  const fromRequest = availabilityFromRequest(status);
+  return fromRequest === "none" && blocked.has(externalId) ? "blocked" : fromRequest;
+}
+
 /** Each item's status for this library and Chaptarr's language acceptance; accepted first. */
 async function annotate(type: SearchableType, items: MediaSummary[]) {
   const source = mediaSources[type];
@@ -35,11 +49,19 @@ async function annotate(type: SearchableType, items: MediaSummary[]) {
     format: source.type,
     externalIds: items.map((item) => item.externalId),
   });
+  const blocked = blockedIds(
+    db,
+    source.source,
+    items.map((item) => item.externalId),
+  );
   const results = items.map((item) => ({
     ...item,
-    availability: owned.has(item.externalId)
-      ? ("available" as const)
-      : availabilityFromRequest(requests.get(item.externalId)?.status),
+    availability: availabilityOf(
+      item.externalId,
+      owned,
+      blocked,
+      requests.get(item.externalId)?.status,
+    ),
     /** Whether Chaptarr's metadata profile accepts the work's languages (null: can't tell). */
     accepted: isLanguageAccepted(policy, item.languages),
   }));
@@ -91,6 +113,7 @@ export const getMedia = createServerFn({ method: "GET" })
     ]);
     if (!result.ok) return { ok: false as const, error: result.error };
     const owned = source.owned(db, [result.value]).has(result.value.externalId);
+    const block = findBlock(db, source.source, result.value.externalId);
     const active = activeRequestsByExternalId(db, {
       source: source.source,
       format: source.type,
@@ -100,8 +123,14 @@ export const getMedia = createServerFn({ method: "GET" })
     return {
       ok: true as const,
       item: result.value,
-      availability: owned ? ("available" as const) : availabilityFromRequest(active?.status),
+      availability: availabilityOf(
+        result.value.externalId,
+        owned ? new Set([result.value.externalId]) : new Set<string>(),
+        block ? new Set([result.value.externalId]) : new Set<string>(),
+        active?.status,
+      ),
       request: active ? { status: active.status, requesterName: active.requesterName } : null,
+      block: block ? { id: block.id, reason: block.reason } : null,
       autoApproved: isAutoApproved(db, context.session.user.id, isAdmin),
       accepted: isLanguageAccepted(policy, result.value.languages),
       ...languageInfo(policy),

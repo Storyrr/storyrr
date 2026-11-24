@@ -5,6 +5,7 @@ import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
 import { LanguageNotice } from "#/components/media/language-notice";
+import { BlockButton } from "#/components/media/block-button";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authed/media/$type/$id")({
 
 function MediaPage() {
   const { type, id } = Route.useParams();
+  const { user } = Route.useRouteContext();
   const { data } = useSuspenseQuery(mediaQuery(type, id));
 
   if (!data.ok) {
@@ -45,7 +47,7 @@ function MediaPage() {
       />
     );
   }
-  const { item, availability, request, accepted, acceptedLanguages } = data;
+  const { item, availability, request, accepted, acceptedLanguages, block } = data;
   const languages = (item.languages ?? []).filter((code): code is string => code !== null);
   const facts: [string, string | undefined][] = [
     [m.media_duration(), item.durationMinutes ? formatDuration(item.durationMinutes) : undefined],
@@ -73,6 +75,19 @@ function MediaPage() {
           <p className="text-sm text-muted-foreground">
             {m.media_requested_by({ name: request.requesterName })}
           </p>
+        ) : null}
+        {block?.reason ? (
+          <p className="text-sm text-muted-foreground">
+            {m.blocklist_reason_shown({ reason: block.reason })}
+          </p>
+        ) : null}
+        {user.isAdmin ? (
+          <BlockButton
+            type={type}
+            externalId={item.externalId}
+            title={item.title}
+            blockId={block?.id ?? null}
+          />
         ) : null}
       </div>
       <div className="flex flex-col gap-4">

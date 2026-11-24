@@ -1,7 +1,7 @@
 import type { RequestStatus } from "#/lib/requests";
 
 /** What a search card or detail page shows for an item. */
-export type MediaAvailability = "available" | "requested" | "processing" | "none";
+export type MediaAvailability = "available" | "requested" | "processing" | "blocked" | "none";
 
 export function availabilityFromRequest(status: RequestStatus | undefined): MediaAvailability {
   switch (status) {

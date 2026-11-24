@@ -7,6 +7,8 @@ import {
   CreateRequestSchema,
   DenyRequestSchema,
   ListRequestsSchema,
+  BlockIdSchema,
+  BlockMediaSchema,
   RemoveFromChaptarrSchema,
   RequestIdSchema,
 } from "#/lib/schemas/requests";
@@ -24,6 +26,7 @@ import {
   upsertMedia,
   getRequestRow,
 } from "#/server/requests/queries";
+import { block, findBlock, listBlocklist, unblock } from "#/server/requests/blocklist";
 import { downloadsFor } from "#/server/requests/downloads";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { submitRequest } from "#/server/requests/submit";
@@ -87,6 +90,10 @@ export const requestMedia = createServerFn({ method: "POST" })
 
     const details = await mediaSources[format].getDetails(services, data.media.id);
     if (!details.ok) throw new Error(details.error.message);
+    if (findBlock(db, details.value.source, details.value.externalId)) {
+      setResponseStatus(409);
+      throw new Error(m.request_blocked());
+    }
     // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
     const policy = await getLanguagePolicy({ services, settings }, format);
     if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
@@ -322,3 +329,29 @@ export const getDiscoverRequests = createServerFn({ method: "GET" })
     ].slice(0, 20);
     return { recentRequests, recentlyAdded };
   });
+
+/** Blocks a work so nobody can request it (existing requests are left alone). Admins. */
+export const blockMedia = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(BlockMediaSchema)
+  .handler(async ({ data, context }) => {
+    const details = await mediaSources[data.media.type].getDetails(services, data.media.id);
+    if (!details.ok) throw new Error(details.error.message);
+    const id = block(db, details.value, {
+      reason: data.reason || null,
+      userId: context.session.user.id,
+    });
+    return { id };
+  });
+
+export const unblockMedia = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(BlockIdSchema)
+  .handler(({ data }) => {
+    if (!unblock(db, data.id)) return notFound();
+    return { ok: true };
+  });
+
+export const getBlocklist = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .handler(() => listBlocklist(db));
