@@ -15,6 +15,7 @@ import {
 
 import { Button } from "#/components/ui/button.tsx";
 import { XIcon } from "lucide-react";
+import { m } from "#/paraglide/messages.js";
 
 function DialogTrigger({ ...props }: DialogTriggerPrimitiveProps) {
   return <DialogTriggerPrimitive data-slot="dialog-trigger" {...props} />;
@@ -89,7 +90,7 @@ function Dialog({
           {showCloseButton && (
             <DialogClose variant="ghost" className="absolute top-2 right-2" size="icon-sm">
               <XIcon />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{m.action_close()}</span>
             </DialogClose>
           )}
         </DialogPrimitive>

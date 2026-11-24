@@ -180,5 +180,8 @@
   "requests_remove_nothing": "Chaptarr n’a plus rien pour ce livre.",
   "status_requested": "Demandé",
   "status_downloading": "En téléchargement",
-  "status_downloading_progress": "En téléchargement ({percent})"
+  "status_downloading_progress": "En téléchargement ({percent})",
+  "sidebar_title": "Navigation",
+  "sidebar_description": "Les rubriques de Storyrr.",
+  "sidebar_toggle": "Afficher ou masquer le menu"
 }
