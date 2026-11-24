@@ -142,7 +142,7 @@ When the Email notification agent is set up, the sign-in page offers "Forgot pas
 
 - Events: request waiting for approval, auto-approved, approved, declined, available, failed; issue reported, commented, resolved, reopened.
 - Agents (Settings → Notifications, one sub-tab each, with Enable, events, fields, Test, Save): Email (SMTP), Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, a webhook with a JSON template (`{{variables}}`), and Web Push (VAPID keys generated on first use; users turn it on per device). Tokens are stored encrypted; the eye button reveals them like API keys.
-- Shared delivery: each enabled agent posts the events it's set for to its own destination, in the instance's notification language.
+- Shared delivery: each enabled agent posts the events it's set for to its own destination, in the instance's notification language. A new agent starts with no event checked; turning one on needs at least one.
 - Personal delivery: requesters and watchers get news of their requests, request managers of new requests, issue managers of new issues and comments, reporters of their issues. Each user picks their events and channels (email on/off, Discord user ID mentioned in the shared Discord message, Telegram chat ID, Pushover user key, Pushbullet token) in Profile → Settings → Notifications, in their own language.
 
 ### 4.9 Settings (admin)

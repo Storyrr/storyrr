@@ -483,6 +483,7 @@
   "notification_enable_agent": "Enable",
   "notification_events": "Notify about",
   "notification_events_description": "Which events go through this channel.",
+  "notification_events_required": "Pick at least one event before turning this channel on.",
   "settings_tab_notifications": "Notifications",
   "notification_general_title": "Notification settings",
   "notification_general_description": "Storyrr notifies about requests and issues through the channels below. Shared channels get every chosen event; users also get their own through email, Telegram, Pushover or Pushbullet, and Discord mentions, from their settings.",

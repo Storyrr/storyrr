@@ -26,7 +26,6 @@ import {
 import {
   AGENT_DEFINITIONS,
   DEFAULT_WEBHOOK_TEMPLATE,
-  NOTIFICATION_EVENTS,
   type AgentField,
   type NotificationAgent,
   type NotificationEvent,
@@ -141,11 +140,16 @@ export function AgentForm({
   const form = useForm({
     defaultValues: {
       enabled: stored?.enabled ?? false,
-      events: stored?.events ?? [...NOTIFICATION_EVENTS],
+      // Nothing checked until the admin picks what this channel is for.
+      events: stored?.events ?? [],
       config: initialValues(agent, stored),
     },
     validators: { onSubmit: ({ value }) => validate(agent, value.config, saved) },
     onSubmit: async ({ value }) => {
+      if (value.enabled && value.events.length === 0) {
+        setFeedback({ tone: "error", message: m.notification_events_required() });
+        return;
+      }
       await save.mutateAsync(value).catch(() => undefined);
     },
   });

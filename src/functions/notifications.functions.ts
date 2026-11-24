@@ -130,7 +130,15 @@ const AgentInputSchema = v.object({
 
 export const saveNotificationAgent = createServerFn({ method: "POST" })
   .middleware([requireSettings])
-  .validator(v.object({ ...AgentInputSchema.entries, ...AgentCommonSchema.entries }))
+  .validator(
+    v.pipe(
+      v.object({ ...AgentInputSchema.entries, ...AgentCommonSchema.entries }),
+      v.check(
+        (input) => !input.enabled || input.events.length > 0,
+        () => m.notification_events_required(),
+      ),
+    ),
+  )
   .handler(async ({ data }) => {
     const target = toTarget[data.agent](await withStoredSecrets(data.agent, data.config));
     await saveTarget({ enabled: data.enabled, events: data.events }, target);
