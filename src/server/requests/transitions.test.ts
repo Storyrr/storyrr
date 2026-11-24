@@ -158,7 +158,7 @@ describe("transitionRequest", () => {
 
   it("rejects transitions the table doesn't allow, without side effects", () => {
     const { requestId } = createRequest(db, input());
-    expect(() => transitionRequest(db, requestId, { to: "available", actor: "admin" })).toThrow(
+    expect(() => transitionRequest(db, requestId, { to: "submitted", actor: "admin" })).toThrow(
       InvalidTransitionError,
     );
     expect(db.select().from(request).get()?.status).toBe("pending");

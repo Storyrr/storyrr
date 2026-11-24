@@ -508,5 +508,20 @@
   "requests_format_all": "Tous les formats",
   "users_requests_title": "Demandes de {name}",
   "users_view_requests": "Demandes",
-  "requests_pending_badge": "{count} en attente d’approbation"
+  "requests_pending_badge": "{count} en attente d’approbation",
+  "manage_title": "Gérer",
+  "manage_title_heading": "Gérer « {title} »",
+  "manage_title_description": "Demandes, problèmes et disponibilité de ce titre.",
+  "manage_requests": "Demandes",
+  "manage_no_requests": "Aucune demande pour ce titre.",
+  "manage_issues": "Problèmes",
+  "manage_no_issues": "Aucun problème signalé.",
+  "manage_actions": "Actions",
+  "manage_mark_available": "Marquer comme disponible",
+  "manage_mark_available_description": "Pour un titre que vous avez mais que la synchronisation ne reconnaît pas : il apparaît disponible et ses demandes ouvertes sont satisfaites.",
+  "manage_marked_available": "Marqué disponible manuellement.",
+  "manage_in_library": "Déjà dans la bibliothèque.",
+  "manage_clear_data": "Effacer les données",
+  "manage_clear_data_title": "Effacer les données de « {title} » ?",
+  "manage_clear_data_description": "Storyrr oublie les demandes de ce titre (avec leur historique), ses problèmes et sa disponibilité manuelle. Rien ne change dans Chaptarr ni dans vos bibliothèques."
 }

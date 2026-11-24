@@ -8,11 +8,12 @@ import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
 import { availabilityFromRequest, type MediaAvailability } from "#/lib/request-status";
 import type { RequestStatus } from "#/lib/requests";
 import { MediaRefSchema, SearchInputSchema } from "#/lib/schemas/requests";
-import { requireUser } from "#/server/auth/middleware";
+import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
 import { blockedIds, findBlock } from "#/server/requests/blocklist";
 import { getLanguagePolicy } from "#/server/requests/language-policy";
-import { activeRequestsByExternalId } from "#/server/requests/queries";
+import { clearTitleData, markAvailable, titleAdminInfo } from "#/server/requests/manage";
+import { activeRequestsByExternalId, upsertMedia } from "#/server/requests/queries";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
 import { mediaSources } from "#/server/sources";
@@ -136,4 +137,30 @@ export const getMedia = createServerFn({ method: "GET" })
       accepted: isLanguageAccepted(policy, result.value.languages),
       ...languageInfo(policy),
     };
+  });
+
+/** Admin panel of a title: its requests, issues and manual availability. Request managers. */
+export const getTitleAdmin = createServerFn({ method: "GET" })
+  .middleware([requirePermission("manage_requests")])
+  .validator(MediaRefSchema)
+  .handler(({ data }) => titleAdminInfo(db, mediaSources[data.type].source, data.id));
+
+/** Marks a title as in the library (when the sync can't match it), fulfilling its requests. */
+export const markTitleAvailable = createServerFn({ method: "POST" })
+  .middleware([requirePermission("manage_requests")])
+  .validator(MediaRefSchema)
+  .handler(async ({ data, context }) => {
+    const details = await mediaSources[data.type].getDetails(services, data.id);
+    if (!details.ok) throw new Error(details.error.message);
+    upsertMedia(db, details.value);
+    return { fulfilled: markAvailable(db, details.value, context.session.user.id) };
+  });
+
+/** Forgets a title's requests, issues and manual availability (Chaptarr and libraries untouched). */
+export const clearTitle = createServerFn({ method: "POST" })
+  .middleware([requirePermission("manage_requests")])
+  .validator(MediaRefSchema)
+  .handler(({ data }) => {
+    clearTitleData(db, mediaSources[data.type].source, data.id);
+    return { ok: true };
   });

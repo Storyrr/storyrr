@@ -76,6 +76,10 @@ Shown when the database has no user.
 
 - Any user reports a problem on an available item: wrong language, wrong edition, missing or broken content, bad audio, other; with a comment. Admins and the reporter discuss it in comments; admins resolve or reopen it. The Issues page lists open issues first (users see their own, admins all).
 
+### 4.3e Manage a title (decided 2026-11-24)
+
+Request managers get a "Manage" side panel on title pages (Seerr's): the title's requests and issues, **Mark as available** (when the library sync can't match a title you have: it counts as owned and its open requests turn available) and **Clear data** (forgets its requests, issues and manual availability; Chaptarr and the libraries are untouched).
+
 ### 4.4 Request modal (Seerr-like)
 
 - **Format** (audiobook / eBook) when the work exists in both.

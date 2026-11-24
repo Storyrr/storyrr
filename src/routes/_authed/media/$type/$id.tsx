@@ -7,6 +7,7 @@ import { Cover } from "#/components/media/cover";
 import { LanguageNotice } from "#/components/media/language-notice";
 import { ReportIssueDialog } from "#/components/issues/report-issue-dialog";
 import { BlockButton } from "#/components/media/block-button";
+import { ManageTitle } from "#/components/media/manage-title";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
@@ -85,6 +86,14 @@ function MediaPage() {
         ) : null}
         {availability === "available" && can(user, "create_issues") ? (
           <ReportIssueDialog type={type} externalId={item.externalId} title={item.title} />
+        ) : null}
+        {can(user, "manage_requests") ? (
+          <ManageTitle
+            type={type}
+            externalId={item.externalId}
+            title={item.title}
+            available={availability === "available"}
+          />
         ) : null}
         {can(user, "manage_blocklist") ? (
           <BlockButton

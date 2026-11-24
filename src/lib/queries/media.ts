@@ -1,6 +1,6 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
-import { getMedia, getTrending, searchMedia } from "#/functions/media.functions";
+import { getMedia, getTitleAdmin, getTrending, searchMedia } from "#/functions/media.functions";
 import type { SearchableType } from "#/lib/media-types";
 
 export const mediaKeys = {
@@ -8,7 +8,14 @@ export const mediaKeys = {
   search: (type: SearchableType, query: string) =>
     [...mediaKeys.all, "search", type, query] as const,
   detail: (type: SearchableType, id: string) => [...mediaKeys.all, "detail", type, id] as const,
+  admin: (type: SearchableType, id: string) => [...mediaKeys.all, "admin", type, id] as const,
 };
+
+export const titleAdminQuery = (type: SearchableType, id: string) =>
+  queryOptions({
+    queryKey: mediaKeys.admin(type, id),
+    queryFn: () => getTitleAdmin({ data: { type, id } }),
+  });
 
 export const mediaSearchQuery = (type: SearchableType, query: string) =>
   queryOptions({

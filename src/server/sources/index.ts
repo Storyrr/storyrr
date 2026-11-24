@@ -4,6 +4,7 @@ import type { MediaDetails, MediaSummary } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
 import { ownedAsins, ownedTitles } from "#/server/library";
+import { manuallyOwned } from "#/server/requests/manage";
 import { titleKey } from "#/lib/match";
 import type { Services } from "#/server/services/factory";
 import { fail, type ServiceResult } from "#/server/services/result";
@@ -38,12 +39,13 @@ const audiobooks: MediaSource = {
   },
   // By ASIN in Audiobookshelf: titles in libraries are often wrong.
   owned(db, items) {
-    const owned = ownedAsins(
-      db,
-      items.map((item) => item.externalId),
-    );
+    const ids = items.map((item) => item.externalId);
+    const owned = ownedAsins(db, ids);
+    const manual = manuallyOwned(db, "audible", ids);
     return new Set(
-      items.filter((item) => owned.has(item.externalId.toUpperCase())).map((i) => i.externalId),
+      items
+        .filter((item) => owned.has(item.externalId.toUpperCase()) || manual.has(item.externalId))
+        .map((i) => i.externalId),
     );
   },
 };
@@ -69,8 +71,15 @@ const ebooks: MediaSource = {
       db,
       items.map((item) => item.title),
     );
+    const manual = manuallyOwned(
+      db,
+      "hardcover",
+      items.map((item) => item.externalId),
+    );
     return new Set(
-      items.filter((item) => owned.has(titleKey(item.title))).map((i) => i.externalId),
+      items
+        .filter((item) => owned.has(titleKey(item.title)) || manual.has(item.externalId))
+        .map((i) => i.externalId),
     );
   },
 };

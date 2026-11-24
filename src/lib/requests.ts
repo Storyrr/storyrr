@@ -28,12 +28,13 @@ export const ACTIVE_REQUEST_STATUSES = [
 
 /** Allowed transitions. Every status change goes through `src/server/requests/transitions.ts`. */
 export const REQUEST_TRANSITIONS: Readonly<Record<RequestStatus, readonly RequestStatus[]>> = {
-  pending: ["approved", "denied", "cancelled"],
-  approved: ["submitted", "failed", "cancelled"],
+  // "available" from any active status: an admin can mark a title they already have as available.
+  pending: ["approved", "denied", "cancelled", "available"],
+  approved: ["submitted", "failed", "cancelled", "available"],
   // Admins can give up on a request Chaptarr never fulfils (cleanup in Chaptarr stays manual).
   submitted: ["available", "failed", "cancelled"],
   // Retry: back to approved, then submitted again. Admins can also give up.
-  failed: ["approved", "cancelled"],
+  failed: ["approved", "cancelled", "available"],
   available: [],
   denied: [],
   cancelled: [],

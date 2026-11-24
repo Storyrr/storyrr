@@ -508,5 +508,20 @@
   "requests_format_all": "All formats",
   "users_requests_title": "Requests by {name}",
   "users_view_requests": "Requests",
-  "requests_pending_badge": "{count} waiting for approval"
+  "requests_pending_badge": "{count} waiting for approval",
+  "manage_title": "Manage",
+  "manage_title_heading": "Manage “{title}”",
+  "manage_title_description": "Requests, issues and availability of this title.",
+  "manage_requests": "Requests",
+  "manage_no_requests": "No request for this title.",
+  "manage_issues": "Issues",
+  "manage_no_issues": "No issue reported.",
+  "manage_actions": "Actions",
+  "manage_mark_available": "Mark as available",
+  "manage_mark_available_description": "For a title you have but the library sync doesn't match: it shows as available and its open requests are fulfilled.",
+  "manage_marked_available": "Marked as available by hand.",
+  "manage_in_library": "Already in the library.",
+  "manage_clear_data": "Clear data",
+  "manage_clear_data_title": "Clear data of “{title}”?",
+  "manage_clear_data_description": "Storyrr forgets this title's requests (with their history), issues and manual availability. Nothing changes in Chaptarr or your libraries."
 }
