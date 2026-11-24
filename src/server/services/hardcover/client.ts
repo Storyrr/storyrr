@@ -1,7 +1,13 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
-import type { MediaCollection, MediaDetails, MediaSummary } from "#/lib/media";
+import type {
+  MediaCollection,
+  MediaDetails,
+  MediaSummary,
+  MediaTag,
+  MediaTagPage,
+} from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { canonicalLanguage } from "#/lib/languages";
@@ -59,8 +65,22 @@ const EditionLanguagesSchema = v.optional(
   [],
 );
 
+/** Readers' tags per category ("Genre", "Mood", "Tag", "Content Warning"), checked on 2026-11-24. */
+const CachedTagsSchema = v.record(
+  v.string(),
+  v.array(
+    v.looseObject({
+      tag: v.string(),
+      tagSlug: v.string(),
+      count: v.optional(v.number(), 0),
+      spoilerRatio: v.optional(v.nullable(v.number())),
+    }),
+  ),
+);
+
 const BookSchema = v.looseObject({
   id: v.number(),
+  cached_tags: v.optional(v.nullable(CachedTagsSchema)),
   title: v.nullable(v.string()),
   subtitle: v.optional(v.nullable(v.string())),
   description: v.optional(v.nullable(v.string())),
@@ -197,6 +217,18 @@ const AUTHOR_QUERY = `query StoryrrAuthor($id: Int!) {
   }
 }`;
 
+/** Books with a tag, the most read first (main books only), with the tag's name. */
+const TAG_QUERY = `query StoryrrTag($slug: String!, $limit: Int!, $offset: Int!) {
+  tags(where: {slug: {_eq: $slug}}, limit: 1) { tag }
+  books(
+    where: {canonical_id: {_is_null: true}, taggings: {tag: {slug: {_eq: $slug}}}}
+    order_by: {users_count: desc}
+    limit: $limit
+    offset: $offset
+  ) { ${BOOK_CARD} }
+}`;
+const TAG_PAGE = 40;
+
 const TrendingDataSchema = v.object({
   books_trending: v.looseObject({
     ids: v.optional(v.nullable(v.array(v.number())), []),
@@ -204,10 +236,14 @@ const TrendingDataSchema = v.object({
   }),
 });
 const BooksDataSchema = v.object({ books: v.array(BookSchema) });
+const TagDataSchema = v.object({
+  tags: v.array(v.looseObject({ tag: v.string() })),
+  books: v.array(BookSchema),
+});
 
 const BOOK_QUERY = `query StoryrrBook($id: Int!) {
   books_by_pk(id: $id) {
-    id title subtitle description release_date pages
+    id title subtitle description release_date pages cached_tags
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
@@ -333,6 +369,26 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       });
     },
 
+    /** A genre's or mood's books, the most read first, page by page. */
+    async tag(slug: string, page = 1): Promise<ServiceResult<MediaTagPage>> {
+      const result = await graphql(
+        TAG_QUERY,
+        { slug, limit: TAG_PAGE, offset: (page - 1) * TAG_PAGE },
+        TagDataSchema,
+      );
+      if (!result.ok) return result;
+      const [tag] = result.value.tags;
+      if (!tag) return fail("not_found", `No Hardcover tag ${slug}`);
+      return ok({
+        name: tag.tag,
+        items: result.value.books.flatMap((book) => {
+          if (!book.title) return [];
+          const { description: _description, ...summary } = toDetails(book);
+          return [summary];
+        }),
+      });
+    },
+
     async getById(id: string): Promise<ServiceResult<MediaDetails>> {
       const numericId = Number(id);
       if (!Number.isInteger(numericId) || numericId <= 0)
@@ -341,7 +397,7 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       if (!result.ok) return result;
       const book = result.value.books_by_pk;
       if (!book?.title) return fail("not_found", `No Hardcover book ${id}`);
-      return ok(toDetails(book));
+      return ok({ ...toDetails(book), tags: bookTags(book.cached_tags) });
     },
   };
 }
@@ -368,6 +424,28 @@ function toSummary(document: SearchDocument): MediaSummary | null {
       : [],
     coverUrl: document.image?.url ?? undefined,
   };
+}
+
+/** Tag categories shown on a book, with how many of each (readers' opinions and content warnings left out). */
+const TAG_CATEGORIES = [
+  ["Genre", 8],
+  ["Mood", 4],
+] as const;
+
+/** A book's most-tagged genres and moods (spoilers left out). */
+function bookTags(cached: HardcoverBook["cached_tags"]): MediaTag[] {
+  if (!cached) return [];
+  return TAG_CATEGORIES.flatMap(([category, count]) =>
+    (cached[category] ?? [])
+      .filter((tag) => (tag.spoilerRatio ?? 0) < 0.5)
+      .toSorted((a, b) => b.count - a.count)
+      .slice(0, count)
+      // Readers type some in lowercase ("challenging").
+      .map((tag) => ({
+        id: tag.tagSlug,
+        name: tag.tag.charAt(0).toUpperCase() + tag.tag.slice(1),
+      })),
+  );
 }
 
 function toDetails(book: HardcoverBook): MediaDetails {

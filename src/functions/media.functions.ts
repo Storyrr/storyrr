@@ -197,6 +197,23 @@ export const getSeries = createServerFn({ method: "GET" })
     };
   });
 
+/** A genre's or keyword's page: its titles, most popular first, each with its status. Signed-in users. */
+export const getTagged = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(
+    v.object({
+      type: v.picklist(SEARCHABLE_TYPES),
+      id: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
+      page: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(25)),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const result = await mediaSources[data.type].tag(services, data.id, data.page);
+    if (!result.ok) return { ok: false as const, error: result.error };
+    // Popularity order: no regrouping by language acceptance.
+    return { ...(await annotate(data.type, result.value.items, false)), name: result.value.name };
+  });
+
 /** An author page: bio and works, each with its status. Signed-in users. */
 export const getAuthor = createServerFn({ method: "GET" })
   .middleware([requireUser])

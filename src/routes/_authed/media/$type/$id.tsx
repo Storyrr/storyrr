@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { TagIcon } from "lucide-react";
 
 import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
@@ -167,6 +168,20 @@ function MediaPage() {
         </dl>
         {item.description ? (
           <p className="whitespace-pre-line text-sm leading-relaxed">{item.description}</p>
+        ) : null}
+        {item.tags && item.tags.length > 0 ? (
+          <ul aria-label={m.media_tags()} className="flex flex-wrap gap-2">
+            {item.tags.map((tag) => (
+              <li key={tag.id}>
+                <Link to="/tags/$type/$id" params={{ type, id: tag.id }}>
+                  <Badge variant="outline" className="h-7 gap-1.5 px-3 text-sm hover:bg-muted">
+                    <TagIcon aria-hidden />
+                    {tag.name}
+                  </Badge>
+                </Link>
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
     </article>

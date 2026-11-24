@@ -64,6 +64,8 @@ Shown when the database has no user.
 - Other formats of the same work when known (e.g. "Also available as eBook").
 - Request button (or current status + who requested it).
 
+- Genres and keywords (decided 2026-11-24, like Seerr's keywords): chips under the description. Audiobooks show their Audible genres (every level of each genre path); books their main Hardcover genres (up to 8) and moods (up to 4), most tagged first, without readers' opinion tags, content warnings or spoiler-flagged tags. A chip opens `/tags/$type/$id`: the genre's bestsellers on Audible, or the tag's most-read books on Hardcover, 40 per page with "Load more".
+
 ### 4.3b Navigation and Discover (decided 2026-11-24)
 
 - Seerr-like layout: a sidebar with **Découvrir (Discover), Livres (eBooks), Livres audio (Audiobooks), Demandes (Requests), Blocages (Blocklist, admins), Problèmes (Issues), Utilisateurs (Users, admins), Paramètres (Settings, admins)**, a search bar at the top, the account menu at the top right. On phones the sidebar becomes a drawer.

@@ -30,10 +30,17 @@ export type MediaSummary = {
   languages?: (string | null)[];
 };
 
+/** A genre or keyword of a title (Audible category, Hardcover genre or mood), browsable. */
+export type MediaTag = { id: string; name: string };
+
 export type MediaDetails = MediaSummary & {
   /** Plain text (provider HTML is stripped). */
   description?: string;
+  tags?: MediaTag[];
 };
+
+/** The titles of a genre or keyword, one page at a time. */
+export type MediaTagPage = { name: string; items: MediaSummary[] };
 
 /** A series or an author page: its works in order, with what the provider says about it. */
 export type MediaCollection = {

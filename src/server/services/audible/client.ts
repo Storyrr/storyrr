@@ -1,7 +1,13 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
-import type { MediaCollection, MediaDetails, MediaSummary } from "#/lib/media";
+import type {
+  MediaCollection,
+  MediaDetails,
+  MediaSummary,
+  MediaTag,
+  MediaTagPage,
+} from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
@@ -34,6 +40,11 @@ const ProductSchema = v.object({
   product_images: v.optional(v.record(v.string(), v.string()), {}),
   publisher_summary: v.optional(v.string()),
   merchandising_summary: v.optional(v.string()),
+  /** Genre paths ("Science fiction › Space opera"), verified on api.audible.fr on 2026-11-24. */
+  category_ladders: v.optional(
+    v.array(v.object({ ladder: v.array(v.object({ id: v.string(), name: v.string() })) })),
+    [],
+  ),
 });
 type Product = v.InferOutput<typeof ProductSchema>;
 
@@ -42,6 +53,11 @@ const SearchResponseSchema = v.object({
   total_results: v.optional(v.number()),
 });
 const ProductResponseSchema = v.object({ product: ProductSchema });
+
+const CategorySchema = v.object({ category: v.object({ id: v.string(), name: v.string() }) });
+
+/** Titles per page of a genre. */
+const CATEGORY_PAGE = 40;
 
 /** A series is a product whose children are its volumes (verified on api.audible.fr, 2026-11-24). */
 const SeriesResponseSchema = v.object({
@@ -178,7 +194,7 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
     async getByAsin(asin: string): Promise<ServiceResult<MediaDetails>> {
       const url = new URL(`${base}/${encodeURIComponent(asin)}`);
       url.search = new URLSearchParams({
-        response_groups: RESPONSE_GROUPS,
+        response_groups: `${RESPONSE_GROUPS},category_ladders`,
         image_sizes: "500",
       }).toString();
       const result = await requestJson({
@@ -193,7 +209,30 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       if (!summary) return fail("not_found", `Audible has no audiobook ${asin}`);
       const html =
         result.value.product.publisher_summary ?? result.value.product.merchandising_summary;
-      return ok({ ...summary, description: html ? htmlToText(html) : undefined });
+      return ok({
+        ...summary,
+        description: html ? htmlToText(html) : undefined,
+        tags: genres(result.value.product),
+      });
+    },
+
+    /** A genre's bestsellers, page by page (Audible pages from 0), with the genre's name. */
+    async category(id: string, page = 1): Promise<ServiceResult<MediaTagPage>> {
+      const info = await requestJson({
+        fetch,
+        service: "Audible",
+        url: new URL(
+          `https://${audibleHost(region)}/1.0/catalog/categories/${encodeURIComponent(id)}`,
+        ),
+        schema: CategorySchema,
+      });
+      if (!info.ok) return info;
+      const items = await list(
+        { category_id: id, products_sort_by: "BestSellers", page: String(page - 1) },
+        CATEGORY_PAGE,
+      );
+      if (!items.ok) return items;
+      return ok({ name: info.value.category.name, items: items.value });
     },
   };
 }
@@ -202,6 +241,14 @@ export type AudibleClient = ReturnType<typeof createAudibleClient>;
 
 /** Contributors listed with a role suffix ("Name - traducteur") are not authors. */
 const ROLE_SUFFIX = / - [^-]+$/;
+
+/** A product's genres, broadest first, each once (only with the `category_ladders` group). */
+function genres(product: Product): MediaTag[] {
+  const tags = new Map<string, MediaTag>();
+  for (const { ladder } of product.category_ladders)
+    for (const node of ladder) tags.set(node.id, { id: node.id, name: node.name });
+  return [...tags.values()];
+}
 
 function toSummary(product: Product): MediaSummary | null {
   if (!product.title) return null;

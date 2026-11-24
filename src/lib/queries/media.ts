@@ -6,6 +6,7 @@ import {
   getMedia,
   getSeries,
   getTitleAdmin,
+  getTagged,
   getTrending,
   searchMedia,
 } from "#/functions/media.functions";
@@ -74,6 +75,17 @@ export const trendingPagesQuery = (type: SearchableType) =>
     initialPageParam: 1,
     getNextPageParam: (last, _all, page) =>
       last.ok && last.results.length > 0 && page < 50 ? page + 1 : undefined,
+    staleTime: 10 * 60_000,
+  });
+
+/** A genre's or keyword's titles, page by page. */
+export const taggedPagesQuery = (type: SearchableType, id: string) =>
+  infiniteQueryOptions({
+    queryKey: [...mediaKeys.all, "tag", type, id] as const,
+    queryFn: ({ pageParam }) => getTagged({ data: { type, id, page: pageParam } }),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, page) =>
+      last.ok && last.results.length > 0 && page < 25 ? page + 1 : undefined,
     staleTime: 10 * 60_000,
   });
 

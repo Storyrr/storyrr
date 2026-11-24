@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import type { MediaCollection, MediaDetails, MediaSummary } from "#/lib/media";
+import type { MediaCollection, MediaDetails, MediaSummary, MediaTagPage } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
 import { ownedAsins, ownedTitles } from "#/server/library";
@@ -25,6 +25,8 @@ export type MediaSource = {
   series(services: Services, id: string): Promise<ServiceResult<MediaCollection>>;
   /** An author's works (`name`: Audible searches by name). */
   author(services: Services, id: string, name: string): Promise<ServiceResult<MediaCollection>>;
+  /** A genre's or keyword's titles, most popular first (`id`: MediaTag.id). */
+  tag(services: Services, id: string, page: number): Promise<ServiceResult<MediaTagPage>>;
   /** External ids of the items a library already holds. */
   owned(db: AppDatabase, items: readonly Pick<MediaSummary, "externalId" | "title">[]): Set<string>;
 };
@@ -46,6 +48,9 @@ const audiobooks: MediaSource = {
   },
   async author(services, id, name) {
     return (await services.audible()).author(id, name);
+  },
+  async tag(services, id, page) {
+    return (await services.audible()).category(id, page);
   },
   // By ASIN in Audiobookshelf (titles there are often wrong); by title in Jellyfin (no ASIN).
   owned(db, items) {
@@ -94,6 +99,10 @@ const ebooks: MediaSource = {
   async author(services, id) {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.author(id) : fail("not_configured", "Hardcover token missing");
+  },
+  async tag(services, id, page) {
+    const hardcover = await services.hardcover();
+    return hardcover ? hardcover.tag(id, page) : fail("not_configured", "Hardcover token missing");
   },
   // By normalized title in Kavita, Komga and Jellyfin (no shared ID): "probably owned".
   owned(db, items) {

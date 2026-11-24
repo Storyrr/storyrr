@@ -8,6 +8,13 @@ import search from "./fixtures/search.json" with { type: "json" };
 
 // Fixtures are hand-written from the field lists in hardcoverapp/hardcover-docs (no recorded response yet).
 
+const tag = (name: string, count: number, spoilerRatio = 0) => ({
+  tag: name,
+  tagSlug: name.toLowerCase().replaceAll(" ", "-"),
+  count,
+  spoilerRatio,
+});
+
 describe("Hardcover client", () => {
   it("searches books with the token and normalizes hits", async () => {
     const { fetch, calls } = fakeFetch(() => json(search));
@@ -76,6 +83,44 @@ describe("Hardcover client", () => {
       language: "English",
       publisher: "Ace",
       description: "Set on the desert planet Arrakis, Dune is the story of Paul Atreides.",
+    });
+  });
+
+  it("shows a book's top genres and moods, without readers' opinions or spoilers", async () => {
+    const { fetch } = fakeFetch(() =>
+      json({
+        data: {
+          books_by_pk: {
+            id: 1,
+            title: "Dune",
+            cached_tags: {
+              Genre: [tag("Fantasy", 5), tag("Science Fiction", 9), tag("Twist", 9, 0.8)],
+              Mood: [tag("Adventurous", 3)],
+              Tag: [tag("Loveable Characters", 50)],
+            },
+          },
+        },
+      }),
+    );
+    const result = await createHardcoverClient({ token: "abc", fetch }).getById("1");
+    expect(result.ok && result.value.tags).toEqual([
+      { id: "science-fiction", name: "Science Fiction" },
+      { id: "fantasy", name: "Fantasy" },
+      { id: "adventurous", name: "Adventurous" },
+    ]);
+  });
+
+  it("pages through a tag's books, the most read first", async () => {
+    const { fetch, calls } = fakeFetch(() =>
+      json({ data: { tags: [{ tag: "Space Opera" }], books: [{ id: 7, title: "Hyperion" }] } }),
+    );
+    const result = await createHardcoverClient({ token: "abc", fetch }).tag("space-opera", 2);
+    expect(result).toMatchObject({
+      ok: true,
+      value: { name: "Space Opera", items: [{ externalId: "7", title: "Hyperion" }] },
+    });
+    expect(jsonBody(calls[0]?.init)).toMatchObject({
+      variables: { slug: "space-opera", limit: 40, offset: 40 },
     });
   });
 

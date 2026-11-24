@@ -9,6 +9,8 @@ import notFound from "./fixtures/product-not-found.json" with { type: "json" };
 import product from "./fixtures/product-B07Q44JYLF.fr.json" with { type: "json" };
 import search from "./fixtures/search-dune.fr.json" with { type: "json" };
 
+const node = (id: string, name: string) => ({ id, name });
+
 describe("Audible client", () => {
   it("searches the region's catalog and normalizes results", async () => {
     const { fetch, calls } = fakeFetch(() => json(search));
@@ -48,6 +50,40 @@ describe("Audible client", () => {
     );
     expect(result.ok && result.value.description).toMatch(/^Le livre culte/);
     expect(result.ok && result.value.description).not.toContain("<");
+  });
+
+  it("lists a title's genres once each, and browses a genre's bestsellers", async () => {
+    const { fetch, calls } = fakeFetch((url) => {
+      if (url.pathname.endsWith("/categories/3"))
+        return json({ category: node("3", "Space opera") });
+      if (url.searchParams.has("category_id"))
+        return json({ products: product.product ? [product.product] : [] });
+      return json({
+        product: {
+          ...product.product,
+          category_ladders: [
+            { ladder: [node("1", "Science fiction"), node("2", "Adventure")] },
+            { ladder: [node("1", "Science fiction"), node("3", "Space opera")] },
+          ],
+        },
+      });
+    });
+    const audible = createAudibleClient({ fetch, region: "fr" });
+
+    const details = await audible.getByAsin("B07Q44JYLF");
+    expect(details.ok && details.value.tags).toEqual([
+      node("1", "Science fiction"),
+      node("2", "Adventure"),
+      node("3", "Space opera"),
+    ]);
+    expect(calls[0]?.url.searchParams.get("response_groups")).toContain("category_ladders");
+
+    const genre = await audible.category("3", 2);
+    expect(genre).toMatchObject({
+      ok: true,
+      value: { name: "Space opera", items: [{ externalId: "B07Q44JYLF" }] },
+    });
+    expect(calls.at(-1)?.url.searchParams.get("page")).toBe("1");
   });
 
   it("reports unknown ASINs as not found", async () => {
