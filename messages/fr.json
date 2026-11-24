@@ -304,7 +304,6 @@
   "profile_tab_password": "Mot de passe",
   "profile_tab_permissions": "Permissions",
   "profile_display_name": "Nom affiché",
-  "profile_email_description": "Seul un administrateur peut le modifier pour l’instant.",
   "profile_display_language": "Langue d’affichage",
   "profile_language_default": "Par défaut (navigateur)",
   "profile_language_default_named": "Par défaut ({language})",
@@ -601,5 +600,14 @@
   "users_import_server": "Depuis",
   "users_import_done": "{count} utilisateurs importés.",
   "users_import_already": "A déjà un compte",
-  "users_import_submit": "Importer ({count})"
+  "users_import_submit": "Importer ({count})",
+  "update_title": "Storyrr a été mis à jour",
+  "update_description": "Le serveur utilise maintenant la version {version}. Rechargez pour en profiter (la page ouverte peut mal fonctionner avec).",
+  "update_later": "Plus tard",
+  "update_reload": "Recharger",
+  "account_warning_email_title": "Ajoutez votre e-mail",
+  "account_warning_email_description": "Votre compte n’a pas encore d’e-mail : les réinitialisations de mot de passe et les notifications par e-mail ne peuvent pas vous parvenir.",
+  "account_warning_email_action": "L’ajouter dans vos paramètres",
+  "profile_email_own_description": "Pour vous connecter, réinitialiser votre mot de passe et recevoir les notifications par e-mail.",
+  "profile_email_taken": "Un autre compte utilise déjà cet e-mail."
 }

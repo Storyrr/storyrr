@@ -304,7 +304,6 @@
   "profile_tab_password": "Password",
   "profile_tab_permissions": "Permissions",
   "profile_display_name": "Display name",
-  "profile_email_description": "Only an admin can change it for now.",
   "profile_display_language": "Display language",
   "profile_language_default": "Default (browser)",
   "profile_language_default_named": "Default ({language})",
@@ -601,5 +600,14 @@
   "users_import_server": "From",
   "users_import_done": "{count} users imported.",
   "users_import_already": "Already has an account",
-  "users_import_submit": "Import ({count})"
+  "users_import_submit": "Import ({count})",
+  "update_title": "Storyrr was updated",
+  "update_description": "The server now runs version {version}. Reload to use it (the page you have may not work right with it).",
+  "update_later": "Later",
+  "update_reload": "Reload",
+  "account_warning_email_title": "Add your email",
+  "account_warning_email_description": "Your account has no email yet, so password resets and email notifications can't reach you.",
+  "account_warning_email_action": "Add it in your settings",
+  "profile_email_own_description": "Used to sign in, reset your password and receive email notifications.",
+  "profile_email_taken": "Another account already uses this email."
 }

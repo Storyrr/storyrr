@@ -2,7 +2,9 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { AppSidebar } from "#/components/layout/app-sidebar";
+import { AccountWarnings } from "#/components/layout/account-warnings";
 import { MobileNav } from "#/components/layout/mobile-nav";
+import { UpdateChecker } from "#/components/layout/update-checker";
 import { TopBar } from "#/components/layout/top-bar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 import { getLocale, isLocale, setLocale } from "#/paraglide/runtime.js";
@@ -35,9 +37,11 @@ function AuthedLayout() {
         {/* SidebarInset is already the page's <main>. */}
         {/* Bottom padding on phones: room for the bottom menu. */}
         <div className="w-full min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-6">
+          <AccountWarnings user={user} />
           <Outlet />
         </div>
         <MobileNav />
+        <UpdateChecker version={version} />
       </SidebarInset>
     </SidebarProvider>
   );

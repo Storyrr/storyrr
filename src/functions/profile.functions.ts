@@ -87,23 +87,31 @@ export const getAccount = createServerFn({ method: "GET" })
     };
   });
 
-/**
- * Display name and language. Users change their own name; admins can also
- * change another account's email.
- */
+/** Display name, email and language: one's own, or (user managers) another account's. */
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(ProfileSchema)
   .handler(async ({ data, context }) => {
     const { row, self } = resolveTarget(context, data.userId, true);
-    if (self) {
+    if (data.email.toLowerCase() !== row.email.toLowerCase()) {
+      // Emails are unique: say so on the field rather than failing on the constraint.
+      const taken = db
+        .select({ id: user.id })
+        .from(user)
+        .where(sql`lower(${user.email}) = ${data.email.toLowerCase()}`)
+        .get();
+      if (taken)
+        return { ok: false as const, field: "email" as const, message: m.profile_email_taken() };
+    }
+    if (self && data.email === row.email) {
       if (data.name !== row.name)
         await auth.api.updateUser({ body: { name: data.name }, headers: getRequestHeaders() });
     } else if (data.name !== row.name || data.email !== row.email) {
-      await updateAccount(row.id, { name: data.name, email: data.email });
+      // Invite-only instance: no verification email (none may be set up); the change is direct.
+      await updateAccount(row.id, { name: data.name, email: data.email.toLowerCase() });
     }
     setUserLocale(db, row.id, data.locale === "default" ? null : data.locale);
-    return { ok: true };
+    return { ok: true as const };
   });
 
 /** Changes the caller's password and signs out their other sessions. */

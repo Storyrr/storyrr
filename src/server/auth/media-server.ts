@@ -6,6 +6,7 @@ import type {
   MediaServerSignInError,
   MediaServerSignInInput,
 } from "#/lib/media-server-login";
+import { PLACEHOLDER_EMAIL_DOMAIN } from "#/lib/emails";
 import type { AppDatabase } from "#/server/db/client";
 import { user, userPreference } from "#/server/db/schema";
 import type { Services } from "#/server/services/factory";
@@ -53,7 +54,7 @@ export function linkedUserId(db: AppDatabase, server: MediaServer, key: string):
 
 /** Placeholder email for accounts the media server has none for (better-auth requires one). */
 export const placeholderEmail = (server: MediaServer, key: string) =>
-  `${key.toLowerCase().replaceAll(/[^a-z0-9._-]/g, "-")}@${server}.storyrr.invalid`;
+  `${key.toLowerCase().replaceAll(/[^a-z0-9._-]/g, "-")}@${server}${PLACEHOLDER_EMAIL_DOMAIN}`;
 
 async function checkCredentials(
   services: Services,

@@ -156,6 +156,11 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
 - Later: health of each connection.
 
+### 4.9b Polish (decided 2026-11-24)
+
+- When the server runs another version than the open page (Storyrr was updated), a dialog offers to reload.
+- Accounts without a real email (media-server sign-in) see a notice until they add one; users can change their own email in their settings (no verification: invite-only instance).
+
 ### 4.10 Installable app (decided 2026-11-24)
 
 - Web app manifest and icons; a service worker (`public/sw.js`) for installation and Web Push, without offline caching (pages always come from the server).

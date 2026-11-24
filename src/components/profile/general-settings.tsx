@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type * as v from "valibot";
 import { useServerFn } from "@tanstack/react-start";
-import { useId } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
@@ -14,13 +13,13 @@ import {
 } from "#/components/settings/settings-section";
 import { Button } from "#/components/ui/button";
 import { FieldGroup } from "#/components/ui/field";
-import { Input } from "#/components/ui/input";
 import { Spinner } from "#/components/ui/spinner";
 import { updateProfile } from "#/functions/profile.functions";
 import { authKeys } from "#/lib/queries/auth";
 import { accountQuery, profileKeys } from "#/lib/queries/profile";
 import { userKeys } from "#/lib/queries/users";
 import { LOCALE_CHOICES, ProfileFormSchema, type LocaleChoice } from "#/lib/schemas/profile";
+import { isPlaceholderEmail } from "#/lib/emails";
 import { m } from "#/paraglide/messages.js";
 import {
   baseLocale,
@@ -56,10 +55,10 @@ export function GeneralSettings({ userId }: { userId?: string }) {
   const { data: account } = useSuspenseQuery(accountQuery(userId));
   const queryClient = useQueryClient();
   const updateFn = useServerFn(updateProfile);
-  const emailId = useId();
   const save = useMutation({
     mutationFn: (data: ProfileForm) => updateFn({ data: { ...data, userId } }),
-    onSuccess: async (_, data) => {
+    onSuccess: async (result, data) => {
+      if (!result.ok) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: authKeys.all }),
         queryClient.invalidateQueries({ queryKey: profileKeys.all }),
@@ -72,10 +71,21 @@ export function GeneralSettings({ userId }: { userId?: string }) {
   const locale: LocaleChoice =
     account.locale && isLocale(account.locale) ? account.locale : "default";
   const form = useForm({
-    defaultValues: { name: account.name, email: account.email, locale },
+    defaultValues: {
+      name: account.name,
+      // A made-up address (media-server account without one) starts blank, to be filled in.
+      email: isPlaceholderEmail(account.email) ? "" : account.email,
+      locale,
+    },
     validators: { onSubmit: ProfileFormSchema },
-    onSubmit: async ({ value }) => {
-      await save.mutateAsync(value).catch(() => undefined);
+    onSubmit: async ({ value, formApi }) => {
+      const result = await save.mutateAsync(value).catch(() => null);
+      // Server-side check (email already used): shown on its field.
+      if (result && !result.ok)
+        formApi.setFieldMeta(result.field, (meta) => ({
+          ...meta,
+          errorMap: { ...meta.errorMap, onSubmit: [{ message: result.message }] },
+        }));
     },
   });
   const browserLocale =
@@ -110,31 +120,22 @@ export function GeneralSettings({ userId }: { userId?: string }) {
               />
             )}
           </form.Field>
-          {account.self ? (
-            <SettingsRow
-              label={m.field_email()}
-              description={m.profile_email_description()}
-              htmlFor={emailId}
-            >
-              <Input id={emailId} readOnly value={account.email} />
-            </SettingsRow>
-          ) : (
-            <form.Field name="email">
-              {(field) => (
-                <TextField
-                  label={m.field_email()}
-                  layout="row"
-                  type="email"
-                  name={field.name}
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  onBlur={field.handleBlur}
-                  errors={field.state.meta.errors}
-                />
-              )}
-            </form.Field>
-          )}
+          <form.Field name="email">
+            {(field) => (
+              <TextField
+                label={m.field_email()}
+                layout="row"
+                description={account.self ? m.profile_email_own_description() : undefined}
+                type="email"
+                name={field.name}
+                autoComplete={account.self ? "email" : "off"}
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                errors={field.state.meta.errors}
+              />
+            )}
+          </form.Field>
           <form.Field name="locale">
             {(field) => (
               <SelectField
