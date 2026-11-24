@@ -90,7 +90,10 @@ export function MediaPoster({
 }) {
   const year = yearOf(item.releaseDate);
   return (
-    <article className="group relative overflow-hidden rounded-xl border bg-card shadow-sm ring-primary/70 transition duration-200 focus-within:ring-2 hover:scale-[1.03] hover:ring-2">
+    // The clip path (not only overflow-hidden) keeps the cover inside the rounded corners
+    // while the card scales: browsers drop the rounded clip of composited children (the
+    // blurred badge) during transforms. It would clip an outer ring, hence the inset one.
+    <article className="group relative overflow-hidden rounded-xl bg-card shadow-sm transition-transform duration-200 [clip-path:inset(0_round_var(--radius-xl))] hover:scale-[1.03] focus-within:scale-[1.03]">
       <Cover src={item.coverUrl} type={type} className="rounded-none" />
       <Link
         to="/media/$type/$id"
@@ -125,6 +128,10 @@ export function MediaPoster({
       <span className="pointer-events-none absolute top-2 right-2">
         <StatusIcon availability={availability} refused={refused} />
       </span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[inherit] inset-ring inset-ring-border transition-shadow duration-200 group-focus-within:inset-ring-2 group-focus-within:inset-ring-primary group-hover:inset-ring-2 group-hover:inset-ring-primary"
+      />
     </article>
   );
 }
