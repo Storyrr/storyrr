@@ -18,6 +18,7 @@ import { Route as AuthedBlocklistRouteImport } from './routes/_authed/blocklist'
 import { Route as AuthedBooksRouteImport } from './routes/_authed/books'
 import { Route as AuthedRequestsRouteImport } from './routes/_authed/requests'
 import { Route as AuthedSearchRouteImport } from './routes/_authed/search'
+import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedWelcomeRouteImport } from './routes/_authed/welcome'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/index'
@@ -71,6 +72,11 @@ const AuthedSearchRoute = AuthedSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedUsersRoute = AuthedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedWelcomeRoute = AuthedWelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/books': typeof AuthedBooksRoute
   '/requests': typeof AuthedRequestsRoute
   '/search': typeof AuthedSearchRoute
+  '/users': typeof AuthedUsersRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/books': typeof AuthedBooksRoute
   '/requests': typeof AuthedRequestsRoute
   '/search': typeof AuthedSearchRoute
+  '/users': typeof AuthedUsersRoute
   '/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/': typeof AuthedIndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_authed/books': typeof AuthedBooksRoute
   '/_authed/requests': typeof AuthedRequestsRoute
   '/_authed/search': typeof AuthedSearchRoute
+  '/_authed/users': typeof AuthedUsersRoute
   '/_authed/welcome': typeof AuthedWelcomeRoute
   '/api/health': typeof ApiHealthRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/books'
     | '/requests'
     | '/search'
+    | '/users'
     | '/welcome'
     | '/api/health'
     | '/issues/$id'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/books'
     | '/requests'
     | '/search'
+    | '/users'
     | '/welcome'
     | '/api/health'
     | '/'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authed/books'
     | '/_authed/requests'
     | '/_authed/search'
+    | '/_authed/users'
     | '/_authed/welcome'
     | '/api/health'
     | '/_authed/'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSearchRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/users': {
+      id: '/_authed/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthedUsersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/welcome': {
       id: '/_authed/welcome'
       path: '/welcome'
@@ -365,6 +384,7 @@ interface AuthedRouteChildren {
   AuthedBooksRoute: typeof AuthedBooksRoute
   AuthedRequestsRoute: typeof AuthedRequestsRoute
   AuthedSearchRoute: typeof AuthedSearchRoute
+  AuthedUsersRoute: typeof AuthedUsersRoute
   AuthedWelcomeRoute: typeof AuthedWelcomeRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedIssuesIdRoute: typeof AuthedIssuesIdRoute
@@ -379,6 +399,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedBooksRoute: AuthedBooksRoute,
   AuthedRequestsRoute: AuthedRequestsRoute,
   AuthedSearchRoute: AuthedSearchRoute,
+  AuthedUsersRoute: AuthedUsersRoute,
   AuthedWelcomeRoute: AuthedWelcomeRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedIssuesIdRoute: AuthedIssuesIdRoute,
