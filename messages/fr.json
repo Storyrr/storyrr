@@ -645,6 +645,7 @@
   "browse_hide_owned": "Masquer ce qui est dans la bibliothèque ou demandé",
   "browse_accepted_only": "Seulement les langues acceptées par Chaptarr",
   "browse_load_more": "Charger plus",
+  "browse_loading_more": "Chargement de la suite…",
   "media_tags": "Genres et mots-clés",
   "tag_page_title": "Genre",
   "tag_page_audiobooks": "Livres audio de ce genre",

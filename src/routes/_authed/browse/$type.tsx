@@ -4,10 +4,9 @@ import * as v from "valibot";
 
 import { SwitchField } from "#/components/form/switch-field";
 import { FormError } from "#/components/form/form-error";
+import { InfiniteScrollTrigger } from "#/components/media/infinite-scroll-trigger";
 import { MediaCard } from "#/components/media/media-card";
-import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
-import { Spinner } from "#/components/ui/spinner";
 import { isSearchableType, type SearchableType } from "#/lib/media-types";
 import { trendingPagesQuery } from "#/lib/queries/media";
 import { serviceErrorMessage } from "#/lib/service-errors";
@@ -83,17 +82,11 @@ function BrowseList({ type }: { type: SearchableType }) {
           </li>
         ))}
       </ul>
-      {pages.hasNextPage ? (
-        <Button
-          variant="outline"
-          className="self-center"
-          isDisabled={pages.isFetchingNextPage}
-          onPress={() => void pages.fetchNextPage()}
-        >
-          {pages.isFetchingNextPage ? <Spinner data-icon="inline-start" /> : null}
-          {m.browse_load_more()}
-        </Button>
-      ) : null}
+      <InfiniteScrollTrigger
+        hasNextPage={pages.hasNextPage}
+        isFetchingNextPage={pages.isFetchingNextPage}
+        fetchNextPage={pages.fetchNextPage}
+      />
     </div>
   );
 }

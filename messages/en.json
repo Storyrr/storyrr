@@ -645,6 +645,7 @@
   "browse_hide_owned": "Hide what's in the library or requested",
   "browse_accepted_only": "Only languages Chaptarr accepts",
   "browse_load_more": "Load more",
+  "browse_loading_more": "Loading more…",
   "media_tags": "Genres and keywords",
   "tag_page_title": "Genre",
   "tag_page_audiobooks": "Audiobooks in this genre",
