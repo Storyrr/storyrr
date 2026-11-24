@@ -371,5 +371,7 @@
   "metadata_failing": "En échec",
   "metadata_selection_title": "Paramètres des fournisseurs",
   "secret_show": "Afficher",
-  "secret_hide": "Masquer"
+  "secret_hide": "Masquer",
+  "meta_description": "Demandez des livres audio et des eBooks, et suivez-les jusqu’à leur arrivée dans votre bibliothèque.",
+  "meta_image_alt": "Le logo de Storyrr : demandez des livres audio et des eBooks pour votre bibliothèque."
 }

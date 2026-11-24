@@ -371,5 +371,7 @@
   "metadata_failing": "Failing",
   "metadata_selection_title": "Provider settings",
   "secret_show": "Show",
-  "secret_hide": "Hide"
+  "secret_hide": "Hide",
+  "meta_description": "Request audiobooks and eBooks, and follow them until they're in your library.",
+  "meta_image_alt": "The Storyrr logo: request audiobooks and eBooks for your library."
 }

@@ -163,6 +163,7 @@ See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 - Secrets encrypted at rest, redacted in logs and API responses.
 - Responsive: usable on a phone (search + request + approve).
 - i18n: English source, French translation as soon as the UI stabilizes; locale per user, fallback to the browser's.
+- Link previews and search engines (decided 2026-11-24): Open Graph / Twitter card tags with a 1200×630 card per locale (`public/og-image.<locale>.png`, absolute URLs from `BETTER_AUTH_URL`) and a translated description; `robots: noindex, nofollow`, since an instance is private and invite-only. Pages behind sign-in have no per-title previews (bots can't sign in, and titles would leak).
 - Observability: structured logs, `/api/health` with per-service status, job run history in Settings.
 
 ## 8. Milestones

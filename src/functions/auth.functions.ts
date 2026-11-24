@@ -8,6 +8,7 @@ import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
 import { isAutoApproved } from "#/server/requests/queries";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
+import { getEnv } from "#/server/env";
 import { APP_VERSION } from "#/server/version";
 
 export type SessionUser = {
@@ -40,7 +41,8 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
         locale: userLocale(db, session.user.id),
       }
     : null;
-  return { setupComplete, user, version: APP_VERSION };
+  // The public URL is no secret: link previews need absolute URLs (og:image, og:url).
+  return { setupComplete, user, version: APP_VERSION, appUrl: getEnv().BETTER_AUTH_URL };
 });
 
 /**
