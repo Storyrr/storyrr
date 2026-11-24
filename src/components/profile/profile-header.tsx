@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { Badge } from "#/components/ui/badge";
 import { buttonVariants } from "#/components/ui/button";
+import { roleLabel } from "#/components/users/role-labels";
 import { formatDate } from "#/lib/format";
 import { m } from "#/paraglide/messages.js";
 
@@ -11,7 +12,13 @@ export function ProfileHeader({
   account: user,
   link,
 }: {
-  account: { name: string; email: string; isAdmin: boolean; createdAt: Date | string };
+  account: {
+    name: string;
+    email: string;
+    isAdmin: boolean;
+    isOwner: boolean;
+    createdAt: Date | string;
+  };
   link?: { to: "/profile" | "/profile/settings"; label: string; icon: React.ReactNode };
 }) {
   const { createdAt } = user;
@@ -22,9 +29,7 @@ export function ProfileHeader({
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="truncate text-3xl font-semibold text-primary">{user.name}</h1>
           <span className="truncate text-muted-foreground">({user.email})</span>
-          <Badge variant={user.isAdmin ? "default" : "secondary"}>
-            {user.isAdmin ? m.role_admin() : m.role_user()}
-          </Badge>
+          <Badge variant={user.isAdmin ? "default" : "secondary"}>{roleLabel(user)}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           {m.profile_member_since({ date: formatDate(new Date(createdAt), { dateStyle: "long" }) })}

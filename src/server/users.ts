@@ -3,9 +3,11 @@ import { asc, eq, sql } from "drizzle-orm";
 
 import type { AppDatabase } from "#/server/db/client";
 import { request, user, userPreference } from "#/server/db/schema";
+import { ownerId } from "#/server/owner";
 
 /** Every account with its role, ban, own permissions and limits, and number of requests. */
 export function listUsers(db: AppDatabase) {
+  const owner = ownerId(db);
   return db
     .select({
       id: user.id,
@@ -23,5 +25,6 @@ export function listUsers(db: AppDatabase) {
     .from(user)
     .leftJoin(userPreference, eq(userPreference.userId, user.id))
     .orderBy(asc(user.createdAt))
-    .all();
+    .all()
+    .map((row) => ({ ...row, owner: row.id === owner }));
 }

@@ -97,6 +97,7 @@ src/
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
 │   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults); list and implications in src/lib/permissions.ts
+│   ├── owner.ts            # the Owner: the oldest admin (the setup account), changed by nobody else; no stored flag
 │   ├── network.ts          # outbound proxy (undici global dispatcher) and the cover image cache (/api/images)
 │   ├── logs.ts             # in-memory copy of the server's console output (Settings → Jobs & logs)
 │   ├── notifications/      # notification agents (email via nodemailer, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook), started by src/server.ts

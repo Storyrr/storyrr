@@ -21,6 +21,7 @@ import { linkAccount, linkedUserId, placeholderEmail } from "#/server/auth/media
 import { services } from "#/server/services";
 import { fail, ok } from "#/server/services/result";
 import { db } from "#/server/db";
+import { ownerId } from "#/server/owner";
 import { user } from "#/server/db/schema";
 import { setUserPermissions } from "#/server/permissions";
 import { setUserRequestLimits } from "#/server/requests/quota";
@@ -44,6 +45,10 @@ function assertCanManage(caller: Caller, userId: string) {
   if (!target) {
     setResponseStatus(404);
     throw new Error(m.users_not_found());
+  }
+  if (userId === ownerId(db)) {
+    setResponseStatus(403);
+    throw new Error(m.users_owner_protected());
   }
   if (target.role === "admin" && !caller.permissions.includes("admin")) {
     setResponseStatus(403);

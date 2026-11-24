@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
+import { ReadOnlyNotice } from "#/components/profile/read-only-notice";
 import { SettingsActions, SettingsSection } from "#/components/settings/settings-section";
 import { Button } from "#/components/ui/button";
 import { FieldGroup } from "#/components/ui/field";
@@ -21,7 +22,9 @@ import { m } from "#/paraglide/messages.js";
 /** Password tab: change one's own (current password needed), or set another user's (admins). */
 export function PasswordSettings({ userId }: { userId?: string }) {
   const { data: account } = useSuspenseQuery(accountQuery(userId));
-  return account.self ? <ChangeOwnPassword /> : <SetPasswordForm userId={account.id} />;
+  if (account.self) return <ChangeOwnPassword />;
+  if (!account.editable) return <ReadOnlyNotice account={account} />;
+  return <SetPasswordForm userId={account.id} />;
 }
 
 function ChangeOwnPassword() {

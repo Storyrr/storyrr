@@ -28,6 +28,7 @@ import { userKeys } from "#/lib/queries/users";
 import type { AssignablePermission, Permission } from "#/lib/permissions";
 import type { RequestQuota } from "#/lib/requests";
 import type { RequestLimits } from "#/lib/schemas/settings";
+import { ReadOnlyNotice } from "#/components/profile/read-only-notice";
 import { can } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 
@@ -43,9 +44,11 @@ function quotaText(quota: RequestQuota) {
 export function PermissionSettings({ userId }: { userId?: string }) {
   const { user } = useRouteContext({ from: "/_authed" });
   const { data: account } = useSuspenseQuery(accountQuery(userId));
-  if (can(user, "manage_users") && !account.self) return <EditPermissions userId={account.id} />;
+  if (can(user, "manage_users") && account.editable && !account.self)
+    return <EditPermissions userId={account.id} />;
   return (
     <div className="flex flex-col gap-12">
+      {account.self || !can(user, "manage_users") ? null : <ReadOnlyNotice account={account} />}
       <SettingsSection
         title={m.profile_permissions_title()}
         description={m.profile_permissions_description()}

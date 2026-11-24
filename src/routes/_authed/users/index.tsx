@@ -15,6 +15,7 @@ import { FormError } from "#/components/form/form-error";
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { CreateUserDialog } from "#/components/users/create-user-dialog";
 import { ImportUsersDialog } from "#/components/users/import-users-dialog";
+import { roleLabel } from "#/components/users/role-labels";
 import { Badge } from "#/components/ui/badge";
 import { Button, buttonVariants } from "#/components/ui/button";
 import {
@@ -68,6 +69,9 @@ type SortColumn = "name" | "requests" | "role" | "createdAt";
 const isSortColumn = (key: unknown): key is SortColumn =>
   key === "name" || key === "requests" || key === "role" || key === "createdAt";
 
+/** Owner, then administrators, then users. */
+const roleRank = (account: Account) => (account.owner ? 0 : account.role === "admin" ? 1 : 2);
+
 function compare(a: Account, b: Account, column: SortColumn): number {
   switch (column) {
     case "name":
@@ -75,7 +79,7 @@ function compare(a: Account, b: Account, column: SortColumn): number {
     case "requests":
       return a.requests - b.requests;
     case "role":
-      return (a.role === "admin" ? 0 : 1) - (b.role === "admin" ? 0 : 1);
+      return roleRank(a) - roleRank(b);
     default:
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }
@@ -204,7 +208,9 @@ function UsersPage() {
                       account.requests
                     )}
                   </TableCell>
-                  <TableCell>{account.role === "admin" ? m.role_admin() : m.role_user()}</TableCell>
+                  <TableCell>
+                    {roleLabel({ isAdmin: account.role === "admin", isOwner: account.owner })}
+                  </TableCell>
                   <TableCell>{formatDate(new Date(account.createdAt))}</TableCell>
                   <TableCell className="px-4">
                     <div className="flex justify-end gap-2">
@@ -226,7 +232,11 @@ function UsersPage() {
                           {m.action_edit()}
                         </Link>
                       )}
-                      <DeleteUserButton id={account.id} name={account.name} disabled={isMe} />
+                      <DeleteUserButton
+                        id={account.id}
+                        name={account.name}
+                        disabled={isMe || account.owner}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

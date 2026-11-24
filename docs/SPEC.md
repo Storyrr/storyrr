@@ -30,7 +30,7 @@ One place where invited users **search and request audiobooks and eBooks (books,
 | **Admin** | everything a user can + approve/deny requests, choose target folder and quality profile, manage users, manage settings |
 | **User**  | search, request, see own requests and their status                                                                     |
 
-Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everything), each user has a list of permissions: Manage users, Manage settings, Manage requests (implies Advanced requests, View requests and auto-approval), Advanced requests (pick folder and profile), View requests, Request audiobooks / eBooks, Auto-approve audiobooks / eBooks, Manage issues (implies Report issues), Report issues, Manage blocklist. Users without their own list get the defaults from Settings → Users (request both formats, report issues). User managers who aren't admins can't change admins' accounts or grant the Admin role. Accounts are **invite-only**: no public sign-up.
+Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everything), each user has a list of permissions: Manage users, Manage settings, Manage requests (implies Advanced requests, View requests and auto-approval), Advanced requests (pick folder and profile), View requests, Request audiobooks / eBooks, Auto-approve audiobooks / eBooks, Manage issues (implies Report issues), Report issues, Manage blocklist. Users without their own list get the defaults from Settings → Users (request both formats, report issues). User managers who aren't admins can't change admins' accounts or grant the Admin role. The **Owner** (decided 2026-11-24, like Seerr's first user) is the account the setup wizard created (on older installs: the oldest admin): an admin that only they can change. Nobody else edits their name, email, language, password or permissions, bans, demotes or deletes them; the Users table and their profile show the role as Owner. Accounts are **invite-only**: no public sign-up.
 
 ## 4. Core flows
 
@@ -38,7 +38,7 @@ Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everyt
 
 Shown when the database has no user.
 
-1. Create the admin account (name, email, password).
+1. Create the admin account (name, email, password): it becomes the **Owner**.
 2. Connect services, each with a **Test** button and a clear error on failure:
    - Chaptarr: URL + API key (required for audiobooks and eBooks).
    - Audiobookshelf: URL + API key (audiobook availability).
@@ -119,7 +119,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 
 - List, create/invite (email + temporary password; invite links later), set role, toggle auto-approve, disable/remove.
 - Per-user request limits overriding the global ones (decided 2026-11-24).
-- Seerr-like table (decided 2026-11-24): user (avatar, name, email), requests, role, joined; search, sortable columns, pages. **Edit** opens that user's settings (the same General / Password / Permissions tabs as one's own): admins change their name, email and language, set a new password, and edit role, auto-approval, ban and request limits there. Admins can't demote, ban or delete themselves.
+- Seerr-like table (decided 2026-11-24): user (avatar, name, email), requests, role, joined; search, sortable columns, pages. **Edit** opens that user's settings (the same General / Password / Permissions tabs as one's own): admins change their name, email and language, set a new password, and edit role, auto-approval, ban and request limits there. Admins can't demote, ban or delete themselves. The Owner's settings are read-only for everyone else, with a notice saying why, and their Delete button is disabled.
 - Optional link to an Audiobookshelf user (future: "already listened").
 
 ### 4.8b Account menu and profile (decided 2026-11-24)

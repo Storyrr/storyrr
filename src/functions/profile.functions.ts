@@ -16,6 +16,7 @@ import { auth } from "#/server/auth";
 import { setAccountPassword, updateAccount } from "#/server/auth/accounts";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
+import { ownerId } from "#/server/owner";
 import { request, user, userPreference } from "#/server/db/schema";
 import { setUserLocale } from "#/server/profile";
 import { permissionsOf } from "#/server/permissions";
@@ -41,11 +42,14 @@ function resolveTarget(caller: Caller, userId: string | undefined, write = false
     setResponseStatus(404);
     throw new Error(m.users_not_found());
   }
-  if (write && !self && row.role === "admin" && !hasPermission(caller.permissions, "admin")) {
+  const owner = row.id === ownerId(db);
+  const editable =
+    self || (!owner && (row.role !== "admin" || hasPermission(caller.permissions, "admin")));
+  if (write && !editable) {
     setResponseStatus(403);
-    throw new Error(m.users_admin_only());
+    throw new Error(owner ? m.users_owner_protected() : m.users_admin_only());
   }
-  return { row, self };
+  return { row, self, owner, editable };
 }
 
 /** An account's details, request counts, permissions and limits (own, or any for admins). */
@@ -53,7 +57,7 @@ export const getAccount = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(AccountTargetSchema)
   .handler(async ({ data, context }) => {
-    const { row, self } = resolveTarget(context, data.userId);
+    const { row, self, owner, editable } = resolveTarget(context, data.userId);
     const isAdmin = row.role === "admin";
     const permissions = await permissionsOf({ db, settings }, row);
     const pref = db.select().from(userPreference).where(eq(userPreference.userId, row.id)).get();
@@ -74,6 +78,10 @@ export const getAccount = createServerFn({ method: "GET" })
       email: row.email,
       createdAt: row.createdAt,
       isAdmin,
+      /** The Owner of Storyrr (only they change their account). */
+      isOwner: owner,
+      /** Whether the caller may change this account. */
+      editable,
       banned: row.banned ?? false,
       locale: pref?.locale ?? null,
       /** Effective permissions (with the defaults and what they imply). */

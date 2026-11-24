@@ -20,6 +20,8 @@ import { accountQuery, profileKeys } from "#/lib/queries/profile";
 import { userKeys } from "#/lib/queries/users";
 import { LOCALE_CHOICES, ProfileFormSchema, type LocaleChoice } from "#/lib/schemas/profile";
 import { isPlaceholderEmail } from "#/lib/emails";
+import { ReadOnlyNotice } from "#/components/profile/read-only-notice";
+import { roleLabel } from "#/components/users/role-labels";
 import { m } from "#/paraglide/messages.js";
 import {
   baseLocale,
@@ -102,9 +104,10 @@ export function GeneralSettings({ userId }: { userId?: string }) {
         className="flex flex-col gap-6"
       >
         <FieldGroup>
+          {account.editable ? null : <ReadOnlyNotice account={account} />}
           <FormError message={save.error ? save.error.message || m.error_generic() : null} />
           <SettingsRow label={m.field_role()}>
-            <p className="text-sm">{account.isAdmin ? m.role_admin() : m.role_user()}</p>
+            <p className="text-sm">{roleLabel(account)}</p>
           </SettingsRow>
           <form.Field name="name">
             {(field) => (
@@ -113,6 +116,7 @@ export function GeneralSettings({ userId }: { userId?: string }) {
                 layout="row"
                 name={field.name}
                 autoComplete="name"
+                disabled={!account.editable}
                 value={field.state.value}
                 onChange={field.handleChange}
                 onBlur={field.handleBlur}
@@ -129,6 +133,7 @@ export function GeneralSettings({ userId }: { userId?: string }) {
                 type="email"
                 name={field.name}
                 autoComplete={account.self ? "email" : "off"}
+                disabled={!account.editable}
                 value={field.state.value}
                 onChange={field.handleChange}
                 onBlur={field.handleBlur}
@@ -153,6 +158,7 @@ export function GeneralSettings({ userId }: { userId?: string }) {
                       : languageLabels[choice](),
                 }))}
                 value={field.state.value}
+                disabled={!account.editable}
                 onChange={(value) => {
                   if (isChoice(value)) field.handleChange(value);
                 }}
@@ -161,16 +167,18 @@ export function GeneralSettings({ userId }: { userId?: string }) {
             )}
           </form.Field>
         </FieldGroup>
-        <SettingsActions>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" isDisabled={isSubmitting}>
-                {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-                {save.isSuccess ? m.action_saved() : m.action_save()}
-              </Button>
-            )}
-          </form.Subscribe>
-        </SettingsActions>
+        {account.editable ? (
+          <SettingsActions>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <Button type="submit" isDisabled={isSubmitting}>
+                  {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+                  {save.isSuccess ? m.action_saved() : m.action_save()}
+                </Button>
+              )}
+            </form.Subscribe>
+          </SettingsActions>
+        ) : null}
       </form>
     </SettingsSection>
   );
