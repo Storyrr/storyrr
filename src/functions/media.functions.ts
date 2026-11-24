@@ -4,7 +4,8 @@ import * as v from "valibot";
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
 import { DEFAULT_DISCOVER_LAYOUT, DiscoverLayoutSchema } from "#/lib/discover";
 import { hasPermission } from "#/lib/permissions";
-import type { MediaSummary } from "#/lib/media";
+import { AudiobookFiltersSchema, BookFiltersSchema } from "#/lib/explore";
+import type { MediaSummary, MediaTag } from "#/lib/media";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
 import { availabilityFromRequest, type MediaAvailability } from "#/lib/request-status";
 import type { RequestStatus } from "#/lib/requests";
@@ -16,6 +17,7 @@ import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { clearTitleData, markAvailable, titleAdminInfo } from "#/server/requests/manage";
 import { activeRequestsByExternalId, upsertMedia } from "#/server/requests/queries";
 import { services } from "#/server/services";
+import { fail, ok, type ServiceResult } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import { discoverLayout } from "#/server/settings/definitions";
 import { mediaSources } from "#/server/sources";
@@ -195,6 +197,60 @@ export const getSeries = createServerFn({ method: "GET" })
       description,
       imageUrl,
     };
+  });
+
+/** The Books / Audiobooks page: the catalog sorted and filtered, each title with its status. */
+export const exploreMedia = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(
+    v.variant("type", [
+      v.object({
+        type: v.literal("audiobook"),
+        filters: AudiobookFiltersSchema,
+        page: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(50)),
+      }),
+      v.object({
+        type: v.literal("ebook"),
+        filters: BookFiltersSchema,
+        page: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(50)),
+      }),
+    ]),
+  )
+  .handler(async ({ data }) => {
+    let result: ServiceResult<MediaSummary[]>;
+    if (data.type === "audiobook") {
+      result = await (await services.audible()).discover(data.filters, data.page);
+    } else {
+      const hardcover = await services.hardcover();
+      result = hardcover
+        ? await hardcover.discover(data.filters, data.page)
+        : fail("not_configured", "Hardcover token missing");
+    }
+    if (!result.ok) return { ok: false as const, error: result.error };
+    // The chosen sort is the order: no regrouping by language acceptance.
+    return annotate(data.type, result.value, false);
+  });
+
+const GENRES_TTL_MS = 24 * 60 * 60_000;
+const genresCache = new Map<SearchableType, { at: number; genres: MediaTag[] }>();
+
+/** The genres the Books / Audiobooks genre filter offers, shared between users for a day. */
+export const getGenreOptions = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(v.object({ type: v.picklist(SEARCHABLE_TYPES) }))
+  .handler(async ({ data }) => {
+    const cached = genresCache.get(data.type);
+    if (cached && Date.now() - cached.at < GENRES_TTL_MS) return cached.genres;
+    let result: ServiceResult<MediaTag[]>;
+    if (data.type === "audiobook") result = await (await services.audible()).genres();
+    else {
+      const hardcover = await services.hardcover();
+      result = hardcover ? await hardcover.genres() : ok([]);
+    }
+    // No genres is not an error worth a message: the filter just stays empty.
+    if (!result.ok) return [];
+    genresCache.set(data.type, { at: Date.now(), genres: result.value });
+    return result.value;
   });
 
 /** A genre's or keyword's page: its titles, most popular first, each with its status. Signed-in users. */

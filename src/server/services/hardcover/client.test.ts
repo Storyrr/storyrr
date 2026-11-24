@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeFetch, json, jsonBody } from "#/server/services/test-utils";
 
-import { createHardcoverClient } from "./client";
+import { createHardcoverClient, exploreQuery } from "./client";
 import book from "./fixtures/book.json" with { type: "json" };
 import search from "./fixtures/search.json" with { type: "json" };
 
@@ -170,5 +170,43 @@ describe("Hardcover trending", () => {
       ["2", "Two", []],
       ["1", "One", ["fra"]],
     ]);
+  });
+});
+
+describe("Hardcover explore query", () => {
+  const today = new Date("2026-11-24T12:00:00Z");
+
+  it("keeps main books, most read first, with no filter", () => {
+    expect(exploreQuery({}, today)).toEqual({
+      where: { _and: [{ canonical_id: { _is_null: true } }] },
+      order: [{ users_count: "desc" }],
+    });
+  });
+
+  it("turns filters into conditions and skips placeholder records in other sorts", () => {
+    const { where, order } = exploreQuery(
+      {
+        sort: "newest",
+        genres: ["fantasy"],
+        yearFrom: 2000,
+        pagesMax: 400,
+        ratingMin: 4,
+        language: "fr",
+      },
+      today,
+    );
+    expect(where).toEqual({
+      _and: [
+        { canonical_id: { _is_null: true } },
+        { users_count: { _gte: 5 } },
+        { release_date: { _lte: "2026-11-24" } },
+        { _or: [{ cached_tags: { _contains: { Genre: [{ tagSlug: "fantasy" }] } } }] },
+        { release_year: { _gte: 2000 } },
+        { pages: { _lte: 400 } },
+        { rating: { _gte: 4 } },
+        { editions: { language: { code2: { _eq: "fr" } } } },
+      ],
+    });
+    expect(order).toEqual([{ release_date: "desc_nulls_last" }]);
   });
 });

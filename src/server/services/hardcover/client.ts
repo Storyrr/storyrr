@@ -10,6 +10,7 @@ import type {
 } from "#/lib/media";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
+import { EXPLORE_PAGE_SIZE, type BookFilters, type BookSort } from "#/lib/explore";
 import { canonicalLanguage } from "#/lib/languages";
 import { htmlToText } from "#/server/services/text";
 
@@ -229,6 +230,72 @@ const TAG_QUERY = `query StoryrrTag($slug: String!, $limit: Int!, $offset: Int!)
 }`;
 const TAG_PAGE = 40;
 
+/** The catalog filtered and sorted (Books page); `where` and `order_by` built by `exploreQuery`. */
+const EXPLORE_QUERY = `query StoryrrExplore($where: books_bool_exp!, $order: [books_order_by!], $limit: Int!, $offset: Int!) {
+  books(where: $where, order_by: $order, limit: $limit, offset: $offset) { ${BOOK_CARD} }
+}`;
+
+const GENRES_QUERY = `query StoryrrGenres {
+  tags(where: {tag_category: {slug: {_eq: "genre"}}}, order_by: {count: desc}, limit: 80) { tag slug }
+}`;
+const GenresDataSchema = v.object({
+  tags: v.array(v.looseObject({ tag: v.string(), slug: v.string() })),
+});
+
+/**
+ * Readers needed for a book to show in a non-popularity sort: without a floor,
+ * newest / oldest / title sorts surface placeholder records (blank titles,
+ * year 202309), checked live on 2026-11-24. Best rated needs ratings instead.
+ */
+const MIN_READERS: Record<BookSort, number> = {
+  popular: 0,
+  rating: 0,
+  newest: 5,
+  oldest: 5,
+  title_asc: 5,
+  title_desc: 5,
+};
+/** Ratings needed to rank by rating (else unreleased books with a few 5-star ratings lead). */
+const MIN_RATINGS = 50;
+
+/** Hasura `where` and `order_by` of the Books page (main books only). */
+export function exploreQuery(filters: BookFilters, today = new Date()) {
+  const sort = filters.sort ?? "popular";
+  const and: Record<string, unknown>[] = [{ canonical_id: { _is_null: true } }];
+  if (MIN_READERS[sort] > 0) and.push({ users_count: { _gte: MIN_READERS[sort] } });
+  if (sort.startsWith("title")) and.push({ title: { _neq: "" } });
+  const released = { release_date: { _lte: today.toISOString().slice(0, 10) } };
+  if (sort === "newest") and.push(released);
+  if (sort === "rating") and.push({ ratings_count: { _gte: MIN_RATINGS } }, released);
+  // Placeholder dates (year 1) come first otherwise.
+  if (sort === "oldest") and.push({ release_year: { _gte: 1000 } });
+  // Any of the genres, by the book's own most-used genre tags (cached_tags): faster and
+  // more relevant than any reader's tagging, checked live on 2026-11-24.
+  if (filters.genres?.length)
+    and.push({
+      _or: filters.genres.map((slug) => ({
+        cached_tags: { _contains: { Genre: [{ tagSlug: slug }] } },
+      })),
+    });
+  if (filters.yearFrom !== undefined) and.push({ release_year: { _gte: filters.yearFrom } });
+  if (filters.yearTo !== undefined) and.push({ release_year: { _lte: filters.yearTo } });
+  if (filters.pagesMin !== undefined) and.push({ pages: { _gte: filters.pagesMin } });
+  if (filters.pagesMax !== undefined) and.push({ pages: { _lte: filters.pagesMax } });
+  if (filters.ratingMin !== undefined) and.push({ rating: { _gte: filters.ratingMin } });
+  if (filters.language) and.push({ editions: { language: { code2: { _eq: filters.language } } } });
+  const order: Record<BookSort, Record<string, string>[]> = {
+    popular: [{ users_count: "desc" }],
+    rating: [{ rating: "desc_nulls_last" }, { users_count: "desc" }],
+    newest: [{ release_date: "desc_nulls_last" }],
+    oldest: [{ release_date: "asc_nulls_last" }],
+    title_asc: [{ title: "asc" }],
+    title_desc: [{ title: "desc" }],
+  };
+  return { where: { _and: and }, order: order[sort] };
+}
+
+const ExploreDataSchema = v.object({ books: v.array(BookSchema) });
+
 const TrendingDataSchema = v.object({
   books_trending: v.looseObject({
     ids: v.optional(v.nullable(v.array(v.number())), []),
@@ -367,6 +434,31 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
           return [summary];
         }),
       });
+    },
+
+    /** The catalog filtered and sorted (Books page), page by page. */
+    async discover(filters: BookFilters, page = 1): Promise<ServiceResult<MediaSummary[]>> {
+      const { where, order } = exploreQuery(filters);
+      const result = await graphql(
+        EXPLORE_QUERY,
+        { where, order, limit: EXPLORE_PAGE_SIZE, offset: (page - 1) * EXPLORE_PAGE_SIZE },
+        ExploreDataSchema,
+      );
+      if (!result.ok) return result;
+      return ok(
+        result.value.books.flatMap((book) => {
+          if (!book.title) return [];
+          const { description: _description, ...summary } = toDetails(book);
+          return [summary];
+        }),
+      );
+    },
+
+    /** The most used genres, for the Books page's genre filter. */
+    async genres(): Promise<ServiceResult<MediaTag[]>> {
+      const result = await graphql(GENRES_QUERY, {}, GenresDataSchema);
+      if (!result.ok) return result;
+      return ok(result.value.tags.map((tag) => ({ id: tag.slug, name: tag.tag })));
     },
 
     /** A genre's or mood's books, the most read first, page by page. */

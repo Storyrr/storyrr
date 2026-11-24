@@ -1,32 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
-import * as v from "valibot";
 
-import { TrendingRow } from "#/components/media/trending-row";
-import { TypeSearch } from "#/components/media/type-search";
+import { ExplorePage } from "#/components/media/explore-page";
+import { BookFiltersSchema, readFilters, type BookFilters } from "#/lib/explore";
 import { m } from "#/paraglide/messages.js";
 
+/** Seerr's Movies / Series page for this format: the catalog with a sort and filters. */
 export const Route = createFileRoute("/_authed/books")({
-  validateSearch: v.object({ q: v.optional(v.string()) }),
+  // No defaults: the router would rewrite the URL with them on every visit.
+  validateSearch: (search: Record<string, unknown>) => readFilters(BookFiltersSchema, search),
   head: () => ({ meta: [{ title: `${m.nav_books()} · ${m.app_name()}` }] }),
   component: Page,
 });
 
 function Page() {
-  const { q = "" } = Route.useSearch();
+  const filters = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const setQuery = useCallback(
-    (query: string) => void navigate({ search: { q: query || undefined }, replace: true }),
+  const onChange = useCallback(
+    (next: BookFilters) => void navigate({ search: next, replace: true }),
     [navigate],
   );
-  return (
-    <TypeSearch
-      type="ebook"
-      title={m.nav_books()}
-      placeholder={m.search_placeholder_books()}
-      query={q}
-      onQueryChange={setQuery}
-      browse={<TrendingRow type="ebook" />}
-    />
-  );
+  return <ExplorePage type="ebook" title={m.nav_books()} filters={filters} onChange={onChange} />;
 }

@@ -6,10 +6,13 @@ import {
   getMedia,
   getSeries,
   getTitleAdmin,
+  exploreMedia,
+  getGenreOptions,
   getTagged,
   getTrending,
   searchMedia,
 } from "#/functions/media.functions";
+import type { AudiobookFilters, BookFilters } from "#/lib/explore";
 import type { SearchableType } from "#/lib/media-types";
 
 export const mediaKeys = {
@@ -87,6 +90,26 @@ export const taggedPagesQuery = (type: SearchableType, id: string) =>
     getNextPageParam: (last, _all, page) =>
       last.ok && last.results.length > 0 && page < 25 ? page + 1 : undefined,
     staleTime: 10 * 60_000,
+  });
+
+/** The Books / Audiobooks page with its filters, page by page. */
+export const exploreQuery = (
+  input: { type: "audiobook"; filters: AudiobookFilters } | { type: "ebook"; filters: BookFilters },
+) =>
+  infiniteQueryOptions({
+    queryKey: [...mediaKeys.all, "explore", input.type, input.filters] as const,
+    queryFn: ({ pageParam }) => exploreMedia({ data: { ...input, page: pageParam } }),
+    initialPageParam: 1,
+    getNextPageParam: (last, _all, page) =>
+      last.ok && last.results.length > 0 && page < 50 ? page + 1 : undefined,
+    staleTime: 10 * 60_000,
+  });
+
+export const genreOptionsQuery = (type: SearchableType) =>
+  queryOptions({
+    queryKey: [...mediaKeys.all, "genres", type] as const,
+    queryFn: () => getGenreOptions({ data: { type } }),
+    staleTime: 60 * 60_000,
   });
 
 export const discoverLayoutQuery = () =>

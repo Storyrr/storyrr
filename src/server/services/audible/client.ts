@@ -11,6 +11,7 @@ import type {
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
+import { EXPLORE_PAGE_SIZE, type AudiobookFilters, type AudiobookSort } from "#/lib/explore";
 import { canonicalLanguage } from "#/lib/languages";
 import { htmlToText } from "#/server/services/text";
 
@@ -55,6 +56,21 @@ const SearchResponseSchema = v.object({
 const ProductResponseSchema = v.object({ product: ProductSchema });
 
 const CategorySchema = v.object({ category: v.object({ id: v.string(), name: v.string() }) });
+const RootCategoriesSchema = v.object({
+  categories: v.array(v.object({ id: v.string(), name: v.string() })),
+});
+
+/** Audible's sort names (`products_sort_by`; it has no descending rating). */
+const AUDIBLE_SORT: Record<AudiobookSort, string> = {
+  bestsellers: "BestSellers",
+  newest: "-ReleaseDate",
+  oldest: "ReleaseDate",
+  rating: "AvgRating",
+  title_asc: "Title",
+  title_desc: "-Title",
+  longest: "-RuntimeLength",
+  shortest: "RuntimeLength",
+};
 
 /** Titles per page of a genre. */
 const CATEGORY_PAGE = 40;
@@ -214,6 +230,34 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
         description: html ? htmlToText(html) : undefined,
         tags: genres(result.value.product),
       });
+    },
+
+    /** The catalog sorted and filtered (Books / Audiobooks page), page by page. */
+    async discover(filters: AudiobookFilters, page = 1): Promise<ServiceResult<MediaSummary[]>> {
+      const params: Record<string, string> = {
+        products_sort_by: AUDIBLE_SORT[filters.sort ?? "bestsellers"],
+        // Audible pages from 0.
+        page: String(page - 1),
+      };
+      if (filters.genre) params.category_id = filters.genre;
+      if (filters.author) params.author = filters.author;
+      if (filters.narrator) params.narrator = filters.narrator;
+      if (filters.publisher) params.publisher = filters.publisher;
+      return list(params, EXPLORE_PAGE_SIZE);
+    },
+
+    /** The top-level genres (verified on api.audible.fr: `?root=Genres`, 24 in France). */
+    async genres(): Promise<ServiceResult<MediaTag[]>> {
+      const url = new URL(`https://${audibleHost(region)}/1.0/catalog/categories`);
+      url.search = new URLSearchParams({ root: "Genres" }).toString();
+      const result = await requestJson({
+        fetch,
+        service: "Audible",
+        url,
+        schema: RootCategoriesSchema,
+      });
+      if (!result.ok) return result;
+      return ok(result.value.categories.map((c) => ({ id: c.id, name: c.name })));
     },
 
     /** A genre's bestsellers, page by page (Audible pages from 0), with the genre's name. */

@@ -58,6 +58,13 @@ Shown when the database has no user.
 - Owned detection: audiobooks by ASIN in Audiobookshelf, or by title in Jellyfin; eBooks by title in Kavita, Komga and Jellyfin, "probably owned" (and Chaptarr files). Any configured server counts (decided 2026-11-24).
 - Fast: debounce, cached metadata, no blocking on slow providers.
 
+### 4.2b Books and Audiobooks pages (decided 2026-11-24, like Seerr's Movies / Series)
+
+- No search field (the top bar searches): the catalog as a grid that loads while scrolling, a **sort** and a **Filters** panel (right-side sheet, "N active filters", Reset). Sort and filters live in the URL.
+- Audiobooks (Audible catalog, region from Settings): sorts Bestsellers, Release date (newest / oldest), Best rated, Title (A-Z / Z-A), Length (longest / shortest); filters genre (top-level Audible genres), author, narrator, publisher. Audible can't filter by language.
+- Books (Hardcover): sorts Most read, Best rated (at least 50 ratings, released), Release date (newest: released only / oldest: year ≥ 1000), Title (A-Z / Z-A); filters genres (any of, by each book's main genre tags), edition language, release year range, pages range, minimum Hardcover rating. Non-popularity sorts need 5 readers, or they surface placeholder records. Genre + language together can take several seconds on Hardcover.
+- Both: "Hide owned" and "Only languages Chaptarr accepts" switches, applied to the loaded results.
+
 ### 4.3 Media detail page
 
 - Cover, title, authors, narrators, series (with position), description, language, duration/pages, publication date.

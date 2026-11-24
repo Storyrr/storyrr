@@ -86,6 +86,21 @@ describe("Audible client", () => {
     expect(calls.at(-1)?.url.searchParams.get("page")).toBe("1");
   });
 
+  it("explores the catalog with Audible's sort names and filters", async () => {
+    const { fetch, calls } = fakeFetch(() => json({ products: [] }));
+    await createAudibleClient({ fetch, region: "fr" }).discover(
+      { sort: "newest", genre: "21229694031", narrator: "Benjamin Jungers" },
+      3,
+    );
+    const params = calls[0]?.url.searchParams;
+    expect(params?.get("products_sort_by")).toBe("-ReleaseDate");
+    expect(params?.get("category_id")).toBe("21229694031");
+    expect(params?.get("narrator")).toBe("Benjamin Jungers");
+    expect(params?.get("page")).toBe("2");
+    expect(params?.get("num_results")).toBe("40");
+    expect(params?.has("author")).toBe(false);
+  });
+
   it("reports unknown ASINs as not found", async () => {
     const { fetch } = fakeFetch(() => json(notFound));
     const result = await createAudibleClient({ fetch, region: "fr" }).getByAsin("B000000000");
