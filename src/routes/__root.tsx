@@ -41,12 +41,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: m.app_name(),
       },
+      {
+        name: "theme-color",
+        content: "#17140F",
+      },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootDocument,
