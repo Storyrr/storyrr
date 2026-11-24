@@ -249,6 +249,7 @@ const GenresDataSchema = v.object({
  */
 const MIN_READERS: Record<BookSort, number> = {
   popular: 0,
+  upcoming: 0,
   rating: 0,
   newest: 5,
   oldest: 5,
@@ -266,6 +267,21 @@ export function exploreQuery(filters: BookFilters, today = new Date()) {
   if (sort.startsWith("title")) and.push({ title: { _neq: "" } });
   const released = { release_date: { _lte: today.toISOString().slice(0, 10) } };
   if (sort === "newest") and.push(released);
+  // Out within a year, the most awaited (want-to-read) first; far-off placeholders
+  // ("Untitled Stormlight Archive #10", 2035) left out, checked live on 2026-11-24.
+  if (sort === "upcoming") {
+    const inAYear = new Date(today);
+    inAYear.setFullYear(inAYear.getFullYear() + 1);
+    and.push(
+      {
+        release_date: {
+          _gt: today.toISOString().slice(0, 10),
+          _lte: inAYear.toISOString().slice(0, 10),
+        },
+      },
+      { title: { _nilike: "untitled%" } },
+    );
+  }
   if (sort === "rating") and.push({ ratings_count: { _gte: MIN_RATINGS } }, released);
   // Placeholder dates (year 1) come first otherwise.
   if (sort === "oldest") and.push({ release_year: { _gte: 1000 } });
@@ -285,6 +301,7 @@ export function exploreQuery(filters: BookFilters, today = new Date()) {
   if (filters.language) and.push({ editions: { language: { code2: { _eq: filters.language } } } });
   const order: Record<BookSort, Record<string, string>[]> = {
     popular: [{ users_count: "desc" }],
+    upcoming: [{ users_count: "desc" }, { release_date: "asc" }],
     rating: [{ rating: "desc_nulls_last" }, { users_count: "desc" }],
     newest: [{ release_date: "desc_nulls_last" }],
     oldest: [{ release_date: "asc_nulls_last" }],

@@ -9,13 +9,15 @@ export const DISCOVER_ROW_KINDS = [
   "recent_requests",
   "trending",
   "search",
+  "genres",
+  "upcoming",
 ] as const;
 
 export const DiscoverRowSchema = v.object({
   id: v.pipe(v.string(), v.nonEmpty(), v.maxLength(64)),
   kind: v.picklist(DISCOVER_ROW_KINDS),
   enabled: v.boolean(),
-  /** trending / search: which format. */
+  /** trending / search / genres: which format (upcoming: books only, Audible can't list them). */
   type: v.optional(v.picklist(SEARCHABLE_TYPES)),
   /** search: what to search, and the row's title. */
   query: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(200))),
@@ -47,4 +49,16 @@ export const DEFAULT_DISCOVER_LAYOUT: readonly DiscoverRow[] = [
   { id: "recent_requests", kind: "recent_requests", enabled: true },
   { id: "trending_audiobook", kind: "trending", type: "audiobook", enabled: true },
   { id: "trending_ebook", kind: "trending", type: "ebook", enabled: true },
+  { id: "genres_audiobook", kind: "genres", type: "audiobook", enabled: true },
+  { id: "genres_ebook", kind: "genres", type: "ebook", enabled: true },
+  { id: "upcoming_ebook", kind: "upcoming", type: "ebook", enabled: true },
 ];
+
+/**
+ * A saved layout with the built-in rows it doesn't know yet (added in later
+ * versions) appended, so new rows show up without resetting the layout.
+ */
+export function withNewBuiltInRows(saved: readonly DiscoverRow[]): DiscoverRow[] {
+  const known = new Set(saved.map((row) => row.id));
+  return [...saved, ...DEFAULT_DISCOVER_LAYOUT.filter((row) => !known.has(row.id))];
+}

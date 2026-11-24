@@ -32,6 +32,10 @@ function rowLabel(row: DiscoverRow): string {
       return m.discover_recent_requests();
     case "trending":
       return row.type === "ebook" ? m.discover_trending_books() : m.discover_trending_audiobooks();
+    case "genres":
+      return row.type === "ebook" ? m.discover_genres_books() : m.discover_genres_audiobooks();
+    case "upcoming":
+      return m.discover_upcoming_books();
     default:
       return row.title || row.query || "";
   }

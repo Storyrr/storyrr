@@ -105,6 +105,15 @@ export const exploreQuery = (
     staleTime: 10 * 60_000,
   });
 
+/** The Discover "Upcoming books" row: the first page of the Upcoming sort. */
+export const upcomingBooksQuery = () =>
+  queryOptions({
+    queryKey: [...mediaKeys.all, "upcoming", "ebook"] as const,
+    queryFn: () =>
+      exploreMedia({ data: { type: "ebook", filters: { sort: "upcoming" }, page: 1 } }),
+    staleTime: 30 * 60_000,
+  });
+
 export const genreOptionsQuery = (type: SearchableType) =>
   queryOptions({
     queryKey: [...mediaKeys.all, "genres", type] as const,

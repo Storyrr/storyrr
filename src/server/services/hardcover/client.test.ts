@@ -209,4 +209,16 @@ describe("Hardcover explore query", () => {
     });
     expect(order).toEqual([{ release_date: "desc_nulls_last" }]);
   });
+
+  it("lists upcoming books within a year, without placeholder titles", () => {
+    const { where, order } = exploreQuery({ sort: "upcoming" }, today);
+    expect(where).toEqual({
+      _and: [
+        { canonical_id: { _is_null: true } },
+        { release_date: { _gt: "2026-11-24", _lte: "2027-11-24" } },
+        { title: { _nilike: "untitled%" } },
+      ],
+    });
+    expect(order).toEqual([{ users_count: "desc" }, { release_date: "asc" }]);
+  });
 });

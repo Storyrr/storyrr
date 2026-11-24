@@ -58,11 +58,17 @@ Shown when the database has no user.
 - Owned detection: audiobooks by ASIN in Audiobookshelf, or by title in Jellyfin; eBooks by title in Kavita, Komga and Jellyfin, "probably owned" (and Chaptarr files). Any configured server counts (decided 2026-11-24).
 - Fast: debounce, cached metadata, no blocking on slow providers.
 
+### 4.2a Discover genre and upcoming rows (decided 2026-11-24, like Seerr's "Series by genre" / "Upcoming")
+
+- **Audiobooks by genre** (Audible's top-level genres) and **Books by genre** (Hardcover's 20 most used genres, catch-alls like Fiction left out): a colored card per genre opening the Audiobooks / Books page filtered by it.
+- **Upcoming books** (Hardcover): out within a year, the most awaited first, "Untitled …" placeholders left out; See all opens Books sorted by "Upcoming". Audible can't list upcoming titles (no date filter, its newest-first sort starts years ahead), so there is no audiobook equivalent. No publishers row: neither catalog gives publisher logos.
+- Saved Discover layouts get rows added in later versions appended (enabled), keeping the admin's order and choices.
+
 ### 4.2b Books and Audiobooks pages (decided 2026-11-24, like Seerr's Movies / Series)
 
 - No search field (the top bar searches): the catalog as a grid that loads while scrolling, a **sort** and a **Filters** panel (right-side sheet, "N active filters", Reset). Sort and filters live in the URL.
 - Audiobooks (Audible catalog, region from Settings): sorts Bestsellers, Release date (newest / oldest), Best rated, Title (A-Z / Z-A), Length (longest / shortest); filters genre (top-level Audible genres), author, narrator, publisher. Audible can't filter by language.
-- Books (Hardcover): sorts Most read, Best rated (at least 50 ratings, released), Release date (newest: released only / oldest: year ≥ 1000), Title (A-Z / Z-A); filters genres (any of, by each book's main genre tags), edition language, release year range, pages range, minimum Hardcover rating. Non-popularity sorts need 5 readers, or they surface placeholder records. Genre + language together can take several seconds on Hardcover.
+- Books (Hardcover): sorts Most read, Upcoming (most awaited, out within a year), Best rated (at least 50 ratings, released), Release date (newest: released only / oldest: year ≥ 1000), Title (A-Z / Z-A); filters genres (any of, by each book's main genre tags), edition language, release year range, pages range, minimum Hardcover rating. Non-popularity sorts need 5 readers, or they surface placeholder records. Genre + language together can take several seconds on Hardcover.
 - Both: "Hide owned" and "Only languages Chaptarr accepts" switches, applied to the loaded results.
 
 ### 4.3 Media detail page

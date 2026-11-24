@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 
 import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
-import { DEFAULT_DISCOVER_LAYOUT, DiscoverLayoutSchema } from "#/lib/discover";
+import { DEFAULT_DISCOVER_LAYOUT, DiscoverLayoutSchema, withNewBuiltInRows } from "#/lib/discover";
 import { hasPermission } from "#/lib/permissions";
 import { AudiobookFiltersSchema, BookFiltersSchema } from "#/lib/explore";
 import type { MediaSummary, MediaTag } from "#/lib/media";
@@ -284,7 +284,10 @@ export const getAuthor = createServerFn({ method: "GET" })
 /** Discover's rows, in order. Signed-in users (everyone sees the same Discover). */
 export const getDiscoverLayout = createServerFn({ method: "GET" })
   .middleware([requireUser])
-  .handler(async () => (await settings.get(discoverLayout)) ?? [...DEFAULT_DISCOVER_LAYOUT]);
+  .handler(async () => {
+    const saved = await settings.get(discoverLayout);
+    return saved ? withNewBuiltInRows(saved) : [...DEFAULT_DISCOVER_LAYOUT];
+  });
 
 /** Saves Discover's rows (null: back to the default). Manage settings. */
 export const saveDiscoverLayout = createServerFn({ method: "POST" })

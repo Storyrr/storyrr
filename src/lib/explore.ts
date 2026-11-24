@@ -24,6 +24,7 @@ export type AudiobookSort = (typeof AUDIOBOOK_SORTS)[number];
 
 export const BOOK_SORTS = [
   "popular",
+  "upcoming",
   "rating",
   "newest",
   "oldest",
@@ -35,6 +36,7 @@ export type BookSort = (typeof BOOK_SORTS)[number];
 export const sortLabels: Record<AudiobookSort | BookSort, () => string> = {
   bestsellers: m.explore_sort_bestsellers,
   popular: m.explore_sort_popular,
+  upcoming: m.explore_sort_upcoming,
   newest: m.explore_sort_newest,
   oldest: m.explore_sort_oldest,
   rating: m.explore_sort_rating,
