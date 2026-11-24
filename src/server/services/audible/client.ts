@@ -44,24 +44,35 @@ const ProductResponseSchema = v.object({ product: ProductSchema });
 export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region: AudibleRegion }) {
   const base = `https://${audibleHost(region)}/1.0/catalog/products`;
 
+  async function list(
+    params: Record<string, string>,
+    limit: number,
+  ): Promise<ServiceResult<MediaSummary[]>> {
+    const url = new URL(base);
+    url.search = new URLSearchParams({
+      ...params,
+      num_results: String(limit),
+      response_groups: RESPONSE_GROUPS,
+      image_sizes: "500",
+    }).toString();
+    const result = await requestJson({
+      fetch,
+      service: "Audible",
+      url,
+      schema: SearchResponseSchema,
+    });
+    if (!result.ok) return result;
+    return ok(result.value.products.flatMap((product) => toSummary(product) ?? []));
+  }
+
   return {
     async search(query: string, { limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
-      const url = new URL(base);
-      url.search = new URLSearchParams({
-        keywords: query,
-        num_results: String(limit),
-        products_sort_by: "Relevance",
-        response_groups: RESPONSE_GROUPS,
-        image_sizes: "500",
-      }).toString();
-      const result = await requestJson({
-        fetch,
-        service: "Audible",
-        url,
-        schema: SearchResponseSchema,
-      });
-      if (!result.ok) return result;
-      return ok(result.value.products.flatMap((product) => toSummary(product) ?? []));
+      return list({ keywords: query, products_sort_by: "Relevance" }, limit);
+    },
+
+    /** The region's bestsellers (verified on api.audible.fr: no keywords, sorted by BestSellers). */
+    async bestsellers({ limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
+      return list({ products_sort_by: "BestSellers" }, limit);
     },
 
     async getByAsin(asin: string): Promise<ServiceResult<MediaDetails>> {

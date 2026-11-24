@@ -117,6 +117,29 @@ const LANGUAGES_QUERY = `query StoryrrLanguages($ids: [Int!]!) {
   books(where: {id: {_in: $ids}}) { id ${EDITION_LANGUAGES} }
 }`;
 
+const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
+  books_trending(duration: month, limit: $limit) { ids error }
+}`;
+
+// Card fields for a list of books (trending), languages included.
+const BOOKS_QUERY = `query StoryrrBooks($ids: [Int!]!) {
+  books(where: {id: {_in: $ids}}) {
+    id title subtitle release_date
+    image { url }
+    contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { name } }
+    featured_book_series { position details series { name } }
+    ${EDITION_LANGUAGES}
+  }
+}`;
+
+const TrendingDataSchema = v.object({
+  books_trending: v.looseObject({
+    ids: v.optional(v.nullable(v.array(v.number())), []),
+    error: v.optional(v.nullable(v.string())),
+  }),
+});
+const BooksDataSchema = v.object({ books: v.array(BookSchema) });
+
 const BOOK_QUERY = `query StoryrrBook($id: Int!) {
   books_by_pk(id: $id) {
     id title subtitle description release_date pages
@@ -174,6 +197,26 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
         languages.value.books.map((book) => [String(book.id), editionLanguages(book.editions)]),
       );
       return ok(items.map((item) => ({ ...item, languages: byId.get(item.externalId) })));
+    },
+
+    /** Books the most Hardcover readers finished this month (worldwide), in rank order. */
+    async trending({ limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
+      const trending = await graphql(TRENDING_QUERY, { limit }, TrendingDataSchema);
+      if (!trending.ok) return trending;
+      const { ids, error } = trending.value.books_trending;
+      if (error) return fail("rejected", error);
+      if (!ids?.length) return ok([]);
+      const books = await graphql(BOOKS_QUERY, { ids }, BooksDataSchema);
+      if (!books.ok) return books;
+      const byId = new Map(books.value.books.map((book) => [book.id, book]));
+      return ok(
+        ids.flatMap((id) => {
+          const book = byId.get(id);
+          if (!book?.title) return [];
+          const { description: _description, ...summary } = toDetails(book);
+          return [summary];
+        }),
+      );
     },
 
     async getById(id: string): Promise<ServiceResult<MediaDetails>> {

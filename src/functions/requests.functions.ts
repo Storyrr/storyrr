@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
-import { eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 import {
   ApproveRequestSchema,
@@ -284,4 +284,41 @@ export const removeFromChaptarr = createServerFn({ method: "POST" })
       transitionRequest(db, data.id, { to: "cancelled", actor: context.session.user.id });
     }
     return { ok: true as const, ...result.value };
+  });
+
+/**
+ * Discover's request rows: the latest requests (everyone's for admins, one's
+ * own and watched ones otherwise) and what became available lately (library
+ * content, the same for everyone). Signed-in users.
+ */
+export const getDiscoverRequests = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(({ context }) => {
+    const { user } = context.session;
+    const recentRequests = listRequests(db, {
+      userId: user.role === "admin" ? undefined : user.id,
+      filter: "all",
+    })
+      .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 20);
+    const added = db
+      .select({
+        type: media.type,
+        externalId: media.externalId,
+        title: media.title,
+        authors: media.authors,
+        coverUrl: media.coverUrl,
+        updatedAt: request.updatedAt,
+      })
+      .from(request)
+      .innerJoin(media, eq(media.id, request.mediaId))
+      .where(eq(request.status, "available"))
+      .orderBy(desc(request.updatedAt))
+      .limit(40)
+      .all();
+    // One card per work, even if several requests delivered it.
+    const recentlyAdded = [
+      ...new Map(added.map((item) => [`${item.type}:${item.externalId}`, item])).values(),
+    ].slice(0, 20);
+    return { recentRequests, recentlyAdded };
   });

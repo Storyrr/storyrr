@@ -191,5 +191,13 @@
   "search_results_title": "Résultats pour « {query} »",
   "search_placeholder_books": "Rechercher des livres, mangas, BD…",
   "search_placeholder_audiobooks": "Rechercher des livres audio : titre, auteur, narrateur…",
-  "discover_welcome": "Bonjour {name}"
+  "discover_welcome": "Bonjour {name}",
+  "row_previous": "Précédent",
+  "row_next": "Suivant",
+  "discover_trending_audiobooks": "Meilleures ventes en livres audio",
+  "discover_trending_books": "Livres tendance",
+  "discover_recent_requests": "Demandes récentes",
+  "discover_recently_added": "Récemment ajoutés",
+  "discover_see_all": "Tout voir",
+  "discover_empty_requests": "Aucune demande pour l’instant. Cherchez quelque chose dans Livres ou Livres audio."
 }

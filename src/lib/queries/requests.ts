@@ -1,6 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { getRequestHistory, getRequests } from "#/functions/requests.functions";
+import {
+  getDiscoverRequests,
+  getRequestHistory,
+  getRequests,
+} from "#/functions/requests.functions";
 import { IN_FLIGHT_STATUSES } from "#/lib/request-status";
 
 export type RequestScope = "mine" | "all";
@@ -27,4 +31,10 @@ export const requestHistoryQuery = (id: string) =>
   queryOptions({
     queryKey: requestKeys.history(id),
     queryFn: () => getRequestHistory({ data: { id } }),
+  });
+
+export const discoverRequestsQuery = () =>
+  queryOptions({
+    queryKey: [...requestKeys.all, "discover"] as const,
+    queryFn: () => getDiscoverRequests(),
   });

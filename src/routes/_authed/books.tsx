@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import * as v from "valibot";
 
+import { TrendingRow } from "#/components/media/trending-row";
 import { TypeSearch } from "#/components/media/type-search";
 import { m } from "#/paraglide/messages.js";
 
@@ -25,6 +26,7 @@ function Page() {
       placeholder={m.search_placeholder_books()}
       query={q}
       onQueryChange={setQuery}
+      browse={<TrendingRow type="ebook" />}
     />
   );
 }

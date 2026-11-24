@@ -18,6 +18,8 @@ export type MediaSource = {
   source: string;
   search(services: Services, query: string): Promise<ServiceResult<MediaSummary[]>>;
   getDetails(services: Services, id: string): Promise<ServiceResult<MediaDetails>>;
+  /** What's popular right now, for Discover. */
+  trending(services: Services): Promise<ServiceResult<MediaSummary[]>>;
   /** External ids of the items a library already holds. */
   owned(db: AppDatabase, items: readonly Pick<MediaSummary, "externalId" | "title">[]): Set<string>;
 };
@@ -30,6 +32,9 @@ const audiobooks: MediaSource = {
   },
   async getDetails(services, id) {
     return (await services.audible()).getByAsin(id);
+  },
+  async trending(services) {
+    return (await services.audible()).bestsellers();
   },
   // By ASIN in Audiobookshelf: titles in libraries are often wrong.
   owned(db, items) {
@@ -53,6 +58,10 @@ const ebooks: MediaSource = {
   async getDetails(services, id) {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.getById(id) : fail("not_configured", "Hardcover token missing");
+  },
+  async trending(services) {
+    const hardcover = await services.hardcover();
+    return hardcover ? hardcover.trending() : fail("not_configured", "Hardcover token missing");
   },
   // By normalized title in Kavita (no shared ID): "probably owned".
   owned(db, items) {

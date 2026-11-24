@@ -191,5 +191,13 @@
   "search_results_title": "Results for “{query}”",
   "search_placeholder_books": "Search books, manga, comics…",
   "search_placeholder_audiobooks": "Search audiobooks: title, author, narrator…",
-  "discover_welcome": "Hi {name}"
+  "discover_welcome": "Hi {name}",
+  "row_previous": "Previous",
+  "row_next": "Next",
+  "discover_trending_audiobooks": "Bestselling audiobooks",
+  "discover_trending_books": "Trending books",
+  "discover_recent_requests": "Recent requests",
+  "discover_recently_added": "Recently added",
+  "discover_see_all": "See all",
+  "discover_empty_requests": "No requests yet. Find something in Books or Audiobooks."
 }

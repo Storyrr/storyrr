@@ -1,6 +1,6 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
-import { getMedia, searchMedia } from "#/functions/media.functions";
+import { getMedia, getTrending, searchMedia } from "#/functions/media.functions";
 import type { SearchableType } from "#/lib/media-types";
 
 export const mediaKeys = {
@@ -25,4 +25,11 @@ export const mediaQuery = (type: SearchableType, id: string) =>
     queryKey: mediaKeys.detail(type, id),
     queryFn: () => getMedia({ data: { type, id } }),
     staleTime: 60_000,
+  });
+
+export const trendingQuery = (type: SearchableType) =>
+  queryOptions({
+    queryKey: [...mediaKeys.all, "trending", type] as const,
+    queryFn: () => getTrending({ data: { type } }),
+    staleTime: 10 * 60_000,
   });

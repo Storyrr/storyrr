@@ -88,3 +88,13 @@ describe("htmlToText", () => {
     );
   });
 });
+
+describe("Audible bestsellers", () => {
+  it("lists the region's catalog by bestsellers, without keywords", async () => {
+    const { fetch, calls } = fakeFetch(() => json(search));
+    const result = await createAudibleClient({ fetch, region: "fr" }).bestsellers({ limit: 10 });
+    expect(calls[0]?.url.searchParams.get("products_sort_by")).toBe("BestSellers");
+    expect(calls[0]?.url.searchParams.has("keywords")).toBe(false);
+    expect(result.ok && result.value).toHaveLength(2);
+  });
+});

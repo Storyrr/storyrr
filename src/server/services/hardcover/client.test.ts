@@ -103,3 +103,27 @@ describe("Hardcover client", () => {
     });
   });
 });
+
+describe("Hardcover trending", () => {
+  it("looks up the trending ids and keeps their rank order", async () => {
+    const { fetch, calls } = fakeFetch((_url, init) => {
+      const body = JSON.stringify(jsonBody(init));
+      if (body.includes("StoryrrTrending"))
+        return json({ data: { books_trending: { ids: [2, 1], error: null } } });
+      return json({
+        data: {
+          books: [
+            { id: 1, title: "One", contributions: [], editions: [{ language: { code3: "fre" } }] },
+            { id: 2, title: "Two", contributions: [{ author: { name: "A" } }], editions: [] },
+          ],
+        },
+      });
+    });
+    const result = await createHardcoverClient({ token: "abc", fetch }).trending({ limit: 2 });
+    expect(calls).toHaveLength(2);
+    expect(result.ok && result.value.map((b) => [b.externalId, b.title, b.languages])).toEqual([
+      ["2", "Two", []],
+      ["1", "One", ["fra"]],
+    ]);
+  });
+});
