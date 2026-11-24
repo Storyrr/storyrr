@@ -181,6 +181,7 @@
   "status_downloading": "Downloading",
   "status_downloading_progress": "Downloading ({percent})",
   "sidebar_title": "Navigation",
+  "sidebar_update_available": "Update available",
   "sidebar_description": "Storyrr's sections.",
   "sidebar_toggle": "Show or hide the menu",
   "nav_discover": "Discover",

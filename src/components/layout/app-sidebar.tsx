@@ -4,7 +4,9 @@ import {
   BanIcon,
   BookAudioIcon,
   BookOpenIcon,
+  CircleArrowUpIcon,
   CompassIcon,
+  HardDriveIcon,
   InboxIcon,
   SettingsIcon,
   TriangleAlertIcon,
@@ -27,7 +29,9 @@ import {
 } from "#/components/ui/sidebar";
 import type { SessionUser } from "#/functions/auth.functions";
 import { can, type Permission } from "#/lib/permissions";
+import { aboutQuery } from "#/lib/queries/about";
 import { pendingCountQuery } from "#/lib/queries/requests";
+import { cn } from "#/lib/utils";
 import { Logo } from "#/components/layout/logo";
 import { m } from "#/paraglide/messages.js";
 
@@ -56,6 +60,35 @@ function PendingBadge() {
       {data.count}
       <span className="sr-only">{m.requests_pending_badge({ count: data.count })}</span>
     </SidebarMenuBadge>
+  );
+}
+
+/** Seerr-like version card, linking to Settings → About (settings managers). */
+function VersionCard({ version, onNavigate }: { version: string; onNavigate: () => void }) {
+  // Releases are cached by the server for an hour: no need to ask more often.
+  const { data } = useQuery({ ...aboutQuery(), staleTime: 60 * 60_000 });
+  const outdated = data?.updateAvailable === true;
+  return (
+    <Link
+      to="/settings/about"
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        outdated && "border-primary",
+      )}
+    >
+      {outdated ? (
+        <CircleArrowUpIcon className="size-5 shrink-0 text-primary" aria-hidden />
+      ) : (
+        <HardDriveIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+      )}
+      <span className="flex min-w-0 flex-col">
+        <span className="font-semibold">{m.app_name()}</span>
+        <span className="truncate font-mono text-xs text-muted-foreground">
+          {outdated ? m.sidebar_update_available() : version}
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -104,9 +137,13 @@ export function AppSidebar({ user, version }: { user: SessionUser; version: stri
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <p className="px-2 py-1 text-xs text-muted-foreground">
-          {m.app_name()} {version}
-        </p>
+        {can(user, "manage_settings") ? (
+          <VersionCard version={version} onNavigate={() => setOpenMobile(false)} />
+        ) : (
+          <p className="px-2 py-1 text-xs text-muted-foreground">
+            {m.app_name()} {version}
+          </p>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

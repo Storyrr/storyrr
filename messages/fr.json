@@ -181,6 +181,7 @@
   "status_downloading": "En téléchargement",
   "status_downloading_progress": "En téléchargement ({percent})",
   "sidebar_title": "Navigation",
+  "sidebar_update_available": "Mise à jour disponible",
   "sidebar_description": "Les rubriques de Storyrr.",
   "sidebar_toggle": "Afficher ou masquer le menu",
   "nav_discover": "Découvrir",
