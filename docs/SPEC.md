@@ -121,7 +121,9 @@ Shown when the database has no user.
 
 Seerr-like tabs (decided 2026-11-24), label column on the left, control on the right:
 
-- **General:** application URL (read-only, from `BETTER_AUTH_URL`), version, metadata (Audible region, Hardcover token).
+- **General:** application URL (read-only, from `BETTER_AUTH_URL`).
+- **Metadata:** provider status (Audible, Hardcover) with a Test button, then the Audible region and the Hardcover token.
+- **About:** version (and whether a newer GitHub release exists, checked hourly), total titles and requests, data directory, time zone; help links; the latest releases with their notes.
 - **Users:** auto-approve new users by default; global request limits per format ("Unlimited" or N requests every D days). Denied and cancelled requests give their slot back; joining an active request is free; admins are never limited.
 - **Services:** one Chaptarr server (decided: Chaptarr serves both formats), shown as a card (address, default folder and profile per format) with Edit (connection + defaults per format, in a dialog) and Delete, or an "Add a Chaptarr server" box; the webhook URL below.
 - **Audiobookshelf / Kavita** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".

@@ -25,9 +25,11 @@ import { Route as AuthedIssuesIndexRouteImport } from './routes/_authed/issues/i
 import { Route as AuthedIssuesIdRouteImport } from './routes/_authed/issues/$id'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedProfileSettingsRouteImport } from './routes/_authed/profile/settings'
+import { Route as AuthedSettingsAboutRouteImport } from './routes/_authed/settings/about'
 import { Route as AuthedSettingsAudiobookshelfRouteImport } from './routes/_authed/settings/audiobookshelf'
 import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/settings/general'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
+import { Route as AuthedSettingsMetadataRouteImport } from './routes/_authed/settings/metadata'
 import { Route as AuthedSettingsServicesRouteImport } from './routes/_authed/settings/services'
 import { Route as AuthedSettingsUsersRouteImport } from './routes/_authed/settings/users'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
@@ -121,6 +123,11 @@ const AuthedProfileSettingsRoute = AuthedProfileSettingsRouteImport.update({
   path: '/profile/settings',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSettingsAboutRoute = AuthedSettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedSettingsAudiobookshelfRoute =
   AuthedSettingsAudiobookshelfRouteImport.update({
     id: '/audiobookshelf',
@@ -135,6 +142,11 @@ const AuthedSettingsGeneralRoute = AuthedSettingsGeneralRouteImport.update({
 const AuthedSettingsKavitaRoute = AuthedSettingsKavitaRouteImport.update({
   id: '/kavita',
   path: '/kavita',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsMetadataRoute = AuthedSettingsMetadataRouteImport.update({
+  id: '/metadata',
+  path: '/metadata',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsServicesRoute = AuthedSettingsServicesRouteImport.update({
@@ -224,9 +236,11 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
+  '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
+  '/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -257,9 +271,11 @@ export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
   '/issues/$id': typeof AuthedIssuesIdRoute
   '/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
+  '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
+  '/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/settings/services': typeof AuthedSettingsServicesRoute
   '/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -292,9 +308,11 @@ export interface FileRoutesById {
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/issues/$id': typeof AuthedIssuesIdRoute
   '/_authed/profile/settings': typeof AuthedProfileSettingsRouteWithChildren
+  '/_authed/settings/about': typeof AuthedSettingsAboutRoute
   '/_authed/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/_authed/settings/general': typeof AuthedSettingsGeneralRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
+  '/_authed/settings/metadata': typeof AuthedSettingsMetadataRoute
   '/_authed/settings/services': typeof AuthedSettingsServicesRoute
   '/_authed/settings/users': typeof AuthedSettingsUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -327,9 +345,11 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/issues/$id'
     | '/profile/settings'
+    | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
     | '/settings/kavita'
+    | '/settings/metadata'
     | '/settings/services'
     | '/settings/users'
     | '/api/auth/$'
@@ -360,9 +380,11 @@ export interface FileRouteTypes {
     | '/'
     | '/issues/$id'
     | '/profile/settings'
+    | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
     | '/settings/kavita'
+    | '/settings/metadata'
     | '/settings/services'
     | '/settings/users'
     | '/api/auth/$'
@@ -394,9 +416,11 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/issues/$id'
     | '/_authed/profile/settings'
+    | '/_authed/settings/about'
     | '/_authed/settings/audiobookshelf'
     | '/_authed/settings/general'
     | '/_authed/settings/kavita'
+    | '/_authed/settings/metadata'
     | '/_authed/settings/services'
     | '/_authed/settings/users'
     | '/api/auth/$'
@@ -537,6 +561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProfileSettingsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings/about': {
+      id: '/_authed/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof AuthedSettingsAboutRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     '/_authed/settings/audiobookshelf': {
       id: '/_authed/settings/audiobookshelf'
       path: '/audiobookshelf'
@@ -556,6 +587,13 @@ declare module '@tanstack/react-router' {
       path: '/kavita'
       fullPath: '/settings/kavita'
       preLoaderRoute: typeof AuthedSettingsKavitaRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    '/_authed/settings/metadata': {
+      id: '/_authed/settings/metadata'
+      path: '/metadata'
+      fullPath: '/settings/metadata'
+      preLoaderRoute: typeof AuthedSettingsMetadataRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     '/_authed/settings/services': {
@@ -653,17 +691,21 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedSettingsRouteChildren {
+  AuthedSettingsAboutRoute: typeof AuthedSettingsAboutRoute
   AuthedSettingsAudiobookshelfRoute: typeof AuthedSettingsAudiobookshelfRoute
   AuthedSettingsGeneralRoute: typeof AuthedSettingsGeneralRoute
   AuthedSettingsKavitaRoute: typeof AuthedSettingsKavitaRoute
+  AuthedSettingsMetadataRoute: typeof AuthedSettingsMetadataRoute
   AuthedSettingsServicesRoute: typeof AuthedSettingsServicesRoute
   AuthedSettingsUsersRoute: typeof AuthedSettingsUsersRoute
 }
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
+  AuthedSettingsAboutRoute: AuthedSettingsAboutRoute,
   AuthedSettingsAudiobookshelfRoute: AuthedSettingsAudiobookshelfRoute,
   AuthedSettingsGeneralRoute: AuthedSettingsGeneralRoute,
   AuthedSettingsKavitaRoute: AuthedSettingsKavitaRoute,
+  AuthedSettingsMetadataRoute: AuthedSettingsMetadataRoute,
   AuthedSettingsServicesRoute: AuthedSettingsServicesRoute,
   AuthedSettingsUsersRoute: AuthedSettingsUsersRoute,
 }

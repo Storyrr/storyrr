@@ -20,6 +20,8 @@ const TABS = [
   { to: "/settings/services", label: m.settings_tab_services },
   { to: "/settings/audiobookshelf", label: m.service_audiobookshelf },
   { to: "/settings/kavita", label: m.service_kavita },
+  { to: "/settings/metadata", label: m.settings_tab_metadata },
+  { to: "/settings/about", label: m.settings_tab_about },
 ] as const;
 
 function SettingsLayout() {

@@ -28,7 +28,14 @@ import {
   metadataSettings,
   userSettings,
 } from "#/server/settings/definitions";
+import { dirname, resolve } from "node:path";
+import { sql } from "drizzle-orm";
+
+import { compareVersions } from "#/lib/version";
 import { db } from "#/server/db";
+import { media, request } from "#/server/db/schema";
+import { latestReleases, REPOSITORY_URL } from "#/server/releases";
+import { APP_VERSION } from "#/server/version";
 import { libraryStats } from "#/server/library";
 import { syncLibrary } from "#/server/library/sync";
 import { checkAvailability } from "#/server/requests/availability";
@@ -265,4 +272,43 @@ export const saveUserSettings = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await settings.set(userSettings, data);
     return { ok: true };
+  });
+
+/** Settings → About: version (and whether a newer release exists), totals, runtime info. */
+export const getAbout = createServerFn({ method: "GET" })
+  .middleware([requireAdmin])
+  .handler(async () => {
+    const releases = await latestReleases(globalFetch);
+    const latest = releases.ok ? (releases.value[0] ?? null) : null;
+    const count = sql`count(*)`.mapWith(Number);
+    const totals = {
+      media: db.select({ count }).from(media).get()?.count,
+      requests: db.select({ count }).from(request).get()?.count,
+    };
+    return {
+      version: APP_VERSION,
+      /** null when GitHub couldn't be reached. */
+      updateAvailable: latest ? compareVersions(latest.version, APP_VERSION) > 0 : null,
+      releases: releases.ok ? releases.value : [],
+      repositoryUrl: REPOSITORY_URL,
+      totals: { media: totals.media ?? 0, requests: totals.requests ?? 0 },
+      dataDirectory: dirname(resolve(getEnv().DATABASE_URL)),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+  });
+
+/** Settings → Metadata "Test": whether Audible and Hardcover answer with the saved settings. */
+export const testMetadataProviders = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .handler(async () => {
+    const [audible, hardcover] = await Promise.all([
+      services.audible().then((client) => client.search("dune")),
+      settings
+        .get(hardcoverToken)
+        .then((token) => (token ? testHardcoverToken(token, globalFetch) : null)),
+    ]);
+    return {
+      audible: audible.ok ? { ok: true as const } : { ok: false as const, error: audible.error },
+      hardcover: hardcover,
+    };
   });
