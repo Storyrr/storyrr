@@ -5,6 +5,7 @@ import { createAudiobookshelfClient } from "#/server/services/audiobookshelf/cli
 import { createChaptarrClient } from "#/server/services/chaptarr/client";
 import { createHardcoverClient } from "#/server/services/hardcover/client";
 import { createKavitaClient } from "#/server/services/kavita/client";
+import { createJellyfinClient } from "#/server/services/jellyfin/client";
 import { createKomgaClient } from "#/server/services/komga/client";
 import { FOLDER_TYPES } from "#/server/services/chaptarr/schemas";
 import type { FetchFn, ServiceError } from "#/server/services/result";
@@ -52,6 +53,12 @@ export async function testConnection(
           .slice(0, 3)
       : [];
     return { ok: true, version: status.value.version, warnings };
+  }
+  if (service === "jellyfin") {
+    const libraries = await createJellyfinClient(connection, fetch).libraries();
+    return libraries.ok
+      ? { ok: true, libraries: libraries.value.length }
+      : { ok: false, error: libraries.error };
   }
   if (service === "komga") {
     const libraries = await createKomgaClient(connection, fetch).libraries();

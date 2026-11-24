@@ -9,6 +9,7 @@ import type { AppDatabase } from "#/server/db/client";
 import { libraryItem } from "#/server/db/schema";
 import type { AudiobookshelfClient } from "#/server/services/audiobookshelf/client";
 import type { KavitaClient } from "#/server/services/kavita/client";
+import type { JellyfinClient } from "#/server/services/jellyfin/client";
 import type { KomgaClient } from "#/server/services/komga/client";
 import type { ServiceResult } from "#/server/services/result";
 import { ok } from "#/server/services/result";
@@ -26,7 +27,7 @@ export type IndexedItem = {
   format: SearchableType;
   /** ASIN (Audiobookshelf audiobooks); null when there's none. */
   externalId: string | null;
-  titles: readonly string[];
+  titles: string[];
   author: string;
 };
 
@@ -176,6 +177,48 @@ export async function syncKomga(
     now,
   );
   return ok({ items: series.length });
+}
+
+/**
+ * Replaces the Jellyfin part of the library index: its books and audiobooks,
+ * each format on its own (no shared ID: matched by title). An audiobook's
+ * files are one item per file in Jellyfin: they're grouped by album.
+ */
+export async function syncJellyfin(
+  db: AppDatabase,
+  jellyfin: JellyfinClient,
+  { excluded = [], now = new Date() }: SyncOptions = {},
+): Promise<ServiceResult<{ items: number }>> {
+  const libraries = await jellyfin.libraries();
+  if (!libraries.ok) return libraries;
+  const skip = new Set(excluded);
+  const all = await jellyfin.allItems(
+    libraries.value.map((library) => library.id).filter((id) => !skip.has(id)),
+  );
+  if (!all.ok) return all;
+  const grouped = new Map<string, IndexedItem>();
+  for (const item of all.value) {
+    const [first] = item.titles;
+    const key =
+      item.format === "audiobook" && first
+        ? `${item.libraryId}|audiobook|${titleKey(first)}`
+        : item.itemId;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.titles = [...new Set([...existing.titles, ...item.titles])];
+      continue;
+    }
+    grouped.set(key, {
+      itemId: item.itemId,
+      libraryId: item.libraryId,
+      format: item.format,
+      externalId: null,
+      titles: item.titles,
+      author: item.author,
+    });
+  }
+  replaceIndex(db, "jellyfin", [...grouped.values()], now);
+  return ok({ items: grouped.size });
 }
 
 /**

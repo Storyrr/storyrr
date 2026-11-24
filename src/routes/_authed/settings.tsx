@@ -22,6 +22,7 @@ const TABS = [
   { to: "/settings/audiobookshelf", label: m.service_audiobookshelf },
   { to: "/settings/kavita", label: m.service_kavita },
   { to: "/settings/komga", label: m.service_komga },
+  { to: "/settings/jellyfin", label: m.service_jellyfin },
   { to: "/settings/network", label: m.settings_tab_network },
   { to: "/settings/notifications", label: m.settings_tab_notifications },
   { to: "/settings/metadata", label: m.settings_tab_metadata },

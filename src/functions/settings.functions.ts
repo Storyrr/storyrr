@@ -82,22 +82,33 @@ async function connectionSummary(service: keyof typeof connectionSettings) {
 export const getServiceSettings = createServerFn({ method: "GET" })
   .middleware([requireSettings])
   .handler(async () => {
-    const [chaptarr, audiobookshelf, kavita, komga, hardcover, metadata, audiobook, ebook] =
-      await Promise.all([
-        connectionSummary("chaptarr"),
-        connectionSummary("audiobookshelf"),
-        connectionSummary("kavita"),
-        connectionSummary("komga"),
-        settings.get(hardcoverToken),
-        settings.get(metadataSettings),
-        settings.get(formatDefaults.audiobook),
-        settings.get(formatDefaults.ebook),
-      ]);
+    const [
+      chaptarr,
+      audiobookshelf,
+      kavita,
+      komga,
+      jellyfin,
+      hardcover,
+      metadata,
+      audiobook,
+      ebook,
+    ] = await Promise.all([
+      connectionSummary("chaptarr"),
+      connectionSummary("audiobookshelf"),
+      connectionSummary("kavita"),
+      connectionSummary("komga"),
+      connectionSummary("jellyfin"),
+      settings.get(hardcoverToken),
+      settings.get(metadataSettings),
+      settings.get(formatDefaults.audiobook),
+      settings.get(formatDefaults.ebook),
+    ]);
     return {
       chaptarr,
       audiobookshelf,
       kavita,
       komga,
+      jellyfin,
       // Never send the token back: only whether one is stored.
       hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
@@ -280,6 +291,11 @@ async function liveLibraries(
           name: library.name ?? String(library.id),
         })),
       );
+    }
+    case "jellyfin": {
+      const jellyfin = await services.jellyfin();
+      if (!jellyfin) return fail("not_configured", "Jellyfin is not configured");
+      return jellyfin.libraries();
     }
     default: {
       const komga = await services.komga();

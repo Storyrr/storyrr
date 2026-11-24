@@ -35,6 +35,7 @@ const libraryTestMessages: Record<
   audiobookshelf: m.test_ok_audiobookshelf,
   kavita: m.test_ok_kavita,
   komga: m.test_ok_komga,
+  jellyfin: m.test_ok_jellyfin,
 };
 
 export function ConnectionForm({

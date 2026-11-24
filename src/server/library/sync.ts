@@ -7,7 +7,7 @@ import { fail, ok, type ServiceResult } from "#/server/services/result";
 import { librarySelection } from "#/server/settings/definitions";
 import type { SettingsStore } from "#/server/settings/store";
 
-import { syncAudiobookshelf, syncKavita, syncKomga } from "./index";
+import { syncAudiobookshelf, syncJellyfin, syncKavita, syncKomga } from "./index";
 
 export type SyncDeps = { db: AppDatabase; services: Services; settings: SettingsStore };
 
@@ -21,6 +21,11 @@ export async function syncLibrary(
     const abs = await services.audiobookshelf();
     if (!abs) return fail("not_configured", "Audiobookshelf is not configured");
     return syncAudiobookshelf(db, abs, { excluded });
+  }
+  if (service === "jellyfin") {
+    const jellyfin = await services.jellyfin();
+    if (!jellyfin) return fail("not_configured", "Jellyfin is not configured");
+    return syncJellyfin(db, jellyfin, { excluded });
   }
   if (service === "komga") {
     const komga = await services.komga();

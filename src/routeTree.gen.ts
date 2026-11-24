@@ -32,6 +32,7 @@ import { Route as AuthedProfileSettingsRouteImport } from './routes/_authed/prof
 import { Route as AuthedSettingsAboutRouteImport } from './routes/_authed/settings/about'
 import { Route as AuthedSettingsAudiobookshelfRouteImport } from './routes/_authed/settings/audiobookshelf'
 import { Route as AuthedSettingsGeneralRouteImport } from './routes/_authed/settings/general'
+import { Route as AuthedSettingsJellyfinRouteImport } from './routes/_authed/settings/jellyfin'
 import { Route as AuthedSettingsJobsRouteImport } from './routes/_authed/settings/jobs'
 import { Route as AuthedSettingsKavitaRouteImport } from './routes/_authed/settings/kavita'
 import { Route as AuthedSettingsKomgaRouteImport } from './routes/_authed/settings/komga'
@@ -170,6 +171,11 @@ const AuthedSettingsAudiobookshelfRoute =
 const AuthedSettingsGeneralRoute = AuthedSettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
+const AuthedSettingsJellyfinRoute = AuthedSettingsJellyfinRouteImport.update({
+  id: '/jellyfin',
+  path: '/jellyfin',
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsJobsRoute = AuthedSettingsJobsRouteImport.update({
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
+  '/settings/jellyfin': typeof AuthedSettingsJellyfinRoute
   '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/komga': typeof AuthedSettingsKomgaRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/settings/about': typeof AuthedSettingsAboutRoute
   '/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/settings/general': typeof AuthedSettingsGeneralRoute
+  '/settings/jellyfin': typeof AuthedSettingsJellyfinRoute
   '/settings/jobs': typeof AuthedSettingsJobsRoute
   '/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/settings/komga': typeof AuthedSettingsKomgaRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/_authed/settings/about': typeof AuthedSettingsAboutRoute
   '/_authed/settings/audiobookshelf': typeof AuthedSettingsAudiobookshelfRoute
   '/_authed/settings/general': typeof AuthedSettingsGeneralRoute
+  '/_authed/settings/jellyfin': typeof AuthedSettingsJellyfinRoute
   '/_authed/settings/jobs': typeof AuthedSettingsJobsRoute
   '/_authed/settings/kavita': typeof AuthedSettingsKavitaRoute
   '/_authed/settings/komga': typeof AuthedSettingsKomgaRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
+    | '/settings/jellyfin'
     | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/komga'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/audiobookshelf'
     | '/settings/general'
+    | '/settings/jellyfin'
     | '/settings/jobs'
     | '/settings/kavita'
     | '/settings/komga'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/_authed/settings/about'
     | '/_authed/settings/audiobookshelf'
     | '/_authed/settings/general'
+    | '/_authed/settings/jellyfin'
     | '/_authed/settings/jobs'
     | '/_authed/settings/kavita'
     | '/_authed/settings/komga'
@@ -773,6 +785,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsGeneralRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
+    '/_authed/settings/jellyfin': {
+      id: '/_authed/settings/jellyfin'
+      path: '/jellyfin'
+      fullPath: '/settings/jellyfin'
+      preLoaderRoute: typeof AuthedSettingsJellyfinRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     '/_authed/settings/jobs': {
       id: '/_authed/settings/jobs'
       path: '/jobs'
@@ -963,6 +982,7 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsAboutRoute: typeof AuthedSettingsAboutRoute
   AuthedSettingsAudiobookshelfRoute: typeof AuthedSettingsAudiobookshelfRoute
   AuthedSettingsGeneralRoute: typeof AuthedSettingsGeneralRoute
+  AuthedSettingsJellyfinRoute: typeof AuthedSettingsJellyfinRoute
   AuthedSettingsJobsRoute: typeof AuthedSettingsJobsRoute
   AuthedSettingsKavitaRoute: typeof AuthedSettingsKavitaRoute
   AuthedSettingsKomgaRoute: typeof AuthedSettingsKomgaRoute
@@ -977,6 +997,7 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsAboutRoute: AuthedSettingsAboutRoute,
   AuthedSettingsAudiobookshelfRoute: AuthedSettingsAudiobookshelfRoute,
   AuthedSettingsGeneralRoute: AuthedSettingsGeneralRoute,
+  AuthedSettingsJellyfinRoute: AuthedSettingsJellyfinRoute,
   AuthedSettingsJobsRoute: AuthedSettingsJobsRoute,
   AuthedSettingsKavitaRoute: AuthedSettingsKavitaRoute,
   AuthedSettingsKomgaRoute: AuthedSettingsKomgaRoute,

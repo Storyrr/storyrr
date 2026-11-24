@@ -173,7 +173,7 @@ export const importUsers = createServerFn({ method: "POST" })
     return { imported };
   });
 
-/** A media server's accounts, keyed like sign-in links (ABS and Komga ids, Kavita lowercased username). */
+/** A media server's accounts, keyed like sign-in links (ABS, Komga and Jellyfin ids, Kavita lowercased username). */
 async function serverAccounts(server: MediaServer) {
   if (server === "audiobookshelf") {
     const abs = await services.audiobookshelf();
@@ -181,6 +181,13 @@ async function serverAccounts(server: MediaServer) {
     const result = await abs.users();
     if (!result.ok) return result;
     return ok(result.value.map((u) => ({ key: u.id, name: u.username, email: u.email ?? null })));
+  }
+  if (server === "jellyfin") {
+    const jellyfin = await services.jellyfin();
+    if (!jellyfin) return fail("not_configured", "Jellyfin is not configured");
+    const result = await jellyfin.users();
+    if (!result.ok) return result;
+    return ok(result.value.map((u) => ({ key: u.Id, name: u.Name, email: null })));
   }
   if (server === "komga") {
     const komga = await services.komga();

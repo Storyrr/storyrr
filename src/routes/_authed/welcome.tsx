@@ -34,6 +34,7 @@ function WelcomePage() {
         <LibraryServerSettings service="audiobookshelf" />
         <LibraryServerSettings service="kavita" />
         <LibraryServerSettings service="komga" />
+        <LibraryServerSettings service="jellyfin" />
         <SettingsSection
           title={m.settings_metadata_title()}
           description={m.settings_metadata_section_description()}

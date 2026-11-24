@@ -29,6 +29,7 @@ const serverNames: Record<MediaServer, () => string> = {
   audiobookshelf: m.service_audiobookshelf,
   kavita: m.service_kavita,
   komga: m.service_komga,
+  jellyfin: m.service_jellyfin,
 };
 
 function AccountOption({

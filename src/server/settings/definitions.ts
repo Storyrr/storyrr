@@ -51,6 +51,12 @@ export const komgaConnection = defineSetting({
   secret: true,
 });
 
+export const jellyfinConnection = defineSetting({
+  key: "services.jellyfin",
+  schema: StoredConnectionSchema,
+  secret: true,
+});
+
 /** Hardcover personal API token (eBook search). */
 export const hardcoverToken = defineSetting({
   key: "services.hardcover.token",
@@ -77,6 +83,7 @@ export const connectionSettings = {
   audiobookshelf: audiobookshelfConnection,
   kavita: kavitaConnection,
   komga: komgaConnection,
+  jellyfin: jellyfinConnection,
 } as const;
 
 /** Shared secret in the Chaptarr webhook URL (generated on first use). */
@@ -102,6 +109,11 @@ export const librarySelection = {
   }),
   kavita: defineSetting({ key: "libraries.kavita", schema: LibrarySelectionSchema, secret: false }),
   komga: defineSetting({ key: "libraries.komga", schema: LibrarySelectionSchema, secret: false }),
+  jellyfin: defineSetting({
+    key: "libraries.jellyfin",
+    schema: LibrarySelectionSchema,
+    secret: false,
+  }),
 } as const;
 
 const agentSetting = <TConfig extends v.GenericSchema>(agent: NotificationAgent, config: TConfig) =>

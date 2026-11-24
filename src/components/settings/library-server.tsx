@@ -42,6 +42,12 @@ const copy: Record<
     description: m.service_komga_description,
     libraries: m.settings_komga_libraries_description,
   },
+  jellyfin: {
+    name: m.service_jellyfin,
+    title: m.settings_jellyfin_title,
+    description: m.service_jellyfin_description,
+    libraries: m.settings_jellyfin_libraries_description,
+  },
 };
 
 /** Seerr's Plex tab, for Audiobookshelf or Kavita: the connection, then its libraries. */

@@ -8,6 +8,7 @@ import {
   hardcoverToken,
   kavitaConnection,
   komgaConnection,
+  jellyfinConnection,
   metadataSettings,
 } from "#/server/settings/definitions";
 
@@ -16,6 +17,7 @@ import { createAudiobookshelfClient } from "./audiobookshelf/client";
 import { createChaptarrClient } from "./chaptarr/client";
 import { createHardcoverClient } from "./hardcover/client";
 import { createKavitaClient } from "./kavita/client";
+import { createJellyfinClient } from "./jellyfin/client";
 import { createKomgaClient } from "./komga/client";
 import type { FetchFn } from "./result";
 
@@ -37,6 +39,10 @@ export function createServices(store: SettingsStore, fetch: FetchFn) {
     async komga() {
       const connection = await store.get(komgaConnection);
       return connection ? createKomgaClient(connection, fetch) : null;
+    },
+    async jellyfin() {
+      const connection = await store.get(jellyfinConnection);
+      return connection ? createJellyfinClient(connection, fetch) : null;
     },
     async hardcover() {
       const token = await store.get(hardcoverToken);

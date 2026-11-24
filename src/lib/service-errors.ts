@@ -14,6 +14,7 @@ export const serviceNames: Record<ExternalService, () => string> = {
   audiobookshelf: m.service_audiobookshelf,
   kavita: m.service_kavita,
   komga: m.service_komga,
+  jellyfin: m.service_jellyfin,
   hardcover: m.service_hardcover,
   audible: m.service_audible,
 };

@@ -23,6 +23,7 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
         ["audiobookshelf", "Audiobookshelf"],
         ["kavita", "Kavita"],
         ["komga", "Komga"],
+        ["jellyfin", "Jellyfin"],
       ] as const) {
         const synced = await syncLibrary({ db, services, settings }, service);
         if (!synced.ok && synced.error.kind !== "not_configured")

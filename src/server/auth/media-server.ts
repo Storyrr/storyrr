@@ -71,6 +71,14 @@ async function checkCredentials(
     if (!result.ok) return result.error.kind === "retryable" ? "unreachable" : "invalid";
     return { key: result.value.id, name: result.value.username, email: result.value.email ?? null };
   }
+  if (server === "jellyfin") {
+    const jellyfin = await services.jellyfin();
+    if (!jellyfin) return "disabled";
+    const result = await jellyfin.login(username, password);
+    if (!result.ok) return result.error.kind === "retryable" ? "unreachable" : "invalid";
+    // Jellyfin keeps no email: matched by link only (or created when allowed).
+    return { key: result.value.Id, name: result.value.Name, email: null };
+  }
   if (server === "komga") {
     const komga = await services.komga();
     if (!komga) return "disabled";

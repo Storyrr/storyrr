@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { titleKey } from "#/lib/match";
 import { createDatabase } from "#/server/db/client";
 import { createKavitaClient } from "#/server/services/kavita/client";
+import { createJellyfinClient } from "#/server/services/jellyfin/client";
 import { createKomgaClient } from "#/server/services/komga/client";
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { libraryStats, ownedTitles, syncKavita, syncKomga } from "./index";
+import { libraryStats, ownedTitles, syncJellyfin, syncKavita, syncKomga } from "./index";
 
 describe("Kavita library index", () => {
   it("indexes every name of every series and matches titles loosely", async () => {
@@ -90,5 +91,28 @@ describe("Komga library index", () => {
     expect(ownedTitles(db, "ebook", ["Dune"])).toEqual(new Set(["dune"]));
     expect(ownedTitles(db, "audiobook", ["Dune"]).size).toBe(0);
     expect(libraryStats(db, "komga").counts).toEqual(new Map([["lib", 1]]));
+  });
+});
+
+describe("Jellyfin library index", () => {
+  it("groups an audiobook's files and keeps each format apart", async () => {
+    const db = createDatabase(":memory:");
+    const { fetch } = fakeFetch((url) =>
+      url.pathname === "/Library/VirtualFolders"
+        ? json([{ Name: "Books", ItemId: "lib", CollectionType: "books" }])
+        : json({
+            Items: [
+              { Id: "f1", Name: "Part 1", Type: "AudioBook", Album: "Dune" },
+              { Id: "f2", Name: "Part 2", Type: "AudioBook", Album: "Dune" },
+              { Id: "b1", Name: "Hyperion", Type: "Book" },
+            ],
+          }),
+    );
+    const jellyfin = createJellyfinClient({ url: "http://jellyfin", apiKey: "k" }, fetch);
+
+    expect(await syncJellyfin(db, jellyfin)).toEqual({ ok: true, value: { items: 2 } });
+    expect(ownedTitles(db, "audiobook", ["Dune", "Hyperion"])).toEqual(new Set(["dune"]));
+    expect(ownedTitles(db, "ebook", ["Dune", "Hyperion"])).toEqual(new Set(["hyperion"]));
+    expect(libraryStats(db, "jellyfin").counts).toEqual(new Map([["lib", 2]]));
   });
 });
