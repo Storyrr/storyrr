@@ -27,11 +27,14 @@ function AuthedLayout() {
   return (
     <SidebarProvider>
       <AppSidebar user={user} version={version} />
-      <SidebarInset>
+      {/* min-w-0: wide content (scrolling rows) must not stretch the column past the screen,
+          or the top bar and its account menu slide out of view. */}
+      <SidebarInset className="min-w-0">
         <TopBar user={user} />
-        <main className="w-full flex-1 px-4 py-6 md:px-8">
+        {/* SidebarInset is already the page's <main>. */}
+        <div className="w-full min-w-0 flex-1 px-4 py-6 md:px-8">
           <Outlet />
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
