@@ -226,7 +226,7 @@ function ApproveDialog({ request }: { request: RequestListItem }) {
   return (
     <DialogTrigger isOpen={open} onOpenChange={setOpen}>
       <Button size="sm">{m.action_approve()}</Button>
-      <Dialog showCloseButton={false} className="sm:max-w-md">
+      <Dialog showCloseButton={false} className="sm:max-w-lg">
         <form
           noValidate
           onSubmit={(event) => {

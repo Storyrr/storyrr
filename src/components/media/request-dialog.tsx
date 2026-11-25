@@ -2,14 +2,13 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDownIcon, DownloadIcon, InfoIcon } from "lucide-react";
+import { DownloadIcon, InfoIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -19,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "#/components/ui/dialog";
-import { FieldGroup } from "#/components/ui/field";
+import { FieldGroup, FieldLegend, FieldSet } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { requestMedia } from "#/functions/requests.functions";
 import { formatList } from "#/lib/format";
@@ -51,7 +50,7 @@ export function RequestDialog({
         <DownloadIcon data-icon="inline-start" />
         {m.action_request()}
       </Button>
-      <Dialog showCloseButton={false} className="sm:max-w-md">
+      <Dialog showCloseButton={false} className="sm:max-w-lg">
         {open ? <RequestForm item={item} onDone={() => setOpen(false)} /> : null}
       </Dialog>
     </DialogTrigger>
@@ -221,7 +220,7 @@ export function TargetSelects({
   );
 }
 
-/** Admins only: collapsed by default; empty fields mean "use the defaults". */
+/** Those allowed only: always shown, so the folder and profile a request gets are never a surprise. */
 export function AdvancedOptions({
   format,
   children,
@@ -230,24 +229,17 @@ export function AdvancedOptions({
   format: SearchableType;
   children: (options: ChaptarrOptions) => React.ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const options = useQuery({ ...chaptarrOptionsQuery(format), enabled: expanded });
-
+  const options = useQuery(chaptarrOptionsQuery(format));
   return (
-    <Collapsible isExpanded={expanded} onExpandedChange={setExpanded}>
-      <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium">
-        <ChevronDownIcon className={expanded ? "rotate-180" : undefined} />
-        {m.request_advanced_options()}
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <FieldGroup className="pt-4">
-          {expanded && options.isPending ? <Spinner /> : null}
-          {options.data && !options.data.ok ? (
-            <FormError message={chaptarrOptionsErrorMessage(options.data)} />
-          ) : null}
-          {options.data?.ok ? children(options.data) : null}
-        </FieldGroup>
-      </CollapsibleContent>
-    </Collapsible>
+    <FieldSet>
+      <FieldLegend>{m.request_advanced_options()}</FieldLegend>
+      {options.isPending ? <Spinner /> : null}
+      {options.data && !options.data.ok ? (
+        <FormError message={chaptarrOptionsErrorMessage(options.data)} />
+      ) : null}
+      {options.data?.ok ? (
+        <div className="grid gap-4 sm:grid-cols-2">{children(options.data)}</div>
+      ) : null}
+    </FieldSet>
   );
 }
