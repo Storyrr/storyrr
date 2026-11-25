@@ -31,8 +31,11 @@ export function LanguageNotice({
             href={addEditionUrl}
             target="_blank"
             rel="noreferrer"
+            // The notice above names the languages; the full label is for screen readers.
+            aria-label={m.media_add_edition({ languages })}
+            className="self-start"
           >
-            {m.media_add_edition({ languages })}
+            {m.media_add_edition_short()}
             <ExternalLinkIcon data-icon="inline-end" />
           </LinkButton>
           <p className="text-xs text-muted-foreground">{m.media_add_edition_hint()}</p>

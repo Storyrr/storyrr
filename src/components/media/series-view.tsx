@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { LanguagesIcon } from "lucide-react";
+import { ExternalLinkIcon, LanguagesIcon } from "lucide-react";
 
+import { LinkButton } from "#/components/ui/button";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
 import { RelatedSeries } from "#/components/media/related-series";
@@ -322,6 +323,25 @@ function VolumeRow({
       </span>
     );
   else if (canRequest) status = <RequestDialog item={{ ...item, type }} size="sm" />;
+  // Someone who knows an edition in their language can add it on Hardcover.
+  const addEdition =
+    refused && item.addEditionUrl ? (
+      <LinkButton
+        variant="outline"
+        size="sm"
+        href={item.addEditionUrl}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={
+          acceptedLanguages
+            ? m.media_add_edition({ languages: formatLanguages(acceptedLanguages) })
+            : undefined
+        }
+      >
+        {m.media_add_edition_short()}
+        <ExternalLinkIcon data-icon="inline-end" />
+      </LinkButton>
+    ) : null;
 
   return (
     <li className="relative flex items-center gap-4 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50">
@@ -348,7 +368,12 @@ function VolumeRow({
           ) : null}
         </div>
         {/* Above the row's link, so its button or tooltip stays usable. */}
-        {status ? <div className="relative z-10 shrink-0">{status}</div> : null}
+        {status ? (
+          <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-3">
+            {status}
+            {addEdition}
+          </div>
+        ) : null}
       </div>
     </li>
   );

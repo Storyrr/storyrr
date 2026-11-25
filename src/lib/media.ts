@@ -30,6 +30,11 @@ export type MediaSummary = {
   languages?: (string | null)[];
   /** Readers' average out of 5 and how many rated it (left out when nobody did). */
   rating?: MediaRating;
+  /**
+   * The provider's form to add an edition of the work (Hardcover, open to any
+   * member): offered when no edition is in a language Chaptarr accepts.
+   */
+  addEditionUrl?: string;
 };
 
 export type MediaRating = { value: number; count: number };
@@ -41,11 +46,6 @@ export type MediaDetails = MediaSummary & {
   /** Plain text (provider HTML is stripped). */
   description?: string;
   tags?: MediaTag[];
-  /**
-   * The provider's form to add an edition of the work (Hardcover, open to any
-   * member): offered when no edition is in a language Chaptarr accepts.
-   */
-  addEditionUrl?: string;
 };
 
 /** The titles of a genre or keyword, one page at a time. */

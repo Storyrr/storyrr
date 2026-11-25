@@ -231,7 +231,7 @@ const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
 }`;
 
 // Card fields for a list of books (trending, series, author), languages included.
-const BOOK_CARD = `id title subtitle release_date pages rating ratings_count
+const BOOK_CARD = `id slug title subtitle release_date pages rating ratings_count
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }

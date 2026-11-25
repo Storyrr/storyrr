@@ -165,6 +165,7 @@
   "media_language_not_accepted": "Not in {languages}: Chaptarr won't add it.",
   "media_add_edition": "Add an edition in {languages} on Hardcover",
   "media_add_edition_hint": "Once it's on Hardcover, Chaptarr can take a while to see it.",
+  "media_add_edition_short": "Add an edition",
   "media_languages": "Languages",
   "language_en": "English",
   "language_fr": "Français",
