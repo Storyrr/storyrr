@@ -80,7 +80,8 @@ Layout (`src/integrations/` from the template keeps only client-side providers s
 src/
 ├── routes/                 # TanStack file routes (pages + server routes)
 │   ├── __root.tsx          # <html lang={getLocale()}>, layout, providers
-│   ├── api/auth/$.ts       # better-auth handler (GET/POST → auth.handler(request))
+│   ├── api/auth/$.ts       # better-auth handler (GET/POST → auth.handler(request)); its /admin/* endpoints are closed (blocked-paths.ts)
+│   ├── api/images.ts       # cover image cache (Settings → Network)
 │   ├── api/webhooks/chaptarr.ts
 │   ├── api/health.ts
 │   └── …pages (search, media/$type/$id, requests, settings, users, setup)
@@ -92,15 +93,17 @@ src/
 │   ├── setup.ts            # first-run wizard (creates the first admin)
 │   ├── services/           # one client per external service (audible, hardcover, chaptarr, audiobookshelf, kavita, komga, jellyfin), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
-│   ├── requests/           # request lifecycle: transitions.ts (createRequest, transitionRequest), policies; the status vocabulary and transition table are client-safe in src/lib/requests.ts
+│   ├── requests/           # request lifecycle: request-title.ts (every check before a request), transitions.ts (createRequest, transitionRequest), submit.ts and availability.ts (Chaptarr hand-off, availability checks), quota, blocklist, language policy; the status vocabulary and transition table are client-safe in src/lib/requests.ts
 │   ├── library/            # ownership index (library_item) synced from the media servers (replaceIndex), with each item's format
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
-│   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults); list and implications in src/lib/permissions.ts
+│   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults) and accountLock (who may change whose account: user managers only grant what they hold); list and implications in src/lib/permissions.ts
+│   ├── users.ts, profile.ts, issues.ts  # user list, per-user preferences, issues and their comments
+│   ├── health.ts, version.ts, releases.ts  # /api/health, the running version, newer GitHub releases (Settings → About)
 │   ├── owner.ts            # the Owner: the oldest admin (the setup account), changed by nobody else; no stored flag
 │   ├── network.ts          # outbound proxy (undici global dispatcher) and the cover image cache (/api/images)
 │   ├── logs.ts             # in-memory copy of the server's console output (Settings → Jobs & logs)
-│   ├── notifications/      # notification agents (email via nodemailer, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook), started by src/server.ts
+│   ├── notifications/      # notification agents (email via nodemailer, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook, Web Push to the browsers' push services only), started by src/server.ts
 │   └── jobs/               # croner scheduler started by src/server.ts: library-sync (15 min), submit-approved (5 min)
 ├── functions/              # *.functions.ts: createServerFn wrappers called by the UI
 ├── integrations/           # client-side providers (TanStack Query, …) from the template

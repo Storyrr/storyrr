@@ -16,12 +16,11 @@ One place where invited users **search and request audiobooks and eBooks (books,
 
 ### Non-goals for v1
 
-- Recommendations, reading/listening tracking, ratings, social features.
+- Recommendations, reading/listening tracking, users' own ratings, social features (the providers' reader ratings are shown).
 - Being a downloader or indexer client: Chaptarr and Audiobookshelf do the fetching.
 - Movies/TV/music.
 - Podcasts: free to follow in any podcast app, so requesting them adds little (a podcast request flow into Audiobookshelf was built, then removed; see git history).
-- Native mobile app (responsive web only; PWA later).
-- Email/push notifications (in-app status only in v1).
+- Native mobile app (responsive web, installable as a PWA: see 4.10).
 
 ## 3. Users and roles
 
@@ -30,26 +29,16 @@ One place where invited users **search and request audiobooks and eBooks (books,
 | **Admin** | everything a user can + approve/deny requests, choose target folder and quality profile, manage users, manage settings |
 | **User**  | search, request, see own requests and their status                                                                     |
 
-Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everything), each user has a list of permissions: Manage users, Manage settings, Manage requests (implies Advanced requests, View requests and auto-approval), Advanced requests (pick folder and profile), View requests, Request audiobooks / eBooks, Auto-approve audiobooks / eBooks, Manage issues (implies Report issues), Report issues, Manage blocklist. Users without their own list get the defaults from Settings → Users (request both formats, report issues). User managers who aren't admins can't change admins' accounts or grant the Admin role. The **Owner** (decided 2026-11-24, like Seerr's first user) is the account the setup wizard created (on older installs: the oldest admin): an admin that only they can change. Nobody else edits their name, email, language, password or permissions, bans, demotes or deletes them; the Users table and their profile show the role as Owner. Accounts are **invite-only**: no public sign-up.
+Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everything), each user has a list of permissions: Manage users, Manage settings, Manage requests (implies Advanced requests, View requests and auto-approval), Advanced requests (pick folder and profile), View requests, Request audiobooks / eBooks, Auto-approve audiobooks / eBooks, Manage issues (implies Report issues), Report issues, Manage blocklist. Users without their own list get the defaults from Settings → Users (request both formats, report issues). User managers who aren't admins can't change admins' accounts or grant the Admin role; they only grant permissions they hold themselves, and can't change an account holding one they lack (decided 2026-11-25: otherwise they could give an account they create any permission). The **Owner** (decided 2026-11-24, like Seerr's first user) is the account the setup wizard created (on older installs: the oldest admin): an admin that only they can change. Nobody else edits their name, email, language, password or permissions, bans, demotes or deletes them; the Users table and their profile show the role as Owner. Accounts are **invite-only**: no public sign-up.
 
 ## 4. Core flows
 
 ### 4.1 First run (setup wizard)
 
-Shown when the database has no user.
+Shown when the database has no user: it creates the admin account (name, email, password), which becomes the **Owner**, then opens the home page. Services (Chaptarr, Audiobookshelf, Kavita, Komga, Jellyfin, metadata) and the default target per format are set afterwards in Settings, each with a **Test** button and a clear error on failure. Defaults come from the live lists:
 
-1. Create the admin account (name, email, password): it becomes the **Owner**.
-2. Connect services, each with a **Test** button and a clear error on failure:
-   - Chaptarr: URL + API key (required for audiobooks and eBooks).
-   - Audiobookshelf: URL + API key (audiobook availability).
-   - Kavita: URL + auth key (optional, eBook availability).
-   - Komga: URL + API key (optional, eBook availability).
-   - Jellyfin: URL + API key (optional, audiobook and eBook availability from its book libraries).
-   - Metadata: Audible region (default `fr`), Hardcover token (optional).
-3. Defaults: default target per format (from the live lists):
-   - audiobook → a Chaptarr root folder with `folderType` 1 (audiobook) or 0 (mixed);
-   - eBook → a Chaptarr root folder with `folderType` 2 (eBook) or 0 (mixed);
-4. Done → home.
+- audiobook → a Chaptarr root folder with `folderType` 1 (audiobook) or 0 (mixed);
+- eBook → a Chaptarr root folder with `folderType` 2 (eBook) or 0 (mixed).
 
 ### 4.2 Search
 
@@ -128,7 +117,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 ### 4.6 Submission and status tracking
 
 - On approval, submit to the backend:
-  - audiobook/eBook → Chaptarr: ensure the author exists for that media type (with the write scope), monitor + search only the requested book, in the chosen root folder;
+  - audiobook/eBook → Chaptarr `POST /api/v1/book/import`: adds the author if needed, monitors and searches only the requested book on the requested format, in the chosen root folder (see AGENTS.md › Chaptarr);
 - Status: `pending → approved → submitted → available`; failures go to `failed` with the upstream reason and a **Retry** action.
 - Availability updates from: Chaptarr webhook (import events), a periodic job (every ~15 min) checking Chaptarr files and the media servers (Audiobookshelf, Kavita, Komga, Jellyfin), and a manual "Check now".
 - Every transition is recorded (who, when, from → to, message) and shown in the request history.
@@ -140,6 +129,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 ### 4.8 Users (admin)
 
 - List, create/invite (email + temporary password; invite links later), set role, toggle auto-approve, disable/remove.
+- Import users from a media server (like Seerr's Plex import): accounts linked to theirs, default permissions. One whose email a Storyrr account already uses is skipped (never linked by email): its owner links it in their settings.
 - Per-user request limits overriding the global ones (decided 2026-11-24).
 - Seerr-like table (decided 2026-11-24): user (avatar, name, email), requests, role, joined; search, sortable columns, pages. **Edit** opens that user's settings (the same General / Password / Permissions tabs as one's own): admins change their name, email and language, set a new password, and edit role, auto-approval, ban and request limits there. Admins can't demote, ban or delete themselves. The Owner's settings are read-only for everyone else, with a notice saying why, and their Delete button is disabled.
 - Optional link to an Audiobookshelf user (future: "already listened").
@@ -178,7 +168,7 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 - **Services:** one Chaptarr server (decided: Chaptarr serves both formats), shown as a card (address, default folder and profile per format) with Edit (connection + defaults per format, in a dialog) and Delete, or an "Add a Chaptarr server" box; the webhook URL below.
 - **Audiobookshelf / Kavita / Komga / Jellyfin** (Seerr's Plex tab): connection, then the server's libraries as toggles (which ones count for availability; stored as exclusions so new libraries count) and "Sync libraries".
 - **Jobs & logs:** each background job with its schedule, last run (and result) and next run, with Run now; the server's last 1,000 log lines (in memory), filtered by level and text, paused or copied.
-- **Network:** an outbound HTTP(S) proxy for Storyrr's calls (with hosts reached directly), and an optional cover cache: covers served by Storyrr from the data folder (30 days), signed-in users only, provider image hosts only.
+- **Network:** an outbound HTTP(S) proxy for Storyrr's calls (with hosts reached directly), and an optional cover cache: covers served by Storyrr from the data folder (30 days), signed-in users only, provider image hosts only (redirects included), raster images only (no SVG), 5 MB per cover, stored up to 1 GB.
 - Later: health of each connection.
 
 ### 4.9b Polish (decided 2026-11-24)
@@ -202,6 +192,11 @@ Auth tables are generated by better-auth (user, session, account, verification) 
 | `request_event`        | id, request_id, actor (user id / "system" / "webhook"), from_status, to_status, message, created_at                                                                                                                                                                                                                             |
 | `user_preference`      | user_id, permissions (json), locale, request_limits (json), notifications (json)                                                                                                                                                                                                                                                |
 | `media_server_account` | server, account_key, user_id: which media-server account a user is (sign in with a media server, imported users)                                                                                                                                                                                                                |
+| `request_watcher`      | request_id, user_id: users who joined someone else's active request (they get its news)                                                                                                                                                                                                                                         |
+| `issue`                | id, media_id, user_id, type (language/edition/content…), status (open/resolved), created_at, updated_at                                                                                                                                                                                                                         |
+| `issue_comment`        | id, issue_id, user_id, message, created_at: the discussion (the first comment is the report)                                                                                                                                                                                                                                    |
+| `blocklist_item`       | id, type, source, external_id, title, cover_url, reason, created_by, created_at: titles nobody can request                                                                                                                                                                                                                      |
+| `push_subscription`    | endpoint, user_id, p256dh, auth: a device's Web Push subscription                                                                                                                                                                                                                                                               |
 | `setting`              | key, value (json; secrets encrypted)                                                                                                                                                                                                                                                                                            |
 | `library_item`         | backend, item_id, library_id, format (audiobook/ebook), external_id (ASIN), match_key, title, author, synced_at: what the media servers already hold, refreshed by the library sync job; Audiobookshelf matched by ASIN, the other servers by normalized title per format (replaces the planned per-media `availability` table) |
 
@@ -209,15 +204,15 @@ Uniqueness: one _active_ request per (media, format, target); a second requester
 
 ## 6. Integrations (summary)
 
-| Service                  | Used for                                                       | Auth                                    | Key endpoints (verify on install)                                                                                                                                            |
-| ------------------------ | -------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chaptarr                 | submit audiobooks/eBooks, folders, profiles, availability      | `X-Api-Key`                             | `/api/v1/rootfolder`, `/qualityprofile`, `/metadataprofile`, `/author/lookup`, `/book/lookup`, `POST/PUT /author?mediaType=`, `/book/monitor`, `/command`, `/queue`, webhook |
-| Audiobookshelf           | audiobook ownership, metadata proxy                            | Bearer API key                          | `/api/libraries`, `/api/libraries/:id/items`, `/api/search/books`                                                                                                            |
-| Kavita                   | eBook ownership                                                | Auth key → JWT                          | `/api/Plugin/authenticate`, library/series search                                                                                                                            |
-| Komga                    | eBook ownership (comics, manga, eBooks), sign-in, users        | `X-API-Key` (user: HTTP Basic)          | `GET /api/v1/libraries`, `POST /api/v1/series/list`, `GET /api/v2/users`, `GET /api/v2/users/me`                                                                             |
-| Jellyfin                 | audiobook and eBook ownership (book libraries), sign-in, users | `Authorization: MediaBrowser Token="…"` | `GET /Library/VirtualFolders`, `GET /Items?IncludeItemTypes=AudioBook,Book`, `GET /Users`, `POST /Users/AuthenticateByName`                                                  |
-| Audible / Audnexus       | audiobook metadata                                             | none                                    | via ABS proxy or Audnexus                                                                                                                                                    |
-| Hardcover / Open Library | eBook metadata                                                 | token / none                            | GraphQL / `search.json`                                                                                                                                                      |
+| Service        | Used for                                                       | Auth                                    | Key endpoints (verify on install)                                                                                                 |
+| -------------- | -------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Chaptarr       | submit audiobooks/eBooks, folders, profiles, availability      | `X-Api-Key`                             | `/api/v1/rootfolder`, `/qualityprofile`, `/metadataprofile`, `/book/lookup`, `POST /book/import`, `/queue`, `/health`, webhook    |
+| Audiobookshelf | audiobook ownership, metadata proxy                            | Bearer API key                          | `/api/libraries`, `/api/libraries/:id/items`, `/api/search/books`                                                                 |
+| Kavita         | eBook ownership, sign-in, users                                | Auth key → JWT                          | `/api/Plugin/authenticate`, `/api/Library/libraries`, `/api/Series/all-v2`, `/api/Series/volumes` (book titles in book libraries) |
+| Komga          | eBook ownership (comics, manga, eBooks), sign-in, users        | `X-API-Key` (user: HTTP Basic)          | `GET /api/v1/libraries`, `POST /api/v1/series/list`, `POST /api/v1/books/list`, `GET /api/v2/users`, `GET /api/v2/users/me`       |
+| Jellyfin       | audiobook and eBook ownership (book libraries), sign-in, users | `Authorization: MediaBrowser Token="…"` | `GET /Library/VirtualFolders`, `GET /Items?IncludeItemTypes=AudioBook,Book`, `GET /Users`, `POST /Users/AuthenticateByName`       |
+| Audible        | audiobook metadata                                             | none                                    | `https://api.audible.<tld>/1.0/catalog/products` (catalog API, called directly)                                                   |
+| Hardcover      | eBook metadata                                                 | personal token                          | GraphQL `https://api.hardcover.app/v1/graphql`                                                                                    |
 
 See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 
@@ -235,11 +230,11 @@ See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 
 1. **Skeleton:** TanStack Start + Bun + Drizzle + better-auth (invite-only, admin plugin) + Paraglide + Tailwind; CI (`bun run check`) + release-please + Docker image published on release (see AGENTS.md › Releases); health route; setup wizard (admin account only).
 2. **Audiobooks end-to-end:** Settings → Services (Chaptarr, Audiobookshelf, Audible region, default audiobook target, with Test) and the same forms as an optional wizard step; Audible search, detail page, request modal (with admin target folder), approval, Chaptarr submit (write scope!), availability via ABS (ASIN) + Chaptarr webhook.
-3. **eBooks:** Hardcover/Open Library search, Chaptarr eBook submit to Books/Manga/Comics folders, availability via Kavita.
+3. **eBooks:** Hardcover search, Chaptarr eBook submit to Books/Manga/Comics folders, availability via Kavita, Komga and Jellyfin.
 4. ~~Podcasts~~: dropped (2026-11-24), see non-goals.
 5. **Polish:** Seerr-like layout, Discover, blocklist, issues, users admin, settings + job history, retry/cancel, PWA manifest. (French translation: done early, with a language switcher in the account menu; German and Spanish added 2026-11-25.)
 
-Later: OIDC login (better-auth `genericOAuth`, with implicit sign-up disabled), notifications (email / ntfy / Discord), recommendations, public REST API.
+Later: OIDC login (better-auth `genericOAuth`, with implicit sign-up disabled), recommendations, public REST API.
 
 ## 9. Open questions
 

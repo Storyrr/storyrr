@@ -5,9 +5,16 @@
   </picture>
 </p>
 
-A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to Chaptarr and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/) and [Kavita](https://www.kavitareader.com/).
+A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to [Chaptarr](https://github.com/Chaptarr/chaptarr) and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/), [Kavita](https://www.kavitareader.com/), [Komga](https://komga.org/) and [Jellyfin](https://jellyfin.org/).
 
-> **Status: early development.** The first-run wizard, accounts and the app skeleton work; search and requests are being built. See the [v1 spec](docs/SPEC.md) for the roadmap.
+- **Search and discover** audiobooks (Audible's catalog) and eBooks, manga and comics ([Hardcover](https://hardcover.app/)), with series, authors, genres and readers' ratings.
+- **Requests with approval:** per-user permissions and limits, auto-approval, a blocklist, and the target Chaptarr folder chosen per request.
+- **Availability** from your media servers' libraries and Chaptarr's imports, with issues to report a wrong edition or language.
+- **Sign in with a media server** (Audiobookshelf, Kavita, Komga, Jellyfin) or import its users; accounts are invite-only.
+- **Notifications** by email, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook and Web Push.
+- English, French, German and Spanish; installable as an app on phones.
+
+> **Status: pre-release.** The v1 features work; expect changes until 1.0. See the [v1 spec](docs/SPEC.md).
 
 ## Run with Docker
 
@@ -26,7 +33,7 @@ services:
       - ./data:/data
 ```
 
-Then open the URL: the first visit runs the setup wizard, which creates the administrator account. There is no public sign-up; the administrator creates the other accounts.
+Then open the URL: the first visit runs the setup wizard, which creates the administrator account. Connect Chaptarr, your media servers and a Hardcover token in Settings afterwards. There is no public sign-up; the administrator creates or imports the other accounts.
 
 The SQLite database lives in `/data` (keep it on a volume); migrations run automatically at startup. `GET /api/health` reports the app version and database state, and the image uses it as its healthcheck.
 
