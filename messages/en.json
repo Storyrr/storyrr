@@ -690,7 +690,7 @@
   "discover_row_title": "Row title",
   "discover_row_query": "Search",
   "discover_reset": "Reset to default",
-  "media_also_in_languages": "Also in {languages}:",
+  "media_also_in_languages": "Also in {languages}",
   "series_kicker_ebook": "eBook series",
   "series_kicker_audiobook": "Audiobook series",
   "series_partially_available": "Partially available",
