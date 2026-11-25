@@ -6,6 +6,7 @@ import { Cover } from "#/components/media/cover";
 import { RelatedSeries } from "#/components/media/related-series";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { RequestSeriesDialog } from "#/components/media/request-series-dialog";
+import { SameAuthorRow } from "#/components/media/same-author-row";
 import { TagList } from "#/components/media/tag-list";
 import { Badge } from "#/components/ui/badge";
 import { Card, CardContent } from "#/components/ui/card";
@@ -108,6 +109,10 @@ export function SeriesView({
   const imageUrl = useImageUrl();
   const cover = items.find((item) => item.coverUrl)?.coverUrl;
   const authors = seriesAuthors(items);
+  // The first author with a page: their other works close the page.
+  const mainAuthor = authors.find((author): author is { name: string; id: string } =>
+    Boolean(author.id),
+  );
   const years = yearSpan(items);
   const allRefused = items.length > 0 && items.every((item) => item.accepted === false);
   const narrators = [...new Set(items.flatMap((item) => item.narrators))];
@@ -265,6 +270,7 @@ export function SeriesView({
           </Card>
         </aside>
       </div>
+      {mainAuthor ? <SameAuthorRow type={type} seriesId={id} author={mainAuthor} /> : null}
     </div>
   );
 }

@@ -712,5 +712,6 @@
   "series_languages_more": "{languages} et {count} autres",
   "series_details": "Détails",
   "password_show": "Afficher le mot de passe",
-  "password_hide": "Masquer le mot de passe"
+  "password_hide": "Masquer le mot de passe",
+  "series_same_author": "Autres œuvres de {author}"
 }

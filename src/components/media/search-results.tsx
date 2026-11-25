@@ -1,17 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
 import { useId } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { MediaCard } from "#/components/media/media-card";
-import { LanguageNotice } from "#/components/media/language-notice";
-import { MediaPoster } from "#/components/media/media-poster";
-import { RequestSeriesDialog } from "#/components/media/request-series-dialog";
+import { SeriesCard } from "#/components/media/series-card";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { SearchableType } from "#/lib/media-types";
-import { can } from "#/lib/permissions";
 import { mediaSearchQuery, seriesSearchQuery } from "#/lib/queries/media";
-import { groupBySeries, type SeriesEntry } from "#/lib/series";
+import { groupBySeries } from "#/lib/series";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
@@ -23,48 +19,6 @@ const providers: Record<SearchableType, "audible" | "hardcover"> = {
   audiobook: "audible",
   ebook: "hardcover",
 };
-
-/** A series in the results: one card for all its volumes, opening the series page; Request picks volumes. */
-function SeriesCard({
-  type,
-  series,
-  acceptedLanguages,
-}: {
-  type: SearchableType;
-  series: SeriesEntry;
-  acceptedLanguages: readonly string[] | null;
-}) {
-  const { user } = useRouteContext({ from: "/_authed" });
-  const refused = series.availability === "none" && series.accepted === false;
-  let action: React.ReactNode;
-  if (refused && acceptedLanguages)
-    action = <LanguageNotice acceptedLanguages={acceptedLanguages} />;
-  else if (series.availability === "none" && !refused && can(user, `request_${type}`))
-    action = (
-      <RequestSeriesDialog
-        type={type}
-        seriesId={series.id}
-        name={series.name}
-        size="sm"
-        className="w-full"
-      />
-    );
-  return (
-    <MediaPoster
-      type={type}
-      item={{
-        externalId: series.id,
-        title: series.name,
-        authors: series.authors,
-        coverUrl: series.coverUrl,
-      }}
-      availability={series.availability}
-      refused={refused}
-      series={{ booksCount: series.booksCount }}
-      action={action}
-    />
-  );
-}
 
 /**
  * Search results for one type, as a grid of cards (with a heading when several
