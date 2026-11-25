@@ -26,8 +26,10 @@ export type RenderedNotification = { subject: string; message: string };
 export function renderNotification(data: NotificationData, locale: Locale): RenderedNotification {
   const o = { locale };
   const title = data.media?.title ?? "";
-  const format =
+  const label =
     data.media?.type === "ebook" ? m.media_type_ebook({}, o) : m.media_type_audiobook({}, o);
+  // Inside a sentence ("requested the audiobook"): German nouns keep their capital.
+  const format = locale === "de" ? label : label.charAt(0).toLowerCase() + label.slice(1);
   const user = data.requestedBy ?? data.issue?.reportedBy ?? "";
   const issueTypes: Record<IssueType, string> = {
     language: m.issue_type_language({}, o),
