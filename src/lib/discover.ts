@@ -47,9 +47,10 @@ export const NewSearchRowSchema = v.object({
 export const DEFAULT_DISCOVER_LAYOUT: readonly DiscoverRow[] = [
   { id: "recently_added", kind: "recently_added", enabled: true },
   { id: "recent_requests", kind: "recent_requests", enabled: true },
+  // Audiobooks together, then books: each format's rows read as one block.
   { id: "trending_audiobook", kind: "trending", type: "audiobook", enabled: true },
-  { id: "trending_ebook", kind: "trending", type: "ebook", enabled: true },
   { id: "genres_audiobook", kind: "genres", type: "audiobook", enabled: true },
+  { id: "trending_ebook", kind: "trending", type: "ebook", enabled: true },
   { id: "genres_ebook", kind: "genres", type: "ebook", enabled: true },
   { id: "upcoming_ebook", kind: "upcoming", type: "ebook", enabled: true },
 ];
