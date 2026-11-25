@@ -6,6 +6,7 @@ import * as v from "valibot";
 import {
   AGENT_DEFINITIONS,
   AgentCommonSchema,
+  isPushServiceEndpoint,
   withNotificationDefaults,
   NOTIFICATION_AGENTS,
   PERSONAL_ONLY_AGENTS,
@@ -245,7 +246,12 @@ export const getPushPublicKey = createServerFn({ method: "GET" })
   });
 
 const SubscriptionSchema = v.object({
-  endpoint: v.pipe(v.string(), v.url(), v.maxLength(2000)),
+  endpoint: v.pipe(
+    v.string(),
+    v.url(),
+    v.maxLength(2000),
+    v.check(isPushServiceEndpoint, "Not a browser push service"),
+  ),
   p256dh: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
   auth: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
 });
@@ -261,7 +267,7 @@ export const subscribePush = createServerFn({ method: "POST" })
 
 export const unsubscribePush = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(v.object({ endpoint: SubscriptionSchema.entries.endpoint }))
+  .validator(v.object({ endpoint: v.pipe(v.string(), v.maxLength(2000)) }))
   .handler(({ data, context }) => {
     // Only the caller's own device.
     const sub = db

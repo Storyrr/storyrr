@@ -2,6 +2,7 @@ import "@tanstack/react-start/server-only";
 import { eq } from "drizzle-orm";
 import { generateVAPIDKeys, sendNotification } from "web-push";
 
+import { isPushServiceEndpoint } from "#/lib/notifications";
 import type { AppDatabase } from "#/server/db/client";
 import { pushSubscription } from "#/server/db/schema";
 import { vapidKeys } from "#/server/settings/definitions";
@@ -62,6 +63,11 @@ export async function sendWebPush(
   });
   const results: SendResult[] = [];
   for (const sub of subscriptions) {
+    if (!isPushServiceEndpoint(sub.endpoint)) {
+      // Saved before endpoints were checked: never sent to.
+      removeSubscription(db, sub.endpoint);
+      continue;
+    }
     try {
       await sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },

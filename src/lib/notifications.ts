@@ -428,3 +428,31 @@ function read<S extends v.GenericSchema>(schema: S, value: unknown, fallback: v.
   const result = v.safeParse(schema, value);
   return result.success ? result.output : fallback;
 }
+
+/**
+ * The browsers' push services (Chrome and most Chromium browsers: FCM; Firefox:
+ * Mozilla; Safari: Apple; Edge: Windows). The endpoint comes from the user's
+ * browser, so anyone could send another URL: Storyrr would then POST to any
+ * host its server reaches (its own network included). Only these are used.
+ */
+const PUSH_SERVICE_HOSTS = [
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  "push.services.mozilla.com",
+  "push.apple.com",
+  "notify.windows.com",
+];
+
+/** Whether a subscription endpoint is a known push service's, over HTTPS. */
+export function isPushServiceEndpoint(endpoint: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:" || parsed.port !== "") return false;
+  if (parsed.username || parsed.password) return false;
+  const host = parsed.hostname.toLowerCase();
+  return PUSH_SERVICE_HOSTS.some((known) => host === known || host.endsWith(`.${known}`));
+}
