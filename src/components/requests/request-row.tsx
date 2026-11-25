@@ -58,9 +58,9 @@ export function RequestRow({ request }: { request: RequestListItem }) {
   const error = cancel.error ?? retry.error;
   const failure = request.status === "failed" ? describeRequestError(request.lastError) : null;
   const manager = can(user, "manage_requests");
-  const canCancel =
-    (request.status === "pending" && (manager || request.requester.id === user.id)) ||
-    (request.status === "submitted" && manager);
+  // Requesters withdraw their own pending request; managers have Delete request
+  // (and Remove from Chaptarr once sent) instead.
+  const canCancel = !manager && request.status === "pending" && request.requester.id === user.id;
 
   const year = yearOf(request.media.releaseDate ?? undefined);
 
