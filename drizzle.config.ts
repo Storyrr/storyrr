@@ -3,8 +3,8 @@ import { defineConfig } from "drizzle-kit";
 
 config({ path: [".env.local", ".env"] });
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set (see .env.example)");
+// Same default as src/server/env.ts.
+const url = process.env.DATABASE_URL || "database/dev.db";
 
 export default defineConfig({
   out: "./drizzle",

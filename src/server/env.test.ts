@@ -36,18 +36,18 @@ describe("parseEnv", () => {
     expect(() => parseEnv(env)).toThrow(key);
   });
 
-  it("needs no URL or secret (set in the app, generated)", () => {
-    expect(parseEnv({ DATABASE_URL: "test.db" })).toEqual({
-      DATABASE_URL: "test.db",
+  it("needs no variable at all (database in database/, URL set in the app, secret generated)", () => {
+    expect(parseEnv({})).toEqual({
+      DATABASE_URL: "database/dev.db",
       NODE_ENV: "development",
       PORT: 3000,
     });
   });
 
   it("lists every invalid variable in one error", () => {
-    expect(() => parseEnv({ BETTER_AUTH_URL: "nope", BETTER_AUTH_SECRET: "short" })).toThrow(
-      /DATABASE_URL[\s\S]*BETTER_AUTH_URL[\s\S]*BETTER_AUTH_SECRET/,
-    );
+    expect(() =>
+      parseEnv({ DATABASE_URL: "", BETTER_AUTH_URL: "nope", BETTER_AUTH_SECRET: "short" }),
+    ).toThrow(/DATABASE_URL[\s\S]*BETTER_AUTH_URL[\s\S]*BETTER_AUTH_SECRET/);
   });
 });
 

@@ -10,8 +10,12 @@ import * as v from "valibot";
  */
 const EnvSchema = v.object({
   NODE_ENV: v.optional(v.picklist(["development", "production", "test"]), "development"),
-  /** SQLite database file, e.g. `dev.db` locally or `/data/storyrr.db` in Docker. */
-  DATABASE_URL: v.pipe(v.string(), v.nonEmpty("must not be empty")),
+  /**
+   * SQLite database file. Defaults to `database/dev.db` (like Laravel's
+   * `database/` folder, git-ignored); the Docker image sets `/data/storyrr.db`.
+   * Keep in sync with `drizzle.config.ts`.
+   */
+  DATABASE_URL: v.optional(v.pipe(v.string(), v.nonEmpty("must not be empty")), "database/dev.db"),
   /**
    * Optional: the application URL, used in links (emails, notifications, the
    * Chaptarr webhook). Set, it overrides Settings → General. Sign-in works from

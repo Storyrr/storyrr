@@ -19,9 +19,10 @@ Requirements: [Node.js](https://nodejs.org/) 22.12+ (it runs the app) and [Bun](
 
 ```bash
 bun install
-cp .env.example .env.local   # optional: both variables can stay unset
-bun run dev                  # http://localhost:3000, the first visit runs the setup wizard
+bun run dev   # http://localhost:3000, the first visit runs the setup wizard
 ```
+
+No configuration is needed: the database goes to `database/dev.db` (git-ignored, like Laravel's `database/` folder), and the auth secret is generated next to it. To change something, copy `.env.example` to `.env.local` and uncomment the variable.
 
 `.env.local` and the `*.db` files are git-ignored: never commit them.
 
