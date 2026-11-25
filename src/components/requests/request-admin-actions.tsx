@@ -2,11 +2,12 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { FormError, FormSuccess } from "#/components/form/form-error";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
+import { Field, FieldLabel } from "#/components/ui/field";
 import {
   Dialog,
   DialogClose,
@@ -75,6 +76,7 @@ export function DeleteRequestButton({ id, title }: { id: string; title: string }
 
 /** Seerr-like "Remove from Radarr", for Chaptarr: files are kept unless asked. */
 export function RemoveFromChaptarrButton({ id, title }: { id: string; title: string }) {
+  const deleteFilesId = useId();
   const [open, setOpen] = useState(false);
   const removeFn = useServerFn(removeFromChaptarr);
   const invalidate = useInvalidateRequests();
@@ -133,13 +135,16 @@ export function RemoveFromChaptarrButton({ id, title }: { id: string; title: str
           {outcome && !remove.data?.ok ? <FormError message={outcome} /> : null}
           <form.Field name="deleteFiles">
             {(field) => (
-              <Checkbox
-                isSelected={field.state.value}
-                onChange={field.handleChange}
-                className="text-sm"
-              >
-                {m.requests_remove_delete_files()}
-              </Checkbox>
+              <Field orientation="horizontal">
+                <Checkbox
+                  id={deleteFilesId}
+                  isSelected={field.state.value}
+                  onChange={field.handleChange}
+                />
+                <FieldLabel htmlFor={deleteFilesId} className="font-normal">
+                  {m.requests_remove_delete_files()}
+                </FieldLabel>
+              </Field>
             )}
           </form.Field>
           <DialogFooter>
