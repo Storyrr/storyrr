@@ -13,6 +13,9 @@ import { Spinner } from "#/components/ui/spinner";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
+/** What a password field shows for a key: the disc glyph browsers mask with. */
+const SAVED_MASK = "\u25CF".repeat(40);
+
 /**
  * Seerr-like secret input: masked, with a button to show it. When a secret is
  * saved, the field shows a masked placeholder and the button fetches the saved
@@ -81,7 +84,9 @@ export function SecretField({
           autoComplete="off"
           spellCheck={false}
           value={value}
-          placeholder={saved ? "••••••••••••••••••••••••" : undefined}
+          // Looks like the masked key itself (not fetched until the eye is pressed).
+          placeholder={saved && !visible ? SAVED_MASK : undefined}
+          className={saved ? "placeholder:text-foreground" : undefined}
           aria-invalid={invalid || undefined}
           aria-describedby={description ? descriptionId : undefined}
           onChange={(event) => onChange(event.target.value)}
