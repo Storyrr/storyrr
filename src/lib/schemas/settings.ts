@@ -69,9 +69,10 @@ export const FormatDefaultsSchema = v.object({
 });
 export type FormatDefaults = v.InferOutput<typeof FormatDefaultsSchema>;
 
+/** Both formats' defaults, saved together; a format Chaptarr couldn't list options for is left out. */
 export const SaveFormatDefaultsSchema = v.object({
-  format: v.picklist(CHAPTARR_FORMATS),
-  defaults: FormatDefaultsSchema,
+  audiobook: v.optional(FormatDefaultsSchema),
+  ebook: v.optional(FormatDefaultsSchema),
 });
 
 export const FormatInputSchema = v.object({ format: v.picklist(CHAPTARR_FORMATS) });

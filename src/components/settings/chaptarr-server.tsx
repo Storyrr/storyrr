@@ -144,13 +144,7 @@ function ChaptarrDialog({
         // Folders and profiles come from the saved connection: shown once it exists.
         <>
           <Separator />
-          {CHAPTARR_FORMATS.map((format) => (
-            <FormatDefaultsForm
-              key={`${format}-${current.url}`}
-              format={format}
-              current={defaults[format]}
-            />
-          ))}
+          <FormatDefaultsForm key={current.url} current={defaults} />
         </>
       ) : (
         <p className="text-sm text-muted-foreground">

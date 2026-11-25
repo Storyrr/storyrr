@@ -4,6 +4,7 @@ import * as v from "valibot";
 
 import {
   AppUrlSchema,
+  CHAPTARR_FORMATS,
   DEFAULT_USER_SETTINGS,
   FormatInputSchema,
   HardcoverTokenFormSchema,
@@ -164,7 +165,10 @@ export const saveFormatDefaults = createServerFn({ method: "POST" })
   .middleware([requireSettings])
   .validator(SaveFormatDefaultsSchema)
   .handler(async ({ data }) => {
-    await settings.set(formatDefaults[data.format], data.defaults);
+    for (const format of CHAPTARR_FORMATS) {
+      const defaults = data[format];
+      if (defaults) await settings.set(formatDefaults[format], defaults);
+    }
     clearLanguagePolicyCache();
     return { ok: true };
   });
