@@ -30,12 +30,25 @@ const SeriesSchema = v.looseObject({
   ),
 });
 
-// UNVERIFIED: Spring's default Page JSON (content, last), as Komga sets no other
-// serialization mode; checked in the source, not against a running server.
+// Spring's default Page JSON (content, last), checked against a running Komga 1.30.2 on 2026-11-25.
 const SeriesPageSchema = v.looseObject({
   content: v.array(SeriesSchema),
   last: v.optional(v.boolean()),
 });
+
+const BookPageSchema = v.looseObject({
+  content: v.array(
+    v.looseObject({
+      seriesId: v.string(),
+      deleted: v.optional(v.boolean(), false),
+      metadata: v.looseObject({ title: v.string() }),
+    }),
+  ),
+  last: v.optional(v.boolean()),
+});
+
+/** A book title worth matching: not a bare number ("1", "01"), as volumes often are. */
+const hasLetter = (title: string) => /\p{L}/u.test(title);
 
 const UserSchema = v.looseObject({ id: v.string(), email: v.string() });
 export type KomgaUser = v.InferOutput<typeof UserSchema>;
@@ -105,7 +118,7 @@ export function createKomgaClient({ url, apiKey }: KomgaConnection, fetch: Fetch
     /** Also the connection test. */
     libraries: () => call("GET", "/api/v1/libraries", v.array(LibrarySchema)),
 
-    /** Every series the key's user can see, across libraries (deleted ones left out). */
+    /** Every series the key's user can see, across libraries (deleted ones left out), with its books' titles. */
     async allSeries(): Promise<ServiceResult<KomgaSeries[]>> {
       const series: KomgaSeries[] = [];
       for (let page = 0; page < MAX_PAGES; page++) {
@@ -125,13 +138,29 @@ export function createKomgaClient({ url, apiKey }: KomgaConnection, fetch: Fetch
           series.push({
             seriesId: item.id,
             libraryId: item.libraryId,
-            names: [...new Set(names)],
+            names,
             author: writers.map((a) => a.name).join(", "),
           });
         }
         if (result.value.last ?? result.value.content.length < PAGE_SIZE) break;
       }
-      return ok(series);
+      // A series may hold several books (a folder of a real series, or a list
+      // from the EPUBs' metadata): each book's own title is indexed too.
+      const byId = new Map(series.map((item) => [item.seriesId, item]));
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const result = await call("POST", "/api/v1/books/list", BookPageSchema, {
+          query: { page: String(page), size: String(PAGE_SIZE) },
+          body: {},
+        });
+        if (!result.ok) return result;
+        for (const book of result.value.content) {
+          const item = byId.get(book.seriesId);
+          if (item && !book.deleted && hasLetter(book.metadata.title))
+            item.names.push(book.metadata.title);
+        }
+        if (result.value.last ?? result.value.content.length < PAGE_SIZE) break;
+      }
+      return ok(series.map((item) => ({ ...item, names: [...new Set(item.names)] })));
     },
   };
 }

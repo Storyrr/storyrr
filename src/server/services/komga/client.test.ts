@@ -20,6 +20,7 @@ describe("Komga client", () => {
   it("pages through every series with the API key, keeping alternate titles", async () => {
     const page0 = Array.from({ length: 500 }, (_, i) => series(`s${i}`, `Series ${i}`));
     const { fetch, calls } = fakeFetch((url) => {
+      if (url.pathname === "/api/v1/books/list") return json({ content: [], last: true });
       if (url.pathname !== "/api/v1/series/list") return json({}, 404);
       return url.searchParams.get("page") === "0"
         ? json({ content: page0, last: false })
@@ -46,9 +47,36 @@ describe("Komga client", () => {
       names: ["Berserk", "ベルセルク"],
       author: "Kentaro Miura",
     });
-    expect(calls).toHaveLength(2);
+    expect(calls.filter((c) => c.url.pathname === "/api/v1/series/list")).toHaveLength(2);
     expect(calls[0]?.init?.headers).toMatchObject({ "X-API-Key": "api-key" });
     expect(jsonBody(calls[0]?.init)).toEqual({});
+  });
+
+  it("adds the titles of a series' books, but not bare volume numbers", async () => {
+    // Recorded shapes (Komga 1.30.2, trimmed): two EPUBs in one series.
+    const { fetch } = fakeFetch((url) => {
+      if (url.pathname === "/api/v1/series/list")
+        return json({ content: [series("s1", "Le Monde's 100 Books of the Century")], last: true });
+      if (url.pathname === "/api/v1/books/list")
+        return json({
+          content: [
+            { seriesId: "s1", deleted: false, metadata: { title: "The War of the Worlds" } },
+            { seriesId: "s1", deleted: false, metadata: { title: "The Time Machine" } },
+            { seriesId: "s1", deleted: false, metadata: { title: "01" } },
+            { seriesId: "s1", deleted: true, metadata: { title: "Removed" } },
+          ],
+          last: true,
+        });
+      return json({}, 404);
+    });
+
+    const result = await createKomgaClient(connection, fetch).allSeries();
+
+    expect(result.ok && result.value[0]?.names).toEqual([
+      "Le Monde's 100 Books of the Century",
+      "The War of the Worlds",
+      "The Time Machine",
+    ]);
   });
 
   it("checks a user's email and password with HTTP Basic auth", async () => {

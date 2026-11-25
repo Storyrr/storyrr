@@ -72,16 +72,18 @@ describe("Kavita library index", () => {
 describe("Komga library index", () => {
   it("indexes series titles as eBooks only", async () => {
     const db = createDatabase(":memory:");
-    const { fetch } = fakeFetch(() =>
+    const { fetch } = fakeFetch((url) =>
       json({
-        content: [
-          {
-            id: "s1",
-            libraryId: "lib",
-            name: "dune",
-            metadata: { title: "Dune", alternateTitles: [] },
-          },
-        ],
+        content: url.pathname.endsWith("/books/list")
+          ? []
+          : [
+              {
+                id: "s1",
+                libraryId: "lib",
+                name: "dune",
+                metadata: { title: "Dune", alternateTitles: [] },
+              },
+            ],
         last: true,
       }),
     );
