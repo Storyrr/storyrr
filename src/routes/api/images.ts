@@ -31,6 +31,9 @@ export const Route = createFileRoute("/api/images")({
             headers: {
               "Content-Type": image.type,
               "Cache-Control": "private, max-age=604800, immutable",
+              // Never run as a document on Storyrr's origin, whatever the bytes are.
+              "X-Content-Type-Options": "nosniff",
+              "Content-Security-Policy": "default-src 'none'; sandbox",
             },
           });
         } catch (error) {
