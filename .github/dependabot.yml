@@ -12,6 +12,15 @@ updates:
     commit-message:
       prefix: build
       include: scope
+    ignore:
+      # The types match the oldest Node.js Storyrr supports (package.json engines),
+      # so code can't use APIs that version lacks.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (the native compiler) has no tsserver.js or JS API yet, which
+      # editors and some tools still need. Revisit when they support it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       # Released together, and expected to stay on matching versions.
       tanstack:
