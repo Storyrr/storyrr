@@ -72,7 +72,7 @@
   "request_error_defaults_missing": "Aucun dossier ni profil par défaut pour les livres audio. Un administrateur peut les définir dans Paramètres → Services.",
   "request_error_unsupported": "Ce type de demande ne peut pas encore être envoyé.",
   "request_not_found": "Cette demande n’existe pas ou ne vous appartient pas.",
-  "request_cannot_cancel": "Seules les demandes en attente peuvent être annulées.",
+  "request_cannot_delete": "Seules les demandes en attente peuvent être supprimées.",
   "request_invalid_transition": "Cette demande a changé entre-temps. Actualisez la page et réessayez.",
   "availability_available": "Disponible",
   "availability_requested": "Demandé",

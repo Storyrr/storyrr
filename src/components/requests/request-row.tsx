@@ -23,7 +23,6 @@ import { Label } from "#/components/ui/label";
 import { Textarea } from "#/components/ui/textarea";
 import {
   approveRequest,
-  cancelRequest,
   denyRequest,
   retryRequest,
   type getRequests,
@@ -51,16 +50,13 @@ const SENT_STATUSES: readonly RequestStatus[] = ["submitted", "available", "fail
 export function RequestRow({ request }: { request: RequestListItem }) {
   const imageUrl = useImageUrl();
   const { user } = useRouteContext({ from: "/_authed" });
-  const cancelFn = useServerFn(cancelRequest);
   const retryFn = useServerFn(retryRequest);
-  const cancel = useRequestAction((vars: { id: string }) => cancelFn({ data: vars }), "cancelled");
   const retry = useRequestAction((vars: { id: string }) => retryFn({ data: vars }), "approved");
-  const error = cancel.error ?? retry.error;
+  const error = retry.error;
   const failure = request.status === "failed" ? describeRequestError(request.lastError) : null;
   const manager = can(user, "manage_requests");
-  // Requesters withdraw their own pending request; managers have Delete request
-  // (and Remove from Chaptarr once sent) instead.
-  const canCancel = !manager && request.status === "pending" && request.requester.id === user.id;
+  // Like Seerr: managers delete any request; requesters withdraw their own while pending.
+  const canDelete = manager || (request.status === "pending" && request.requester.id === user.id);
 
   const year = yearOf(request.media.releaseDate ?? undefined);
 
@@ -152,34 +148,12 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             >
               {m.action_retry()}
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              isDisabled={cancel.isPending}
-              onPress={() => cancel.mutate({ id: request.id })}
-            >
-              {m.action_cancel()}
-            </Button>
           </>
         ) : null}
-        {canCancel ? (
-          <Button
-            size="sm"
-            variant="outline"
-            isDisabled={cancel.isPending}
-            onPress={() => cancel.mutate({ id: request.id })}
-          >
-            {m.action_cancel()}
-          </Button>
+        {manager && SENT_STATUSES.includes(request.status) ? (
+          <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
         ) : null}
-        {manager ? (
-          <>
-            {SENT_STATUSES.includes(request.status) ? (
-              <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
-            ) : null}
-            <DeleteRequestButton id={request.id} title={request.media.title} />
-          </>
-        ) : null}
+        {canDelete ? <DeleteRequestButton id={request.id} title={request.media.title} /> : null}
         <HistoryDisclosure requestId={request.id} />
       </div>
     </li>

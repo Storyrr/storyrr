@@ -135,7 +135,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 
 ### 4.7 Requests page (user view)
 
-- My requests with status, filters (all / pending / processing / available / failed), cancel while pending.
+- My requests with status, filters (all / pending / processing / available / failed), delete while pending (like Seerr: no separate Cancel; managers delete any request, or remove it from Chaptarr once sent).
 
 ### 4.8 Users (admin)
 

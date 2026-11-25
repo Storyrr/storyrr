@@ -283,19 +283,6 @@ export const denyRequest = createServerFn({ method: "POST" })
     return { status };
   });
 
-/** Cancels a pending request: its requester, or an admin (who can also give up on failed ones). */
-export const cancelRequest = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .validator(RequestIdSchema)
-  .handler(({ data, context }) => {
-    const row = getRequestRow(db, data.id);
-    const { user } = context.session;
-    const manager = hasPermission(context.permissions, "manage_requests");
-    if (!row || (!manager && row.userId !== user.id)) return notFound();
-    if (!manager && row.status !== "pending") throw new Error(m.request_cannot_cancel());
-    return { status: transitionRequest(db, data.id, { to: "cancelled", actor: user.id }) };
-  });
-
 /** Sends a failed request again. Admins. */
 export const retryRequest = createServerFn({ method: "POST" })
   .middleware([requireManageRequests])
@@ -318,11 +305,20 @@ export const checkAvailabilityNow = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Deletes a request and its history from Storyrr (not from Chaptarr). Admins. */
+/** Deletes a request and its history from Storyrr (not from Chaptarr). Managers, or its requester while pending. */
 export const deleteRequest = createServerFn({ method: "POST" })
-  .middleware([requireManageRequests])
+  .middleware([requireUser])
   .validator(RequestIdSchema)
-  .handler(({ data }) => {
+  .handler(({ data, context }) => {
+    // Managers delete any request; requesters withdraw their own while it waits for approval.
+    if (!hasPermission(context.permissions, "manage_requests")) {
+      const row = getRequestRow(db, data.id);
+      if (!row || row.userId !== context.session.user.id) return notFound();
+      if (row.status !== "pending") {
+        setResponseStatus(403);
+        throw new Error(m.request_cannot_delete());
+      }
+    }
     const deleted = db
       .delete(request)
       .where(eq(request.id, data.id))

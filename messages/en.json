@@ -72,7 +72,7 @@
   "request_error_defaults_missing": "No default folder and profiles for audiobooks. An admin can set them in Settings → Services.",
   "request_error_unsupported": "This kind of request can't be sent yet.",
   "request_not_found": "This request doesn't exist or isn't yours.",
-  "request_cannot_cancel": "Only pending requests can be cancelled.",
+  "request_cannot_delete": "Only pending requests can be deleted.",
   "request_invalid_transition": "This request changed in the meantime. Refresh the page and try again.",
   "availability_available": "Available",
   "availability_requested": "Requested",
