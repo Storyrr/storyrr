@@ -83,8 +83,8 @@ export function MediaPoster({
 }: {
   type: SearchableType;
   item: PosterItem;
-  /** A series card: links to the series page, with its book count in place of the year. */
-  series?: { booksCount: number };
+  /** A series card: links to the series page, with its volume count (when known) in place of the year. */
+  series?: { booksCount?: number };
   availability: MediaAvailability;
   /** Chaptarr's language profile would filter it out. */
   refused?: boolean;
@@ -103,11 +103,11 @@ export function MediaPoster({
         <span className="sr-only">{item.title}</span>
       </Link>
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-end gap-1 bg-gradient-to-t from-background via-background/85 to-background/20 p-3 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-        {series ? (
+        {series?.booksCount ? (
           <span className="text-xs font-medium">
             {m.collection_count({ count: series.booksCount })}
           </span>
-        ) : year ? (
+        ) : !series && year ? (
           <span className="text-xs font-medium">{year}</span>
         ) : null}
         <h3 className="line-clamp-3 leading-tight font-semibold">{item.title}</h3>

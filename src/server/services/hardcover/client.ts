@@ -159,7 +159,13 @@ const AuthorDataSchema = v.object({
 });
 
 const LanguagesDataSchema = v.object({
-  books: v.array(v.looseObject({ id: v.number(), editions: EditionLanguagesSchema })),
+  books: v.array(
+    v.looseObject({
+      id: v.number(),
+      editions: EditionLanguagesSchema,
+      featured_book_series: BookSchema.entries.featured_book_series,
+    }),
+  ),
 });
 
 /** The distinct languages of a book's editions (null for editions without one). */
@@ -195,8 +201,12 @@ const SERIES_LANGUAGES_QUERY = `query StoryrrSeriesLanguages($ids: [Int!]!) {
   }
 }`;
 
+// Search documents carry series names, not ids: the series id (for its page) comes with the languages.
 const LANGUAGES_QUERY = `query StoryrrLanguages($ids: [Int!]!) {
-  books(where: {id: {_in: $ids}}) { id ${EDITION_LANGUAGES} }
+  books(where: {id: {_in: $ids}}) {
+    id ${EDITION_LANGUAGES}
+    featured_book_series { position details series { id name } }
+  }
 }`;
 
 const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
@@ -204,7 +214,7 @@ const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
 }`;
 
 // Card fields for a list of books (trending, series, author), languages included.
-const BOOK_CARD = `id title subtitle release_date
+const BOOK_CARD = `id title subtitle release_date pages
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
@@ -482,10 +492,18 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       if (ids.length === 0) return ok(items);
       const languages = await graphql(LANGUAGES_QUERY, { ids }, LanguagesDataSchema);
       if (!languages.ok) return ok(items);
-      const byId = new Map(
-        languages.value.books.map((book) => [String(book.id), editionLanguages(book.editions)]),
+      const byId = new Map(languages.value.books.map((book) => [String(book.id), book]));
+      return ok(
+        items.map((item) => {
+          const book = byId.get(item.externalId);
+          if (!book) return item;
+          return {
+            ...item,
+            languages: editionLanguages(book.editions),
+            series: featuredSeries(book.featured_book_series) ?? item.series,
+          };
+        }),
       );
-      return ok(items.map((item) => ({ ...item, languages: byId.get(item.externalId) })));
     },
 
     searchSeries,
@@ -642,6 +660,20 @@ export function seriesBaseName(name: string): string {
   return name.replace(/(\s*[([][^()[\]]*[)\]])+\s*$/u, "").trim();
 }
 
+/** A book's main series (with its id, for the series page), or null when it has none. */
+function featuredSeries(
+  featured: HardcoverBook["featured_book_series"],
+): MediaSummary["series"] | null {
+  if (!featured?.series) return null;
+  return [
+    {
+      name: featured.series.name,
+      position: featured.details ?? positionText(featured.position),
+      id: featured.series.id === undefined ? undefined : String(featured.series.id),
+    },
+  ];
+}
+
 const positionText = (position: number | null | undefined) =>
   position === null || position === undefined ? undefined : String(position);
 
@@ -702,15 +734,7 @@ function toDetails(book: HardcoverBook): MediaDetails {
     narrators: [],
     publisher: edition?.publisher?.name,
     releaseDate: book.release_date ?? undefined,
-    series: series?.series
-      ? [
-          {
-            name: series.series.name,
-            position: series.details ?? positionText(series.position),
-            id: series.series.id === undefined ? undefined : String(series.series.id),
-          },
-        ]
-      : [],
+    series: featuredSeries(series) ?? [],
     coverUrl: book.image?.url ?? undefined,
     language: edition?.language?.language,
     pages: book.pages ?? undefined,

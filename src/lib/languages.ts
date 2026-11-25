@@ -1,3 +1,4 @@
+import { formatList } from "#/lib/format";
 import { getLocale } from "#/paraglide/runtime.js";
 
 /** Bibliographic (ISO 639-2/B) codes → terminology (639-2/T, also 639-3) codes, which Intl understands. */
@@ -86,6 +87,9 @@ export function languageName(code: string): string {
     return code;
   }
 }
+
+/** Language codes as a list of names in the reader's language ("français et anglais"). */
+export const formatLanguages = (codes: readonly string[]) => formatList(codes.map(languageName));
 
 /** Which languages Chaptarr's metadata profile accepts for a format. */
 export type LanguagePolicy = { allowed: string[]; allowUnknown: boolean };

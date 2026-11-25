@@ -693,6 +693,14 @@
   "discover_row_title": "Row title",
   "discover_row_query": "Search",
   "discover_reset": "Reset to default",
-  "search_series_title": "Book series",
-  "media_also_in_languages": "Also in {languages}:"
+  "media_also_in_languages": "Also in {languages}:",
+  "series_kicker_ebook": "eBook series",
+  "series_kicker_audiobook": "Audiobook series",
+  "series_partially_available": "Partially available",
+  "series_summary": "Summary",
+  "series_volumes": "Volumes",
+  "series_fact_volumes": "Volumes",
+  "series_fact_published": "Published",
+  "series_fact_narrators": "Narrators",
+  "series_page_count": "{count} pages"
 }

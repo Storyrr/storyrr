@@ -1,9 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
-import { CollectionError, CollectionPage } from "#/components/media/collection-page";
-import { RelatedSeries } from "#/components/media/related-series";
-import { RequestSeriesDialog } from "#/components/media/request-series-dialog";
+import { CollectionError } from "#/components/media/collection-page";
+import { SeriesView } from "#/components/media/series-view";
 import { isSearchableType } from "#/lib/media-types";
 import { can } from "#/lib/permissions";
 import { seriesQuery } from "#/lib/queries/media";
@@ -46,21 +45,14 @@ function SeriesContent({
       />
     );
   return (
-    <CollectionPage
+    <SeriesView
       type={type}
-      kicker={m.collection_series()}
+      id={id}
       name={data.name}
       description={data.description}
       items={data.results}
       acceptedLanguages={data.acceptedLanguages}
-      showVolumes
-      notice={
-        // Every title refused: point to the same series in an accepted language, if any.
-        data.results.length > 0 && data.results.every((item) => item.accepted === false) ? (
-          <RelatedSeries type={type} seriesId={id} seriesName={data.name} />
-        ) : null
-      }
-      actions={canRequest ? <RequestSeriesDialog type={type} items={data.results} /> : null}
+      canRequest={canRequest}
     />
   );
 }

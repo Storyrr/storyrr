@@ -40,7 +40,7 @@ describe("Hardcover client", () => {
     ]);
   });
 
-  it("adds each result's edition languages with one more query", async () => {
+  it("adds each result's edition languages and series id with one more query", async () => {
     const { fetch, calls } = fakeFetch((_url, init) =>
       String(jsonBody(init) && JSON.stringify(jsonBody(init))).includes("StoryrrLanguages")
         ? json({
@@ -49,8 +49,9 @@ describe("Hardcover client", () => {
                 {
                   id: 312460,
                   editions: [{ language: { code3: "eng" } }, { language: { code3: "fre" } }],
+                  featured_book_series: { position: 1, series: { id: 4, name: "Dune" } },
                 },
-                { id: 435109, editions: [{ language: null }] },
+                { id: 435109, editions: [{ language: null }], featured_book_series: null },
               ],
             },
           })
@@ -62,6 +63,10 @@ describe("Hardcover client", () => {
     expect(result.ok && result.value.map((item) => item.languages)).toEqual([
       ["eng", "fra"],
       [null],
+    ]);
+    expect(result.ok && result.value.map((item) => item.series)).toEqual([
+      [{ name: "Dune", position: "1", id: "4" }],
+      [],
     ]);
   });
 

@@ -55,6 +55,7 @@ Shown when the database has no user.
 
 - One search bar, with **tabs/filters: Audiobooks, Books** (default: All).
 - Result cards: cover, title, author (narrator for audiobooks), year, series badge, and a **status badge**: _Available_, _Requested_, _Processing_, or a **Request** button.
+- **A series is one card (decided 2026-11-25, like Seerr shows a show once):** the volumes found of the same series fold into one "Series" card (cover of the lowest volume found, at the place of the first one found) that opens the series page; titles outside a series keep their own card. Searching a volume shows its series.
 - Owned detection: audiobooks by ASIN in Audiobookshelf, or by title in Jellyfin; eBooks by title in Kavita, Komga and Jellyfin, "probably owned" (and Chaptarr files). Any configured server counts (decided 2026-11-24).
 - Fast: debounce, cached metadata, no blocking on slow providers.
 
@@ -98,9 +99,9 @@ Shown when the database has no user.
 
 ### 4.3f Series and authors (decided 2026-11-24)
 
-- Series pages (`/series/<type>/<id>`, Audible series ASIN or Hardcover series id), linked from a title's series badge: the volumes in reading order with their status, and **Request the series**: a dialog to pick the volumes (those you have or already requested are disabled), each requested with the usual checks (permissions, blocklist, language, limits).
+- Series pages (`/series/<type>/<id>`, Audible series ASIN or Hardcover series id), linked from a title's series badge and from search, laid out like Seerr's show page: a header over the blurred first cover (series status: _Available_, _Partially available_, _Requested_; name; volume count and years; the authors credited on most volumes, since Audible lists translators as authors), the summary, the volumes as rows (Seerr's seasons: cover, number, title, year, length, status or Request), a facts panel (volumes, years, narrators, publishers, languages, total length), and **Request the series**: a dialog to pick the volumes (those you have or already requested are disabled), each requested with the usual checks (permissions, blocklist, language, limits).
 - **Versions in another language (decided 2026-11-25).** Hardcover keeps a translation cut into other volumes as its own series, with no link to the original ("Solo Leveling (French Numbering)" next to "Solo Leveling (Comic)"). So:
-  - search shows a **Book series** row below the books (Hardcover's series search), the series in a language Chaptarr accepts first; a series' languages are those of its first 3 books;
+  - eBook search adds the series Hardcover's series search finds to the results, accepted languages first; a series' languages are those of its first 3 books;
   - a title or a series refused for its language (every volume refused) shows **"Also in <languages>:"** with links to the series of the same name apart from a trailing qualifier (`(…)`, `[…]`) that Chaptarr accepts. A name match, not a link Hardcover makes: it can include another medium (the novel next to the comic), whose name says so.
 - Author pages (`/authors/<type>/<id>`), linked from a title's authors: photo and bio (Audnexus for audiobooks, Hardcover for eBooks) and their works.
 

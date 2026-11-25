@@ -8,7 +8,7 @@ import { m } from "#/paraglide/messages.js";
 
 type Annotated = MediaSummary & { availability: MediaAvailability; accepted: boolean | null };
 
-/** A series or an author page: header (photo, name, text, actions) and the works as cards. */
+/** An author page: header (photo, name, text, actions) and the works as cards. */
 export function CollectionPage({
   type,
   kicker,
@@ -18,8 +18,6 @@ export function CollectionPage({
   items,
   acceptedLanguages,
   actions,
-  notice,
-  showVolumes = false,
 }: {
   type: SearchableType;
   kicker: string;
@@ -29,10 +27,6 @@ export function CollectionPage({
   items: Annotated[];
   acceptedLanguages: readonly string[] | null;
   actions?: React.ReactNode;
-  /** Under the description (e.g. a series' versions in another language). */
-  notice?: React.ReactNode;
-  /** Series pages: each work's volume number under its card. */
-  showVolumes?: boolean;
 }) {
   const cachedUrl = useImageUrl();
   return (
@@ -58,7 +52,6 @@ export function CollectionPage({
               {description}
             </p>
           ) : null}
-          {notice}
           {actions ? <div className="flex flex-wrap gap-2 pt-2">{actions}</div> : null}
         </div>
       </header>
@@ -67,13 +60,8 @@ export function CollectionPage({
       ) : (
         <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {items.map((item) => (
-            <li key={item.externalId} className="flex flex-col gap-1">
+            <li key={item.externalId}>
               <MediaCard type={type} item={item} acceptedLanguages={acceptedLanguages} />
-              {showVolumes && item.series[0]?.position ? (
-                <span className="text-center text-xs text-muted-foreground">
-                  {m.collection_volume({ position: item.series[0].position })}
-                </span>
-              ) : null}
             </li>
           ))}
         </ul>

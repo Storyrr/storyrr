@@ -3,9 +3,11 @@ import { useId } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { MediaCard } from "#/components/media/media-card";
+import { MediaPoster } from "#/components/media/media-poster";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { SearchableType } from "#/lib/media-types";
-import { mediaSearchQuery } from "#/lib/queries/media";
+import { mediaSearchQuery, seriesSearchQuery } from "#/lib/queries/media";
+import { groupBySeries, type SeriesEntry } from "#/lib/series";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { m } from "#/paraglide/messages.js";
 
@@ -18,7 +20,30 @@ const providers: Record<SearchableType, "audible" | "hardcover"> = {
   ebook: "hardcover",
 };
 
-/** Search results for one type, as a grid of cards (with a heading when several types are shown). */
+/** A series in the results: one card for all its volumes, opening the series page. */
+function SeriesCard({ type, series }: { type: SearchableType; series: SeriesEntry }) {
+  return (
+    <MediaPoster
+      type={type}
+      item={{
+        externalId: series.id,
+        title: series.name,
+        authors: series.authors,
+        coverUrl: series.coverUrl,
+      }}
+      availability={series.availability}
+      refused={series.availability === "none" && series.accepted === false}
+      series={{ booksCount: series.booksCount }}
+    />
+  );
+}
+
+/**
+ * Search results for one type, as a grid of cards (with a heading when several
+ * types are shown). A series' volumes make one series card, like Seerr shows a
+ * show once; eBooks add the series Hardcover's series search finds (a translation
+ * numbered apart is its own series there, its volumes rarely among the books found).
+ */
 export function SearchResults({
   type,
   query,
@@ -29,6 +54,8 @@ export function SearchResults({
   titled: boolean;
 }) {
   const search = useQuery(mediaSearchQuery(type, query));
+  // Best effort, added when it arrives: the titles don't wait for it.
+  const seriesSearch = useQuery({ ...seriesSearchQuery(type, query), enabled: type === "ebook" });
   const headingId = useId();
 
   let body: React.ReactNode;
@@ -42,16 +69,26 @@ export function SearchResults({
     body = <p className="text-muted-foreground">{m.search_no_results({ query })}</p>;
   } else {
     const { results, acceptedLanguages } = search.data;
+    const extra = seriesSearch.data?.ok ? seriesSearch.data.results : [];
+    const entries = groupBySeries(results, extra).toSorted(
+      (x, y) => acceptanceRank(entryAccepted(x)) - acceptanceRank(entryAccepted(y)),
+    );
     body = (
       <ul
         className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
         aria-busy={search.isFetching}
       >
-        {results.map((item) => (
-          <li key={item.externalId}>
-            <MediaCard type={type} item={item} acceptedLanguages={acceptedLanguages} />
-          </li>
-        ))}
+        {entries.map((entry) =>
+          entry.kind === "series" ? (
+            <li key={`series-${entry.series.id}`}>
+              <SeriesCard type={type} series={entry.series} />
+            </li>
+          ) : (
+            <li key={entry.item.externalId}>
+              <MediaCard type={type} item={entry.item} acceptedLanguages={acceptedLanguages} />
+            </li>
+          ),
+        )}
       </ul>
     );
   }
@@ -67,6 +104,12 @@ export function SearchResults({
     </section>
   );
 }
+
+const entryAccepted = (entry: ReturnType<typeof groupBySeries>[number]) =>
+  entry.kind === "series" ? entry.series.accepted : entry.item.accepted;
+/** Accepted first, then unknown, then refused (the server's order for titles). */
+const acceptanceRank = (accepted: boolean | null) =>
+  accepted === true ? 0 : accepted === null ? 1 : 2;
 
 function ResultsSkeleton() {
   return (

@@ -3,7 +3,6 @@ import { SearchIcon } from "lucide-react";
 import * as v from "valibot";
 
 import { SearchResults } from "#/components/media/search-results";
-import { SeriesResults } from "#/components/media/series-results";
 import {
   Empty,
   EmptyDescription,
@@ -43,7 +42,6 @@ function SearchPage() {
       {SEARCHABLE_TYPES.map((type) => (
         <SearchResults key={type} type={type} query={query} titled />
       ))}
-      <SeriesResults type="ebook" query={query} />
     </div>
   );
 }

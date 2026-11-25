@@ -693,6 +693,14 @@
   "discover_row_title": "Titre de la ligne",
   "discover_row_query": "Recherche",
   "discover_reset": "Rétablir par défaut",
-  "search_series_title": "Séries de livres",
-  "media_also_in_languages": "Existe aussi en {languages} :"
+  "media_also_in_languages": "Existe aussi en {languages} :",
+  "series_kicker_ebook": "Série d’eBooks",
+  "series_kicker_audiobook": "Série de livres audio",
+  "series_partially_available": "Partiellement disponible",
+  "series_summary": "Résumé",
+  "series_volumes": "Tomes",
+  "series_fact_volumes": "Tomes",
+  "series_fact_published": "Parution",
+  "series_fact_narrators": "Narrateurs",
+  "series_page_count": "{count} pages"
 }
