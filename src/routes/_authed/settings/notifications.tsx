@@ -60,7 +60,7 @@ function NotificationsLayout() {
           />
         </FieldGroup>
       </SettingsSection>
-      <TabNav label={m.settings_tab_notifications()} tabs={TABS}>
+      <TabNav label={m.settings_tab_notifications()} tabs={TABS} variant="default">
         <Outlet />
       </TabNav>
     </div>

@@ -19,7 +19,7 @@ const SELECT_HIDDEN = { few: "sm:hidden", many: "xl:hidden" } as const;
 const TABS_SHOWN = { few: "sm:flex", many: "xl:flex" } as const;
 
 /**
- * Line tabs where each tab is a route (React Aria follows the links through the
+ * Tabs (line by default) where each tab is a route (React Aria follows the links through the
  * router); the current route's page is the selected tab's panel. Where they
  * wouldn't fit on one line (phones; tablets too for many tabs), a select instead,
  * like Seerr.
@@ -27,10 +27,13 @@ const TABS_SHOWN = { few: "sm:flex", many: "xl:flex" } as const;
 export function TabNav({
   label,
   tabs,
+  variant = "line",
   children,
 }: {
   label: string;
   tabs: readonly Tab[];
+  /** "default": pill tabs, for a bar nested under line tabs (Settings → Notifications' agents). */
+  variant?: "line" | "default";
   children: React.ReactNode;
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -59,16 +62,22 @@ export function TabNav({
         </SelectContent>
       </Select>
       <TabsList
-        variant="line"
+        variant={variant}
         aria-label={label}
         // The list's own fixed height (h-8) would let wrapped rows overlap the page below.
         className={cn(
-          "hidden w-full flex-wrap justify-start border-b pb-1 group-data-horizontal/tabs:h-auto",
+          "hidden flex-wrap justify-start group-data-horizontal/tabs:h-auto",
+          variant === "line" ? "w-full border-b pb-1" : "w-fit",
           TABS_SHOWN[size],
         )}
       >
         {tabs.map((tab) => (
-          <TabsTrigger key={tab.to} id={tab.to} href={tab.to} className="h-8 flex-none px-3">
+          <TabsTrigger
+            key={tab.to}
+            id={tab.to}
+            href={tab.to}
+            className={cn("flex-none px-3", variant === "line" ? "h-8" : "h-7")}
+          >
             {tab.label()}
           </TabsTrigger>
         ))}
