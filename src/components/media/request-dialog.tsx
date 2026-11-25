@@ -130,34 +130,21 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
           <AdvancedOptions format={item.type}>
             {(options) => (
               <>
-                <form.Field name="rootFolderPath">
-                  {(field) => (
-                    <SelectField
-                      label={m.field_root_folder()}
-                      description={m.request_default_hint()}
-                      options={options.rootFolders.map((f) => ({
-                        id: f.path,
-                        label: `${f.name} (${f.path})`,
-                      }))}
-                      value={field.state.value || null}
-                      onChange={(value) => field.handleChange(value ?? "")}
+                <form.Subscribe selector={(state) => state.values}>
+                  {(values) => (
+                    <TargetSelects
+                      options={options}
+                      rootFolderPath={values.rootFolderPath}
+                      onRootFolderPathChange={(value) =>
+                        form.setFieldValue("rootFolderPath", value)
+                      }
+                      qualityProfileId={values.qualityProfileId}
+                      onQualityProfileIdChange={(value) =>
+                        form.setFieldValue("qualityProfileId", value)
+                      }
                     />
                   )}
-                </form.Field>
-                <form.Field name="qualityProfileId">
-                  {(field) => (
-                    <SelectField
-                      label={m.field_quality_profile()}
-                      description={m.request_default_hint()}
-                      options={options.qualityProfiles.map((p) => ({
-                        id: String(p.id),
-                        label: p.name,
-                      }))}
-                      value={field.state.value || null}
-                      onChange={(value) => field.handleChange(value ?? "")}
-                    />
-                  )}
-                </form.Field>
+                </form.Subscribe>
               </>
             )}
           </AdvancedOptions>
@@ -181,7 +168,58 @@ function RequestForm({ item, onDone }: { item: Item; onDone: () => void }) {
 export type ChaptarrOptions = {
   rootFolders: { path: string; name: string }[];
   qualityProfiles: { id: number; name: string }[];
+  defaults: { rootFolderPath: string | null; qualityProfileId: number | null };
 };
+
+const withDefault = (label: string, isDefault: boolean) =>
+  isDefault ? m.request_default_option({ label }) : label;
+
+/**
+ * The root folder and quality profile pickers, showing what applies when left
+ * alone (Seerr's "(default)"): an empty value means "keep it", and is sent as
+ * nothing so the server applies its default.
+ */
+export function TargetSelects({
+  options,
+  rootFolderPath,
+  onRootFolderPathChange,
+  qualityProfileId,
+  onQualityProfileIdChange,
+  current,
+}: {
+  options: ChaptarrOptions;
+  rootFolderPath: string;
+  onRootFolderPathChange: (value: string) => void;
+  qualityProfileId: string;
+  onQualityProfileIdChange: (value: string) => void;
+  /** What applies now if it isn't the default (a pending request's own target). */
+  current?: { rootFolderPath?: string | null; qualityProfileId?: number | null };
+}) {
+  const fallbackFolder = current?.rootFolderPath ?? options.defaults.rootFolderPath;
+  const fallbackProfile = current?.qualityProfileId ?? options.defaults.qualityProfileId;
+  return (
+    <>
+      <SelectField
+        label={m.field_root_folder()}
+        options={options.rootFolders.map((f) => ({
+          id: f.path,
+          label: withDefault(`${f.name} (${f.path})`, f.path === options.defaults.rootFolderPath),
+        }))}
+        value={rootFolderPath || fallbackFolder || null}
+        onChange={(value) => onRootFolderPathChange(value ?? "")}
+      />
+      <SelectField
+        label={m.field_quality_profile()}
+        options={options.qualityProfiles.map((p) => ({
+          id: String(p.id),
+          label: withDefault(p.name, p.id === options.defaults.qualityProfileId),
+        }))}
+        value={qualityProfileId || (fallbackProfile === null ? null : String(fallbackProfile))}
+        onChange={(value) => onQualityProfileIdChange(value ?? "")}
+      />
+    </>
+  );
+}
 
 /** Admins only: collapsed by default; empty fields mean "use the defaults". */
 export function AdvancedOptions({

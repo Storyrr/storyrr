@@ -203,10 +203,11 @@ export const getChaptarrOptions = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const chaptarr = await services.chaptarr();
     if (!chaptarr) return { ok: false as const, reason: "not_configured" as const };
-    const [folders, quality, metadata] = await Promise.all([
+    const [folders, quality, metadata, defaults] = await Promise.all([
       chaptarr.rootFolders(),
       chaptarr.qualityProfiles(),
       chaptarr.metadataProfiles(),
+      settings.get(formatDefaults[data.format]),
     ]);
     if (!folders.ok) return optionsFailure("rootfolder", folders.error);
     if (!quality.ok) return optionsFailure("qualityprofile", quality.error);
@@ -218,6 +219,11 @@ export const getChaptarrOptions = createServerFn({ method: "GET" })
         .map((folder) => ({ path: folder.path, name: folder.name ?? folder.path })),
       qualityProfiles: quality.value.map((p) => ({ id: p.id, name: p.name })),
       metadataProfiles: metadata.value.map((p) => ({ id: p.id, name: p.name })),
+      /** What a request gets when nothing is picked (Settings → Chaptarr). */
+      defaults: {
+        rootFolderPath: defaults?.rootFolderPath ?? null,
+        qualityProfileId: defaults?.qualityProfileId ?? null,
+      },
     };
   });
 

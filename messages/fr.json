@@ -87,7 +87,6 @@
   "request_dialog_title": "Demander {title}",
   "request_auto_approved_info": "Cette demande sera approuvée automatiquement.",
   "request_advanced_options": "Options avancées",
-  "request_default_hint": "Laissez vide pour utiliser la valeur par défaut.",
   "search_label": "Rechercher des livres audio et des livres",
   "search_placeholder": "Titre, auteur, série…",
   "search_prompt_title": "Trouvez quelque chose à lire ou à écouter",
@@ -705,5 +704,6 @@
   "series_column_volume": "Tome",
   "series_column_title": "Titre",
   "series_column_status": "Statut",
-  "series_select_volumes": "Sélectionner des tomes"
+  "series_select_volumes": "Sélectionner des tomes",
+  "request_default_option": "{label} (par défaut)"
 }

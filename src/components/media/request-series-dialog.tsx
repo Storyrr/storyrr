@@ -6,9 +6,8 @@ import { DownloadIcon, InfoIcon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
-import { SelectField } from "#/components/form/select-field";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
-import { AdvancedOptions } from "#/components/media/request-dialog";
+import { AdvancedOptions, TargetSelects } from "#/components/media/request-dialog";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -292,34 +291,21 @@ function SeriesRequestForm({
           <AdvancedOptions format={type}>
             {(options) => (
               <>
-                <form.Field name="rootFolderPath">
-                  {(field) => (
-                    <SelectField
-                      label={m.field_root_folder()}
-                      description={m.request_default_hint()}
-                      options={options.rootFolders.map((f) => ({
-                        id: f.path,
-                        label: `${f.name} (${f.path})`,
-                      }))}
-                      value={field.state.value || null}
-                      onChange={(value) => field.handleChange(value ?? "")}
+                <form.Subscribe selector={(state) => state.values}>
+                  {(values) => (
+                    <TargetSelects
+                      options={options}
+                      rootFolderPath={values.rootFolderPath}
+                      onRootFolderPathChange={(value) =>
+                        form.setFieldValue("rootFolderPath", value)
+                      }
+                      qualityProfileId={values.qualityProfileId}
+                      onQualityProfileIdChange={(value) =>
+                        form.setFieldValue("qualityProfileId", value)
+                      }
                     />
                   )}
-                </form.Field>
-                <form.Field name="qualityProfileId">
-                  {(field) => (
-                    <SelectField
-                      label={m.field_quality_profile()}
-                      description={m.request_default_hint()}
-                      options={options.qualityProfiles.map((p) => ({
-                        id: String(p.id),
-                        label: p.name,
-                      }))}
-                      value={field.state.value || null}
-                      onChange={(value) => field.handleChange(value ?? "")}
-                    />
-                  )}
-                </form.Field>
+                </form.Subscribe>
               </>
             )}
           </AdvancedOptions>
