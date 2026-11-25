@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# Build and runtime share the same Node image so the native better-sqlite3
-# addon is compiled for the Node ABI that runs it. Bun is only the package
-# manager / script runner.
+# Build and runtime share the same Node image (glibc): better-sqlite3 ships
+# prebuilt N-API binaries and Nitro copies them with the server, so the
+# runtime must be able to load the build's. Bun is only the package manager /
+# script runner.
 ARG NODE_VERSION=24
 ARG BUN_VERSION=1.3
 
