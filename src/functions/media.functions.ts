@@ -21,6 +21,7 @@ import { fail, ok, type ServiceResult } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import { discoverLayout } from "#/server/settings/definitions";
 import { mediaSources } from "#/server/sources";
+import { getLocale } from "#/paraglide/runtime.js";
 
 /** Accepted (true) first, then unknown (null), then refused (false); stable otherwise. */
 const ACCEPTANCE_ORDER = new Map<boolean | null, number>([
@@ -286,14 +287,16 @@ export const exploreMedia = createServerFn({ method: "GET" })
   });
 
 const GENRES_TTL_MS = 24 * 60 * 60_000;
-const genresCache = new Map<SearchableType, { at: number; genres: MediaTag[] }>();
+/** By type and UI language: Audible names its genres in the reader's language where it can. */
+const genresCache = new Map<string, { at: number; genres: MediaTag[] }>();
 
 /** The genres the Books / Audiobooks genre filter offers, shared between users for a day. */
 export const getGenreOptions = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(v.object({ type: v.picklist(SEARCHABLE_TYPES) }))
   .handler(async ({ data }) => {
-    const cached = genresCache.get(data.type);
+    const key = `${data.type}:${getLocale()}`;
+    const cached = genresCache.get(key);
     if (cached && Date.now() - cached.at < GENRES_TTL_MS) return cached.genres;
     let result: ServiceResult<MediaTag[]>;
     if (data.type === "audiobook") result = await (await services.audible()).genres();
@@ -303,7 +306,7 @@ export const getGenreOptions = createServerFn({ method: "GET" })
     }
     // No genres is not an error worth a message: the filter just stays empty.
     if (!result.ok) return [];
-    genresCache.set(data.type, { at: Date.now(), genres: result.value });
+    genresCache.set(key, { at: Date.now(), genres: result.value });
     return result.value;
   });
 

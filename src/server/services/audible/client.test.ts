@@ -86,6 +86,21 @@ describe("Audible client", () => {
     expect(calls.at(-1)?.url.searchParams.get("page")).toBe("1");
   });
 
+  it("asks for genre names in the reader's language, and only for them", async () => {
+    const { fetch, calls } = fakeFetch((url) =>
+      url.pathname.endsWith("/categories")
+        ? json({ categories: [node("1", "Arts & Entertainment")] })
+        : json({ products: [] }),
+    );
+    const audible = createAudibleClient({ fetch, region: "fr", genreLocale: "en-GB" });
+
+    await audible.genres();
+    await audible.search("dune");
+    expect(calls[0]?.url.searchParams.get("locale")).toBe("en-GB");
+    // Search results keep the store's own titles and order.
+    expect(calls[1]?.url.searchParams.has("locale")).toBe(false);
+  });
+
   it("explores the catalog with Audible's sort names and filters", async () => {
     const { fetch, calls } = fakeFetch(() => json({ products: [] }));
     await createAudibleClient({ fetch, region: "fr" }).discover(

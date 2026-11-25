@@ -111,7 +111,21 @@ const BATCH = 50;
  * Audible's catalog API (undocumented, no key). Shapes verified against
  * api.audible.fr on 2026-11-23; fixtures in ./fixtures are trimmed recordings.
  */
-export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region: AudibleRegion }) {
+export function createAudibleClient({
+  fetch,
+  region,
+  genreLocale,
+}: {
+  fetch: FetchFn;
+  region: AudibleRegion;
+  /** Audible `locale` for genre names in the reader's language (AUDIBLE_GENRE_LOCALES). */
+  genreLocale?: string;
+}) {
+  /** Genre names in the reader's language where the store offers it; nothing else changes. */
+  const localized = (url: URL) => {
+    if (genreLocale) url.searchParams.set("locale", genreLocale);
+    return url;
+  };
   const base = `https://${audibleHost(region)}/1.0/catalog/products`;
 
   /** Several products by ASIN, in the given order (unknown ones left out). */
@@ -142,6 +156,7 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       response_groups: withGenres ? `${RESPONSE_GROUPS},category_ladders` : RESPONSE_GROUPS,
       image_sizes: "500",
     }).toString();
+    if (withGenres) localized(url);
     const result = await requestJson({
       fetch,
       service: "Audible",
@@ -236,6 +251,7 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
         response_groups: `${RESPONSE_GROUPS},category_ladders`,
         image_sizes: "500",
       }).toString();
+      localized(url);
       const result = await requestJson({
         fetch,
         service: "Audible",
@@ -273,6 +289,7 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
     async genres(): Promise<ServiceResult<MediaTag[]>> {
       const url = new URL(`https://${audibleHost(region)}/1.0/catalog/categories`);
       url.search = new URLSearchParams({ root: "Genres" }).toString();
+      localized(url);
       const result = await requestJson({
         fetch,
         service: "Audible",
@@ -288,8 +305,10 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       const info = await requestJson({
         fetch,
         service: "Audible",
-        url: new URL(
-          `https://${audibleHost(region)}/1.0/catalog/categories/${encodeURIComponent(id)}`,
+        url: localized(
+          new URL(
+            `https://${audibleHost(region)}/1.0/catalog/categories/${encodeURIComponent(id)}`,
+          ),
         ),
         schema: CategorySchema,
       });

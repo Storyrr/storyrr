@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 
-import { DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
+import { AUDIBLE_GENRE_LOCALES, DEFAULT_AUDIBLE_REGION } from "#/lib/audible-regions";
+import { getLocale } from "#/paraglide/runtime.js";
 import type { SettingsStore } from "#/server/settings/store";
 import {
   audiobookshelfConnection,
@@ -53,6 +54,8 @@ export function createServices(store: SettingsStore, fetch: FetchFn) {
       return createAudibleClient({
         fetch,
         region: metadata?.audibleRegion ?? DEFAULT_AUDIBLE_REGION,
+        // The request's UI language (Paraglide keeps it per request on the server).
+        genreLocale: AUDIBLE_GENRE_LOCALES[getLocale()],
       });
     },
   };

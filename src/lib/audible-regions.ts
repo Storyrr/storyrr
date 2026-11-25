@@ -32,3 +32,12 @@ export const DEFAULT_AUDIBLE_REGION: AudibleRegion = "fr";
 export function audibleHost(region: AudibleRegion): string {
   return AUDIBLE_HOSTS[region];
 }
+
+/**
+ * The Audible `locale` asking for genre names in the reader's language (checked on
+ * 2026-11-25). Each store offers its own few: audible.fr and audible.de also
+ * English with "en-GB", audible.ca also French with "fr-CA"; others one language.
+ * A locale a store doesn't offer is ignored (its own language comes back), so
+ * these are safe everywhere. Only genre names change: titles stay the store's.
+ */
+export const AUDIBLE_GENRE_LOCALES: Record<string, string> = { en: "en-GB", fr: "fr-CA" };
