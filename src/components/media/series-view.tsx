@@ -309,7 +309,7 @@ function VolumeRow({
 
   return (
     <li className="relative flex items-center gap-4 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50">
-      <Cover src={item.coverUrl} type={type} className="w-12 shrink-0 self-start rounded-md" />
+      <Cover src={item.coverUrl} type={type} className="w-12 shrink-0 rounded-md" />
       {/* Narrow screens: the status goes under the text, which keeps the width for the title. */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
