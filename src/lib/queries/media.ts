@@ -129,6 +129,16 @@ export const exploreQuery = (
     staleTime: 10 * 60_000,
   });
 
+/** A filtered Discover row: the first page of Books / Audiobooks with its sort and filters. */
+export const exploreRowQuery = (
+  input: { type: "audiobook"; filters: AudiobookFilters } | { type: "ebook"; filters: BookFilters },
+) =>
+  queryOptions({
+    queryKey: [...mediaKeys.all, "explore", input.type, input.filters, "row"] as const,
+    queryFn: () => exploreMedia({ data: { ...input, page: 1 } }),
+    staleTime: 10 * 60_000,
+  });
+
 /** The Discover "Upcoming books" row: the first page of the Upcoming sort. */
 export const upcomingBooksQuery = () =>
   queryOptions({

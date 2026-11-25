@@ -7,10 +7,12 @@ import { MediaCard } from "#/components/media/media-card";
 import { MediaRow, MediaRowItem } from "#/components/media/media-row";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { SearchableType } from "#/lib/media-types";
-import type { exploreMedia, getTrending, searchMedia } from "#/functions/media.functions";
+import type { exploreMedia, getTrending } from "#/functions/media.functions";
+import type { FilteredDiscoverRow } from "#/lib/discover";
+import { applyStatusFilters } from "#/lib/explore";
 import {
+  exploreRowQuery,
   genreOptionsQuery,
-  mediaSearchQuery,
   trendingQuery,
   upcomingBooksQuery,
 } from "#/lib/queries/media";
@@ -117,26 +119,28 @@ export function UpcomingRow() {
   );
 }
 
-/** A custom Discover row: the results of a search (Settings → General → Discover). */
-export function SearchRow({
-  type,
-  title,
-  query,
-}: {
-  type: SearchableType;
-  title: string;
-  query: string;
-}) {
-  const search = useQuery(mediaSearchQuery(type, query));
+/** A filtered Discover row (Settings → General → Discover): Books or Audiobooks with a sort and filters. */
+export function FilteredRow({ row }: { row: FilteredDiscoverRow }) {
+  const rowQuery =
+    row.type === "audiobook"
+      ? exploreRowQuery({ type: "audiobook", filters: row.filters })
+      : exploreRowQuery({ type: "ebook", filters: row.filters });
+  const results = useQuery({
+    ...rowQuery,
+    // Storyrr's own switches (hide owned, accepted languages) aren't catalog filters.
+    select: (data) =>
+      data.ok ? { ...data, results: applyStatusFilters(data.results, row.filters) } : data,
+  });
   return (
     <ResultsRow
-      type={type}
-      title={title}
-      result={search}
+      type={row.type}
+      title={row.title}
+      result={results}
       seeAll={
         <Link
-          to="/search"
-          search={{ q: query }}
+          {...(row.type === "ebook"
+            ? { to: "/books", search: row.filters }
+            : { to: "/audiobooks", search: row.filters })}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           {m.discover_see_all()}
@@ -148,9 +152,7 @@ export function SearchRow({
 }
 
 type Results = UseQueryResult<
-  | Awaited<ReturnType<typeof getTrending>>
-  | Awaited<ReturnType<typeof searchMedia>>
-  | Awaited<ReturnType<typeof exploreMedia>>
+  Awaited<ReturnType<typeof getTrending>> | Awaited<ReturnType<typeof exploreMedia>>
 >;
 
 function ResultsRow({

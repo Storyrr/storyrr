@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import * as v from "valibot";
 
 import { FormError } from "#/components/form/form-error";
+import { ExploreFilterFields, SortSelect, type Explore } from "#/components/media/explore-filters";
 import { SelectField } from "#/components/form/select-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
@@ -13,7 +15,21 @@ import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { saveDiscoverLayout } from "#/functions/media.functions";
-import { NewSearchRowSchema, type DiscoverRow } from "#/lib/discover";
+import {
+  NewFilteredRowSchema,
+  RowTitleSchema,
+  type DiscoverRow,
+  type FilteredDiscoverRow,
+} from "#/lib/discover";
+import {
+  AUDIOBOOK_SORTS,
+  BOOK_SORTS,
+  audiobookFilterCount,
+  bookFilterCount,
+  sortLabels,
+  type AudiobookFilters,
+  type BookFilters,
+} from "#/lib/explore";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
 import { discoverLayoutQuery } from "#/lib/queries/media";
 import { m } from "#/paraglide/messages.js";
@@ -37,12 +53,32 @@ function rowLabel(row: DiscoverRow): string {
       return row.type === "ebook" ? m.discover_genres_books() : m.discover_genres_audiobooks();
     case "upcoming":
       return m.discover_upcoming_books();
+    case "filtered":
+      return row.title;
     default:
-      return row.title || row.query || "";
+      return "";
   }
 }
 
-/** Settings → General → Discover: which rows show, in which order, and custom search rows. */
+/** "eBooks · Most read · Filters (2)", under a filtered row's title. */
+function filteredSummary(row: FilteredDiscoverRow): string {
+  const sort =
+    row.type === "audiobook"
+      ? (row.filters.sort ?? AUDIOBOOK_SORTS[0])
+      : (row.filters.sort ?? BOOK_SORTS[0]);
+  const count =
+    row.type === "audiobook" ? audiobookFilterCount(row.filters) : bookFilterCount(row.filters);
+  return m.discover_row_filtered({
+    format: typeLabels[row.type](),
+    sort: sortLabels[sort](),
+    filters: m.explore_filters_active({ count }),
+  });
+}
+
+const NO_AUDIOBOOK_FILTERS: AudiobookFilters = {};
+const NO_BOOK_FILTERS: BookFilters = {};
+
+/** Settings → General → Discover: which rows show, in which order, and filtered rows. */
 export function DiscoverEditor() {
   const { data } = useSuspenseQuery(discoverLayoutQuery());
   const [rows, setRows] = useState<DiscoverRow[]>(data);
@@ -63,10 +99,24 @@ export function DiscoverEditor() {
     setRows(next);
   };
   const form = useForm({
-    defaultValues: { type: "ebook" as SearchableType, title: "", query: "" },
-    validators: { onSubmit: NewSearchRowSchema },
+    defaultValues: {
+      type: "ebook" as SearchableType,
+      title: "",
+      // One set per format, so switching the format back keeps what was chosen.
+      audiobookFilters: NO_AUDIOBOOK_FILTERS,
+      bookFilters: NO_BOOK_FILTERS,
+    },
     onSubmit: ({ value, formApi }) => {
-      setRows([...rows, { id: crypto.randomUUID(), kind: "search", enabled: true, ...value }]);
+      const parsed = v.safeParse(NewFilteredRowSchema, {
+        type: value.type,
+        title: value.title,
+        filters: value.type === "audiobook" ? value.audiobookFilters : value.bookFilters,
+      });
+      if (!parsed.success) return;
+      setRows([
+        ...rows,
+        { id: crypto.randomUUID(), kind: "filtered", enabled: true, ...parsed.output },
+      ]);
       formApi.reset();
     },
   });
@@ -89,12 +139,9 @@ export function DiscoverEditor() {
             />
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium">{rowLabel(row)}</span>
-              {row.kind === "search" && row.type ? (
+              {row.kind === "filtered" ? (
                 <span className="truncate text-xs text-muted-foreground">
-                  {m.discover_row_search({
-                    format: typeLabels[row.type](),
-                    query: row.query ?? "",
-                  })}
+                  {filteredSummary(row)}
                 </span>
               ) : null}
             </div>
@@ -116,7 +163,7 @@ export function DiscoverEditor() {
             >
               <ArrowDownIcon />
             </Button>
-            {row.kind === "search" ? (
+            {row.kind === "filtered" ? (
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -143,7 +190,7 @@ export function DiscoverEditor() {
           <h3 className="text-sm font-medium">{m.discover_add_row()}</h3>
           <p className="text-sm text-muted-foreground">{m.discover_add_row_description()}</p>
         </div>
-        <FieldGroup className="grid gap-4 sm:grid-cols-3">
+        <FieldGroup className="grid gap-4 sm:grid-cols-2">
           <form.Field name="type">
             {(field) => (
               <SelectField
@@ -157,7 +204,7 @@ export function DiscoverEditor() {
               />
             )}
           </form.Field>
-          <form.Field name="title">
+          <form.Field name="title" validators={{ onSubmit: RowTitleSchema }}>
             {(field) => (
               <TextField
                 label={m.discover_row_title()}
@@ -170,20 +217,32 @@ export function DiscoverEditor() {
               />
             )}
           </form.Field>
-          <form.Field name="query">
-            {(field) => (
-              <TextField
-                label={m.discover_row_query()}
-                placeholder={m.discover_row_query_placeholder()}
-                name={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-                onBlur={field.handleBlur}
-                errors={field.state.meta.errors}
-              />
-            )}
-          </form.Field>
         </FieldGroup>
+        <form.Subscribe selector={(state) => state.values.type}>
+          {(type) =>
+            type === "audiobook" ? (
+              <form.Field name="audiobookFilters">
+                {(field) => (
+                  <RowFilters
+                    type="audiobook"
+                    filters={field.state.value}
+                    onChange={field.handleChange}
+                  />
+                )}
+              </form.Field>
+            ) : (
+              <form.Field name="bookFilters">
+                {(field) => (
+                  <RowFilters
+                    type="ebook"
+                    filters={field.state.value}
+                    onChange={field.handleChange}
+                  />
+                )}
+              </form.Field>
+            )
+          }
+        </form.Subscribe>
         <Button type="submit" variant="outline" className="self-start">
           <PlusIcon data-icon="inline-start" />
           {m.discover_add_row()}
@@ -200,5 +259,15 @@ export function DiscoverEditor() {
         </Button>
       </SettingsActions>
     </SettingsSection>
+  );
+}
+
+/** The Books / Audiobooks sort and filters, as on those pages. */
+function RowFilters(explore: Explore) {
+  return (
+    <div className="flex max-w-md flex-col gap-6">
+      <SortSelect {...explore} label />
+      <ExploreFilterFields {...explore} />
+    </div>
   );
 }

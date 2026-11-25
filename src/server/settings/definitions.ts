@@ -10,7 +10,7 @@ import {
   UserSettingsSchema,
 } from "#/lib/schemas/settings";
 
-import { DiscoverLayoutSchema } from "#/lib/discover";
+import { StoredDiscoverLayoutSchema } from "#/lib/discover";
 import { MediaServerSignInSettingsSchema } from "#/lib/media-server-login";
 import { AGENT_DEFINITIONS, AgentCommonSchema, type NotificationAgent } from "#/lib/notifications";
 import { locales } from "#/paraglide/runtime.js";
@@ -176,6 +176,6 @@ export const networkSettings = defineSetting({
 /** Discover's rows, in order (Settings → General → Discover). */
 export const discoverLayout = defineSetting({
   key: "discover.layout",
-  schema: DiscoverLayoutSchema,
+  schema: StoredDiscoverLayoutSchema,
   secret: false,
 });

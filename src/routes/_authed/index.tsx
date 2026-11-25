@@ -5,7 +5,7 @@ import { ArrowRightIcon } from "lucide-react";
 import { MediaPoster } from "#/components/media/media-poster";
 import { MediaRow, MediaRowItem } from "#/components/media/media-row";
 import { RequestCard } from "#/components/requests/request-card";
-import { GenreRow, SearchRow, TrendingRow, UpcomingRow } from "#/components/media/trending-row";
+import { FilteredRow, GenreRow, TrendingRow, UpcomingRow } from "#/components/media/trending-row";
 import { Skeleton } from "#/components/ui/skeleton";
 import { discoverLayoutQuery } from "#/lib/queries/media";
 import { discoverRequestsQuery } from "#/lib/queries/requests";
@@ -76,15 +76,10 @@ function DiscoverPage() {
               return row.type ? <GenreRow key={row.id} type={row.type} /> : null;
             case "upcoming":
               return <UpcomingRow key={row.id} />;
+            case "filtered":
+              return <FilteredRow key={row.id} row={row} />;
             default:
-              return row.type && row.query ? (
-                <SearchRow
-                  key={row.id}
-                  type={row.type}
-                  title={row.title || row.query}
-                  query={row.query}
-                />
-              ) : null;
+              return null;
           }
         })}
     </div>

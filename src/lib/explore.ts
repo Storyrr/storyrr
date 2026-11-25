@@ -144,3 +144,13 @@ export function bookFilterCount(f: BookFilters): number {
     f.language,
   ].filter(isSet).length;
 }
+
+/** Storyrr's own switches, applied to fetched titles (the catalogs know nothing of them). */
+export function applyStatusFilters<T extends { availability: string; accepted?: boolean | null }>(
+  items: readonly T[],
+  { hideOwned = false, acceptedOnly = false }: { hideOwned?: boolean; acceptedOnly?: boolean },
+): T[] {
+  return items
+    .filter((item) => !hideOwned || item.availability === "none")
+    .filter((item) => !acceptedOnly || item.accepted !== false);
+}
