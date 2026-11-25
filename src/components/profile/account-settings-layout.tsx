@@ -25,9 +25,12 @@ export function AccountSettingsLayout({
     { to: `${basePath}/general`, label: m.settings_tab_general },
     { to: `${basePath}/password`, label: m.profile_tab_password },
     { to: `${basePath}/permissions`, label: m.profile_tab_permissions },
-    // Personal channels are set by each user for themselves.
+    // Personal channels and linked accounts are set by each user for themselves.
     ...(account.self
-      ? [{ to: `${basePath}/notifications`, label: m.settings_tab_notifications }]
+      ? [
+          { to: `${basePath}/notifications`, label: m.settings_tab_notifications },
+          { to: `${basePath}/linked`, label: m.linked_accounts_title },
+        ]
       : []),
   ];
   return (

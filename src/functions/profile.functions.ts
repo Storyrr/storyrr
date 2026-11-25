@@ -9,11 +9,17 @@ import {
   ProfileSchema,
   SetPasswordSchema,
 } from "#/lib/schemas/profile";
+import {
+  MEDIA_SERVERS,
+  MediaServerSignInSchema,
+  UnlinkMediaServerSchema,
+} from "#/lib/media-server-login";
 import { hasPermission, type Permission } from "#/lib/permissions";
 import { CHAPTARR_FORMATS } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { setAccountPassword, updateAccount } from "#/server/auth/accounts";
+import { linkedServers, linkOwnAccount, unlinkAccount } from "#/server/auth/media-server";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
 import { ownerId } from "#/server/owner";
@@ -21,7 +27,9 @@ import { request, user, userPreference } from "#/server/db/schema";
 import { setUserLocale } from "#/server/profile";
 import { permissionsOf } from "#/server/permissions";
 import { requestQuota } from "#/server/requests/quota";
+import { services } from "#/server/services";
 import { settings } from "#/server/settings";
+import { mediaServerSignIn } from "#/server/settings/definitions";
 
 type Caller = { session: { user: { id: string } }; permissions: readonly Permission[] };
 
@@ -156,5 +164,34 @@ export const setUserPassword = createServerFn({ method: "POST" })
     }
     resolveTarget(context, data.userId, true);
     await setAccountPassword(data.userId, data.newPassword);
+    return { ok: true };
+  });
+
+/** The media servers one can sign in with, and whether the caller's account is linked to each. */
+export const getLinkedAccounts = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    const config = await settings.get(mediaServerSignIn);
+    const linked = new Set(linkedServers(db, context.session.user.id));
+    return MEDIA_SERVERS.filter((server) => config?.[server].enabled).map((server) => ({
+      server,
+      linked: linked.has(server),
+    }));
+  });
+
+/** Links the caller to their media-server account (its password proves it's theirs). */
+export const linkMediaServer = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(MediaServerSignInSchema)
+  .handler(({ data, context }) =>
+    linkOwnAccount({ db, services, settings }, context.session.user.id, data),
+  );
+
+/** Removes the caller's link to a media server. */
+export const unlinkMediaServer = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(UnlinkMediaServerSchema)
+  .handler(({ data, context }) => {
+    unlinkAccount(db, data.server, context.session.user.id);
     return { ok: true };
   });

@@ -46,5 +46,35 @@ export const MEDIA_SERVER_SIGN_IN_ERRORS = [
   "invalid",
   "no_account",
   "unreachable",
+  /** A new account would take the email of an existing one: sign in with that one, then link. */
+  "email_in_use",
+  /** Linking: the media-server account is already another Storyrr user's. */
+  "linked_elsewhere",
 ] as const;
 export type MediaServerSignInError = (typeof MEDIA_SERVER_SIGN_IN_ERRORS)[number];
+
+/** Linking or unlinking one's own media-server account (profile settings). */
+export const UnlinkMediaServerSchema = v.object({ server: v.picklist(MEDIA_SERVERS) });
+
+/** Display names of the media servers. */
+export const MEDIA_SERVER_NAMES: Record<MediaServer, () => string> = {
+  audiobookshelf: m.service_audiobookshelf,
+  kavita: m.service_kavita,
+  komga: m.service_komga,
+  jellyfin: m.service_jellyfin,
+};
+
+const ERROR_MESSAGES: Record<MediaServerSignInError, () => string> = {
+  disabled: m.sign_in_error_disabled,
+  invalid: m.sign_in_error_invalid,
+  no_account: m.sign_in_error_no_account,
+  unreachable: m.sign_in_error_unreachable,
+  email_in_use: m.sign_in_error_email_in_use,
+  linked_elsewhere: m.sign_in_error_linked_elsewhere,
+};
+
+/** What to tell the user for a refusal code (any case; unknown codes: the generic error). */
+export function mediaServerErrorMessage(code: string | undefined): string {
+  const known = MEDIA_SERVER_SIGN_IN_ERRORS.find((error) => error === code?.toLowerCase());
+  return (known ? ERROR_MESSAGES[known] : m.error_generic)();
+}

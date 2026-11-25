@@ -47,6 +47,7 @@ import { Route as ApiWebhooksChaptarrRouteImport } from './routes/api/webhooks/c
 import { Route as AuthedAuthorsTypeIdRouteImport } from './routes/_authed/authors/$type/$id'
 import { Route as AuthedMediaTypeIdRouteImport } from './routes/_authed/media/$type/$id'
 import { Route as AuthedProfileSettingsGeneralRouteImport } from './routes/_authed/profile/settings/general'
+import { Route as AuthedProfileSettingsLinkedRouteImport } from './routes/_authed/profile/settings/linked'
 import { Route as AuthedProfileSettingsNotificationsRouteImport } from './routes/_authed/profile/settings/notifications'
 import { Route as AuthedProfileSettingsPasswordRouteImport } from './routes/_authed/profile/settings/password'
 import { Route as AuthedProfileSettingsPermissionsRouteImport } from './routes/_authed/profile/settings/permissions'
@@ -251,6 +252,12 @@ const AuthedProfileSettingsGeneralRoute =
     path: '/general',
     getParentRoute: () => AuthedProfileSettingsRoute,
   } as any)
+const AuthedProfileSettingsLinkedRoute =
+  AuthedProfileSettingsLinkedRouteImport.update({
+    id: '/linked',
+    path: '/linked',
+    getParentRoute: () => AuthedProfileSettingsRoute,
+  } as any)
 const AuthedProfileSettingsNotificationsRoute =
   AuthedProfileSettingsNotificationsRouteImport.update({
     id: '/notifications',
@@ -354,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/linked': typeof AuthedProfileSettingsLinkedRoute
   '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
@@ -404,6 +412,7 @@ export interface FileRoutesByTo {
   '/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/profile/settings/linked': typeof AuthedProfileSettingsLinkedRoute
   '/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
@@ -456,6 +465,7 @@ export interface FileRoutesById {
   '/_authed/authors/$type/$id': typeof AuthedAuthorsTypeIdRoute
   '/_authed/media/$type/$id': typeof AuthedMediaTypeIdRoute
   '/_authed/profile/settings/general': typeof AuthedProfileSettingsGeneralRoute
+  '/_authed/profile/settings/linked': typeof AuthedProfileSettingsLinkedRoute
   '/_authed/profile/settings/notifications': typeof AuthedProfileSettingsNotificationsRoute
   '/_authed/profile/settings/password': typeof AuthedProfileSettingsPasswordRoute
   '/_authed/profile/settings/permissions': typeof AuthedProfileSettingsPermissionsRoute
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/authors/$type/$id'
     | '/media/$type/$id'
     | '/profile/settings/general'
+    | '/profile/settings/linked'
     | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
@@ -558,6 +569,7 @@ export interface FileRouteTypes {
     | '/authors/$type/$id'
     | '/media/$type/$id'
     | '/profile/settings/general'
+    | '/profile/settings/linked'
     | '/profile/settings/notifications'
     | '/profile/settings/password'
     | '/profile/settings/permissions'
@@ -609,6 +621,7 @@ export interface FileRouteTypes {
     | '/_authed/authors/$type/$id'
     | '/_authed/media/$type/$id'
     | '/_authed/profile/settings/general'
+    | '/_authed/profile/settings/linked'
     | '/_authed/profile/settings/notifications'
     | '/_authed/profile/settings/password'
     | '/_authed/profile/settings/permissions'
@@ -902,6 +915,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProfileSettingsGeneralRouteImport
       parentRoute: typeof AuthedProfileSettingsRoute
     }
+    '/_authed/profile/settings/linked': {
+      id: '/_authed/profile/settings/linked'
+      path: '/linked'
+      fullPath: '/profile/settings/linked'
+      preLoaderRoute: typeof AuthedProfileSettingsLinkedRouteImport
+      parentRoute: typeof AuthedProfileSettingsRoute
+    }
     '/_authed/profile/settings/notifications': {
       id: '/_authed/profile/settings/notifications'
       path: '/notifications'
@@ -1034,6 +1054,7 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 
 interface AuthedProfileSettingsRouteChildren {
   AuthedProfileSettingsGeneralRoute: typeof AuthedProfileSettingsGeneralRoute
+  AuthedProfileSettingsLinkedRoute: typeof AuthedProfileSettingsLinkedRoute
   AuthedProfileSettingsNotificationsRoute: typeof AuthedProfileSettingsNotificationsRoute
   AuthedProfileSettingsPasswordRoute: typeof AuthedProfileSettingsPasswordRoute
   AuthedProfileSettingsPermissionsRoute: typeof AuthedProfileSettingsPermissionsRoute
@@ -1041,6 +1062,7 @@ interface AuthedProfileSettingsRouteChildren {
 
 const AuthedProfileSettingsRouteChildren: AuthedProfileSettingsRouteChildren = {
   AuthedProfileSettingsGeneralRoute: AuthedProfileSettingsGeneralRoute,
+  AuthedProfileSettingsLinkedRoute: AuthedProfileSettingsLinkedRoute,
   AuthedProfileSettingsNotificationsRoute:
     AuthedProfileSettingsNotificationsRoute,
   AuthedProfileSettingsPasswordRoute: AuthedProfileSettingsPasswordRoute,

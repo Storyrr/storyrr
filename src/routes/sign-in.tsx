@@ -12,7 +12,12 @@ import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { FieldGroup } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { authClient } from "#/lib/auth-client";
-import { MediaServerSignInSchema, type MediaServer } from "#/lib/media-server-login";
+import {
+  MEDIA_SERVER_NAMES,
+  MediaServerSignInSchema,
+  mediaServerErrorMessage,
+  type MediaServer,
+} from "#/lib/media-server-login";
 import { authKeys } from "#/lib/queries/auth";
 import { safeRedirectPath } from "#/lib/redirect";
 import { SignInSchema, type SignInInput } from "#/lib/schemas/auth";
@@ -57,7 +62,7 @@ function SignInPage() {
             </ToggleGroupItem>
             {mediaServerSignIn.map((server) => (
               <ToggleGroupItem key={server} id={server} className="flex-1">
-                {serverNames[server]()}
+                {MEDIA_SERVER_NAMES[server]()}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -68,13 +73,6 @@ function SignInPage() {
   );
 }
 
-const serverNames: Record<MediaServer, () => string> = {
-  audiobookshelf: m.service_audiobookshelf,
-  kavita: m.service_kavita,
-  komga: m.service_komga,
-  jellyfin: m.service_jellyfin,
-};
-
 function useSignedIn() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -84,13 +82,6 @@ function useSignedIn() {
     await router.navigate({ href: safeRedirectPath(search.redirect) });
   };
 }
-
-const signInErrors: Record<string, () => string> = {
-  DISABLED: m.sign_in_error_disabled,
-  INVALID: m.sign_in_error_invalid,
-  NO_ACCOUNT: m.sign_in_error_no_account,
-  UNREACHABLE: m.sign_in_error_unreachable,
-};
 
 /** Sign in with a media-server account (username, or email for Komga, and password on that server). */
 function MediaServerSignIn({ server }: { server: MediaServer }) {
@@ -103,7 +94,7 @@ function MediaServerSignIn({ server }: { server: MediaServer }) {
       });
       if (error) {
         // The plugin answers with the reason as the message ("invalid", "no_account"…).
-        throw new Error((signInErrors[(error.message ?? "").toUpperCase()] ?? m.error_generic)());
+        throw new Error(mediaServerErrorMessage(error.message));
       }
     },
     onSuccess: signedIn,

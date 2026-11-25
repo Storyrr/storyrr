@@ -1,10 +1,11 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, sql } from "drizzle-orm";
 
-import type {
-  MediaServer,
-  MediaServerSignInError,
-  MediaServerSignInInput,
+import {
+  MEDIA_SERVERS,
+  type MediaServer,
+  type MediaServerSignInError,
+  type MediaServerSignInInput,
 } from "#/lib/media-server-login";
 import { PLACEHOLDER_EMAIL_DOMAIN } from "#/lib/emails";
 import type { AppDatabase } from "#/server/db/client";
@@ -103,9 +104,11 @@ async function checkCredentials(
 }
 
 /**
- * Signs in with a media-server account: the linked Storyrr user, else the one
- * with the same email (then linked), else a new account when the admin allows
- * it for that server.
+ * Signs in with a media-server account: the Storyrr user linked to it, else a
+ * new account when the admin allows it for that server. Never by email: a
+ * media-server user can set any email there, the Owner's included (the
+ * account takeover Seerr avoids the same way for Jellyfin). Existing users
+ * link their account from their settings instead.
  */
 export async function resolveMediaServerSignIn(
   { db, services, settings }: MediaServerDeps,
@@ -118,18 +121,8 @@ export async function resolveMediaServerSignIn(
 
   const linked = linkedUserId(db, input.server, account.key);
   if (linked) return { ok: true, userId: linked };
-  if (account.email) {
-    const sameEmail = db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(sql`lower(${user.email})`, account.email.toLowerCase()))
-      .get();
-    if (sameEmail) {
-      linkAccount(db, input.server, sameEmail.id, account.key);
-      return { ok: true, userId: sameEmail.id };
-    }
-  }
   if (!config.allowNew) return { ok: false, error: "no_account" };
+  if (account.email && emailInUse(db, account.email)) return { ok: false, error: "email_in_use" };
   return {
     ok: true,
     create: {
@@ -138,4 +131,50 @@ export async function resolveMediaServerSignIn(
     },
     link: (userId) => linkAccount(db, input.server, userId, account.key),
   };
+}
+
+function emailInUse(db: AppDatabase, email: string): boolean {
+  return Boolean(
+    db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(sql`lower(${user.email})`, email.toLowerCase()))
+      .get(),
+  );
+}
+
+/**
+ * Links the signed-in user to their media-server account, once its password
+ * proves it's theirs. Only for servers whose sign-in is on.
+ */
+export async function linkOwnAccount(
+  { db, services, settings }: MediaServerDeps,
+  userId: string,
+  input: MediaServerSignInInput,
+): Promise<{ ok: true } | { ok: false; error: MediaServerSignInError }> {
+  if (!(await settings.get(mediaServerSignIn))?.[input.server]?.enabled)
+    return { ok: false, error: "disabled" };
+  const account = await checkCredentials(services, input);
+  if (typeof account === "string") return { ok: false, error: account };
+  const linked = linkedUserId(db, input.server, account.key);
+  if (linked && linked !== userId) return { ok: false, error: "linked_elsewhere" };
+  linkAccount(db, input.server, userId, account.key);
+  return { ok: true };
+}
+
+/** Removes a user's link to a media server (they sign in with their Storyrr password again). */
+export function unlinkAccount(db: AppDatabase, server: MediaServer, userId: string): void {
+  db.delete(mediaServerAccount)
+    .where(and(eq(mediaServerAccount.server, server), eq(mediaServerAccount.userId, userId)))
+    .run();
+}
+
+/** The media servers a user is linked to. */
+export function linkedServers(db: AppDatabase, userId: string): MediaServer[] {
+  return db
+    .select({ server: mediaServerAccount.server })
+    .from(mediaServerAccount)
+    .where(eq(mediaServerAccount.userId, userId))
+    .all()
+    .flatMap((row) => MEDIA_SERVERS.filter((server) => server === row.server));
 }
