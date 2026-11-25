@@ -176,3 +176,26 @@
     background: oklch(0.816 0.167 84.4 / 35%);
   }
 }
+
+/*
+ * The hand cursor on anything clickable, like Seerr. Tailwind v4 and React Aria
+ * keep the arrow on controls (native-app style), and several vendored components
+ * set `cursor-default`. Unlayered on purpose: it wins over those utilities.
+ * Disabled controls keep their `cursor-not-allowed`; the sidebar rail keeps its
+ * resize cursor.
+ */
+:where(
+  button,
+  [role="button"],
+  a[href],
+  [role="tab"],
+  [role="option"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [role="menuitemcheckbox"],
+  [data-slot="switch"],
+  [data-slot="checkbox"],
+  summary
+):not(:disabled, [data-disabled], [aria-disabled="true"], [data-sidebar="rail"]) {
+  cursor: pointer;
+}
