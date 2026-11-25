@@ -151,7 +151,7 @@ export function SeriesView({
           </div>
           {canRequest && items.length > 0 ? (
             <div className="shrink-0">
-              <RequestSeriesDialog type={type} items={items} />
+              <RequestSeriesDialog type={type} seriesId={id} name={name} items={items} />
             </div>
           ) : null}
         </div>

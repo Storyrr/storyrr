@@ -34,6 +34,7 @@ export const CreateRequestSchema = v.object({
 /** Several titles of one format (a series' volumes). */
 export const RequestManySchema = v.object({
   type: v.picklist(SEARCHABLE_TYPES),
+  ...TargetOverrideSchema.entries,
   ids: v.pipe(
     v.array(v.pipe(v.string(), v.nonEmpty(), v.maxLength(64))),
     v.minLength(1),

@@ -175,7 +175,11 @@ export const requestMany = createServerFn({ method: "POST" })
     const results: { id: string; ok: boolean; error?: string }[] = [];
     for (const id of data.ids) {
       try {
-        await requestTitle(context, { media: { type: data.type, id } });
+        await requestTitle(context, {
+          media: { type: data.type, id },
+          rootFolderPath: data.rootFolderPath,
+          qualityProfileId: data.qualityProfileId,
+        });
         results.push({ id, ok: true });
       } catch (error) {
         results.push({

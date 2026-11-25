@@ -550,9 +550,7 @@
   "collection_volume": "Tome {position}",
   "collection_volume_title": "{position}. {title}",
   "collection_request_series": "Demander la série",
-  "collection_request_series_description": "Choisissez les tomes à demander ; ceux que vous avez ou déjà demandés ne peuvent pas l’être.",
   "collection_select_all": "Tout sélectionner",
-  "collection_select_none": "Ne rien sélectionner",
   "collection_request_count": "Demander ({count})",
   "media_by_prefix": "De",
   "settings_tab_jobs": "Tâches et journaux",
@@ -702,5 +700,10 @@
   "series_fact_volumes": "Tomes",
   "series_fact_published": "Parution",
   "series_fact_narrators": "Narrateurs",
-  "series_page_count": "{count} pages"
+  "series_page_count": "{count} pages",
+  "series_not_requested": "Non demandé",
+  "series_column_volume": "Tome",
+  "series_column_title": "Titre",
+  "series_column_status": "Statut",
+  "series_select_volumes": "Sélectionner des tomes"
 }
