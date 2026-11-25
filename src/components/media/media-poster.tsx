@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BanIcon, CheckIcon, ClockIcon, LanguagesIcon, LoaderIcon } from "lucide-react";
+import { BanIcon, CheckIcon, ClockIcon, LanguagesIcon, LoaderIcon, MinusIcon } from "lucide-react";
 
 import { Cover } from "#/components/media/cover";
 import { formatList, yearOf } from "#/lib/format";
@@ -13,19 +13,23 @@ const typeLabels: Record<SearchableType, () => string> = {
   ebook: m.media_type_ebook,
 };
 
-const statusLabels: Record<Exclude<MediaAvailability, "none">, () => string> = {
+const statusLabels: Record<Exclude<PosterAvailability, "none">, () => string> = {
   available: m.availability_available,
+  partial: m.series_partially_available,
   requested: m.availability_requested,
   processing: m.availability_processing,
   blocked: m.availability_blocked,
 };
+
+/** A title's status, or a series' where only some volumes are in the library. */
+export type PosterAvailability = MediaAvailability | "partial";
 
 /** Seerr-like corner icon for a title's status (or a language Chaptarr would refuse). */
 function StatusIcon({
   availability,
   refused,
 }: {
-  availability: MediaAvailability;
+  availability: PosterAvailability;
   refused: boolean;
 }) {
   let icon: React.ReactNode = null;
@@ -33,6 +37,10 @@ function StatusIcon({
   let tone = "bg-secondary text-secondary-foreground";
   if (availability === "available") {
     icon = <CheckIcon />;
+    tone = "bg-primary text-primary-foreground";
+  } else if (availability === "partial") {
+    // Seerr's partly available show: the available color, a minus instead of the check.
+    icon = <MinusIcon />;
     tone = "bg-primary text-primary-foreground";
   } else if (availability === "requested") icon = <ClockIcon />;
   else if (availability === "processing") icon = <LoaderIcon />;
@@ -85,7 +93,7 @@ export function MediaPoster({
   item: PosterItem;
   /** A series card: links to the series page, with its volume count (when known) in place of the year. */
   series?: { booksCount?: number };
-  availability: MediaAvailability;
+  availability: PosterAvailability;
   /** Chaptarr's language profile would filter it out. */
   refused?: boolean;
   /** Shown at the bottom of the hover panel (e.g. the Request button). */

@@ -43,6 +43,16 @@ describe("groupBySeries", () => {
     });
   });
 
+  it("marks a series partly available when some of the volumes found are", () => {
+    const [partial] = groupBySeries([
+      title("a", comic, { availability: "available" }),
+      title("b", comic),
+    ]);
+    const [full] = groupBySeries([title("a", comic, { availability: "available" })]);
+    expect(partial?.kind === "series" && partial.series.availability).toBe("partial");
+    expect(full?.kind === "series" && full.series.availability).toBe("available");
+  });
+
   it("keeps titles whose series has no id as titles", () => {
     const entries = groupBySeries([title("a", { id: "", name: "No id" })]);
     expect(entries).toEqual([

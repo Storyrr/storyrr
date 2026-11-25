@@ -26,7 +26,8 @@ export type SeriesEntry = {
   booksCount?: number;
   /** Accepted when one of its known volumes (or its first books) is; refused when all are. */
   accepted: boolean | null;
-  availability: MediaAvailability;
+  /** From the volumes the search found: all of them in the library, or some. */
+  availability: "available" | "partial" | "none";
 };
 
 export type SearchEntry =
@@ -60,6 +61,9 @@ export function seriesAvailability(
     return "requested";
   return "none";
 }
+
+const posterAvailability = (status: SeriesAvailability) =>
+  status === "available" || status === "partial" ? status : "none";
 
 /**
  * Search results with the volumes of a series folded into one series entry
@@ -101,8 +105,8 @@ export function groupBySeries(
           ...found.map((volume) => volume.accepted),
           ...(known ? [known.accepted] : []),
         ]),
-        // Only what the search found: "available" when those are; the series page tells the rest.
-        availability: seriesAvailability(found) === "available" ? "available" : "none",
+        // Only what the search found; the series page tells the rest.
+        availability: posterAvailability(seriesAvailability(found)),
       },
     });
   }
