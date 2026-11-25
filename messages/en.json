@@ -710,5 +710,7 @@
   "series_collections_description": "Several volumes in one book: not counted above, nor in Request the series.",
   "series_collection_volumes": "Volumes {position}",
   "series_languages_more": "{languages} and {count} more",
-  "series_details": "Details"
+  "series_details": "Details",
+  "password_show": "Show password",
+  "password_hide": "Hide password"
 }

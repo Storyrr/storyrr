@@ -1,10 +1,18 @@
-import { useId } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useId, useState } from "react";
 
 import { SETTINGS_ROW } from "#/components/settings/settings-section";
 import { cn } from "#/lib/utils";
 
 import { Field, FieldDescription, FieldError, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "#/components/ui/input-group";
+import { m } from "#/paraglide/messages.js";
 
 type TextFieldProps = {
   label: string;
@@ -23,7 +31,7 @@ type TextFieldProps = {
   layout?: "stacked" | "row";
 };
 
-/** A labelled text input bound to a TanStack Form field. */
+/** A labelled text input bound to a TanStack Form field; a password one has an eye to show it. */
 export function TextField({
   label,
   description,
@@ -42,6 +50,19 @@ export function TextField({
   const id = useId();
   const descriptionId = `${id}-description`;
   const invalid = errors.length > 0;
+  const [visible, setVisible] = useState(false);
+  const inputProps = {
+    id,
+    name,
+    autoComplete,
+    value,
+    disabled,
+    placeholder,
+    "aria-invalid": invalid || undefined,
+    "aria-describedby": description ? descriptionId : undefined,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => onChange(event.target.value),
+    onBlur,
+  };
   return (
     <Field
       data-invalid={invalid || undefined}
@@ -49,19 +70,22 @@ export function TextField({
       className={row ? cn(SETTINGS_ROW, "md:items-center") : undefined}
     >
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
-        id={id}
-        name={name}
-        type={type}
-        autoComplete={autoComplete}
-        value={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        aria-invalid={invalid || undefined}
-        aria-describedby={description ? descriptionId : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-      />
+      {type === "password" ? (
+        <InputGroup>
+          <InputGroupInput {...inputProps} type={visible ? "text" : "password"} />
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              aria-label={visible ? m.password_hide() : m.password_show()}
+              isDisabled={disabled}
+              onPress={() => setVisible(!visible)}
+            >
+              {visible ? <EyeOffIcon /> : <EyeIcon />}
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      ) : (
+        <Input {...inputProps} type={type} />
+      )}
       {description ? (
         <FieldDescription id={descriptionId} className={row ? "md:col-start-2" : undefined}>
           {description}
