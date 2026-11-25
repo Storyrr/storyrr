@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { desc, eq, inArray } from "drizzle-orm";
-import type * as v from "valibot";
 
 import {
   ApproveRequestSchema,
@@ -15,9 +14,7 @@ import {
   RequestIdSchema,
 } from "#/lib/schemas/requests";
 import { FormatInputSchema as FormatQuotaSchema } from "#/lib/schemas/settings";
-import { formatList } from "#/lib/format";
 import { hasPermission, type Permission } from "#/lib/permissions";
-import { isLanguageAccepted, languageName } from "#/lib/languages";
 import { m } from "#/paraglide/messages.js";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 
@@ -26,20 +23,20 @@ import { db } from "#/server/db";
 import { media, request } from "#/server/db/schema";
 import { runJob } from "#/server/jobs";
 import {
-  activeRequestsByExternalId,
   countPending,
   listRequests,
   requestHistory,
-  upsertMedia,
   getRequestRow,
 } from "#/server/requests/queries";
-import { block, findBlock, listBlocklist, unblock } from "#/server/requests/blocklist";
+import { block, listBlocklist, unblock } from "#/server/requests/blocklist";
 import { downloadsFor } from "#/server/requests/downloads";
-import { getLanguagePolicy } from "#/server/requests/language-policy";
 import { requestQuota } from "#/server/requests/quota";
+import {
+  RequestRefusedError,
+  requestTitle as requestTitleUnchecked,
+} from "#/server/requests/request-title";
 import { submitRequest } from "#/server/requests/submit";
 import {
-  createRequest,
   InvalidTransitionError,
   targetKey,
   transitionRequest as transitionUnchecked,
@@ -47,7 +44,6 @@ import {
 import { services } from "#/server/services";
 import { removeBook } from "#/server/services/chaptarr/client";
 import { settings } from "#/server/settings";
-import { formatDefaults } from "#/server/settings/definitions";
 import { chaptarrProviderId, mediaSources } from "#/server/sources";
 
 /** Submission can take a while (Chaptarr refreshes the author): never block the caller on it. */
@@ -80,78 +76,24 @@ type RequestCaller = {
   permissions: readonly Permission[];
 };
 
-/**
- * Requests one title for the caller, with every check (permission, blocklist,
- * language, limits). Throws with the reason, the HTTP status set.
- */
+/** One request with every check; a refusal becomes an error with its HTTP status. */
 async function requestTitle(
   context: RequestCaller,
-  data: v.InferOutput<typeof CreateRequestSchema>,
+  data: Parameters<typeof requestTitleUnchecked>[2],
 ) {
-  const { user } = context.session;
-  const { permissions } = context;
-  const isAdmin = user.role === "admin";
-  const format = data.media.type;
-  if (!hasPermission(permissions, `request_${format}`)) {
-    setResponseStatus(403);
-    throw new Error(m.request_not_allowed());
-  }
-  // Picking the folder and profile is an advanced request option.
-  const advanced = hasPermission(permissions, "request_advanced");
-  const defaults = await settings.get(formatDefaults[format]);
-  const rootFolderPath = (advanced ? data.rootFolderPath : undefined) ?? defaults?.rootFolderPath;
-  if (!rootFolderPath) {
-    throw new Error(
-      format === "ebook"
-        ? m.request_error_ebook_defaults_missing()
-        : m.request_error_defaults_missing(),
+  try {
+    return await requestTitleUnchecked(
+      { db, services, settings, onApproved: submitInBackground },
+      { user: context.session.user, permissions: context.permissions },
+      data,
     );
-  }
-
-  const details = await mediaSources[format].getDetails(services, data.media.id);
-  if (!details.ok) throw new Error(details.error.message);
-  if (findBlock(db, details.value.source, details.value.externalId)) {
-    setResponseStatus(409);
-    throw new Error(m.request_blocked());
-  }
-  // Chaptarr would wait forever for a work its metadata profile filters out: refuse it here.
-  const policy = await getLanguagePolicy({ services, settings }, format);
-  if (isLanguageAccepted(policy, details.value.languages) === false && policy) {
-    setResponseStatus(422);
-    throw new Error(
-      m.request_language_not_accepted({
-        languages: formatList(policy.allowed.map(languageName)),
-      }),
-    );
-  }
-
-  // Joining someone else's active request costs nothing; a new one counts against the limit.
-  const joins = activeRequestsByExternalId(db, {
-    source: details.value.source,
-    format,
-    externalIds: [details.value.externalId],
-  }).has(details.value.externalId);
-  if (!joins) {
-    const quota = await requestQuota({ db, settings }, { id: user.id, isAdmin }, format);
-    if (quota.remaining === 0 && quota.limit !== null) {
-      setResponseStatus(429);
-      throw new Error(m.request_quota_exceeded({ limit: quota.limit, days: quota.days }));
+  } catch (error) {
+    if (error instanceof RequestRefusedError) {
+      setResponseStatus(error.status);
+      throw new Error(error.message, { cause: error });
     }
+    throw error;
   }
-
-  const mediaId = upsertMedia(db, details.value);
-  const result = createRequest(db, {
-    mediaId,
-    userId: user.id,
-    format,
-    target: { service: "chaptarr", rootFolderPath },
-    qualityProfileId: advanced ? (data.qualityProfileId ?? null) : null,
-    autoApprove: hasPermission(permissions, `auto_approve_${format}`),
-  });
-  if (result.kind === "created" && result.status === "approved") {
-    submitInBackground(result.requestId);
-  }
-  return result;
 }
 
 /**
