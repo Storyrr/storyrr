@@ -18,6 +18,7 @@ export function CollectionPage({
   items,
   acceptedLanguages,
   actions,
+  notice,
   showVolumes = false,
 }: {
   type: SearchableType;
@@ -28,6 +29,8 @@ export function CollectionPage({
   items: Annotated[];
   acceptedLanguages: readonly string[] | null;
   actions?: React.ReactNode;
+  /** Under the description (e.g. a series' versions in another language). */
+  notice?: React.ReactNode;
   /** Series pages: each work's volume number under its card. */
   showVolumes?: boolean;
 }) {
@@ -55,6 +58,7 @@ export function CollectionPage({
               {description}
             </p>
           ) : null}
+          {notice}
           {actions ? <div className="flex flex-wrap gap-2 pt-2">{actions}</div> : null}
         </div>
       </header>

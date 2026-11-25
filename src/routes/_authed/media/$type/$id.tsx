@@ -6,6 +6,7 @@ import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
 import { LanguageNotice } from "#/components/media/language-notice";
+import { RelatedSeries } from "#/components/media/related-series";
 import { ReportIssueDialog } from "#/components/issues/report-issue-dialog";
 import { BlockButton } from "#/components/media/block-button";
 import { ManageTitle } from "#/components/media/manage-title";
@@ -64,6 +65,8 @@ function MediaPage() {
     [m.media_publisher(), item.publisher],
   ];
 
+  const [refusedSeries] = item.series;
+
   return (
     <article className="grid gap-6 md:grid-cols-[16rem_1fr]">
       <div className="flex flex-col gap-3">
@@ -71,7 +74,16 @@ function MediaPage() {
         {availability !== "none" ? (
           <AvailabilityBadge availability={availability} />
         ) : accepted === false && acceptedLanguages ? (
-          <LanguageNotice acceptedLanguages={acceptedLanguages} />
+          <>
+            <LanguageNotice acceptedLanguages={acceptedLanguages} />
+            {refusedSeries?.id ? (
+              <RelatedSeries
+                type={type}
+                seriesId={refusedSeries.id}
+                seriesName={refusedSeries.name}
+              />
+            ) : null}
+          </>
         ) : data.canRequest ? (
           <RequestDialog item={{ ...item, type }} />
         ) : null}

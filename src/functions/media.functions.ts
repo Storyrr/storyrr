@@ -5,7 +5,7 @@ import { isLanguageAccepted, type LanguagePolicy } from "#/lib/languages";
 import { DEFAULT_DISCOVER_LAYOUT, DiscoverLayoutSchema, withNewBuiltInRows } from "#/lib/discover";
 import { hasPermission } from "#/lib/permissions";
 import { AudiobookFiltersSchema, BookFiltersSchema } from "#/lib/explore";
-import type { MediaSummary, MediaTag } from "#/lib/media";
+import type { MediaSummary, MediaTag, SeriesSummary } from "#/lib/media";
 import { SEARCHABLE_TYPES, type SearchableType } from "#/lib/media-types";
 import { availabilityFromRequest, type MediaAvailability } from "#/lib/request-status";
 import type { RequestStatus } from "#/lib/requests";
@@ -197,6 +197,61 @@ export const getSeries = createServerFn({ method: "GET" })
       description,
       imageUrl,
     };
+  });
+
+/** Each series with Chaptarr's language acceptance (from its first books). */
+async function annotateSeries(type: SearchableType, series: SeriesSummary[]) {
+  const policy = await getLanguagePolicy({ services, settings }, type);
+  return {
+    policy,
+    results: series.map((item) => ({
+      ...item,
+      accepted: isLanguageAccepted(policy, item.languages),
+    })),
+  };
+}
+
+/** Series matching a search (Hardcover), accepted languages first. Signed-in users. */
+export const searchSeries = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(SearchInputSchema)
+  .handler(async ({ data }) => {
+    const result = await mediaSources[data.type].searchSeries(services, data.query);
+    if (!result.ok) return { ok: false as const, error: result.error };
+    const { policy, results } = await annotateSeries(data.type, result.value);
+    results.sort(
+      (x, y) => (ACCEPTANCE_ORDER.get(x.accepted) ?? 1) - (ACCEPTANCE_ORDER.get(y.accepted) ?? 1),
+    );
+    return { ok: true as const, results, ...languageInfo(policy) };
+  });
+
+/**
+ * A series' other versions in a language Chaptarr accepts (e.g. a translation
+ * numbered apart), each with those languages only. Signed-in users.
+ */
+export const getRelatedSeries = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(
+    v.object({
+      type: v.picklist(SEARCHABLE_TYPES),
+      id: v.pipe(v.string(), v.nonEmpty(), v.maxLength(64)),
+      name: v.pipe(v.string(), v.nonEmpty(), v.maxLength(300)),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const result = await mediaSources[data.type].relatedSeries(services, data.id, data.name);
+    // A hint, not the page's content: no error shown when it fails.
+    if (!result.ok) return [];
+    const { policy, results } = await annotateSeries(data.type, result.value);
+    if (!policy) return [];
+    return results
+      .filter((series) => series.accepted === true)
+      .map((series) => ({
+        ...series,
+        languages: (series.languages ?? []).filter(
+          (code): code is string => code !== null && policy.allowed.includes(code),
+        ),
+      }));
   });
 
 /** The Books / Audiobooks page: the catalog sorted and filtered, each title with its status. */

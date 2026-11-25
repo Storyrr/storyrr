@@ -79,9 +79,12 @@ export function MediaPoster({
   availability,
   refused = false,
   action,
+  series,
 }: {
   type: SearchableType;
   item: PosterItem;
+  /** A series card: links to the series page, with its book count in place of the year. */
+  series?: { booksCount: number };
   availability: MediaAvailability;
   /** Chaptarr's language profile would filter it out. */
   refused?: boolean;
@@ -93,14 +96,20 @@ export function MediaPoster({
     <article className="group relative overflow-hidden rounded-xl border bg-card shadow-sm ring-primary/70 transition duration-200 focus-within:ring-2 hover:scale-[1.03] hover:ring-2">
       <Cover src={item.coverUrl} type={type} className="rounded-none" />
       <Link
-        to="/media/$type/$id"
+        to={series ? "/series/$type/$id" : "/media/$type/$id"}
         params={{ type, id: item.externalId }}
         className="absolute inset-0 outline-none"
       >
         <span className="sr-only">{item.title}</span>
       </Link>
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-end gap-1 bg-gradient-to-t from-background via-background/85 to-background/20 p-3 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-        {year ? <span className="text-xs font-medium">{year}</span> : null}
+        {series ? (
+          <span className="text-xs font-medium">
+            {m.collection_count({ count: series.booksCount })}
+          </span>
+        ) : year ? (
+          <span className="text-xs font-medium">{year}</span>
+        ) : null}
         <h3 className="line-clamp-3 leading-tight font-semibold">{item.title}</h3>
         {item.authors.length > 0 ? (
           <p className="line-clamp-1 text-xs text-muted-foreground">{formatList(item.authors)}</p>
@@ -120,7 +129,7 @@ export function MediaPoster({
       </div>
       {/* After the panel, so they stay on top of it like Seerr's. */}
       <span className="pointer-events-none absolute top-2 left-2 rounded-full bg-background/80 px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide uppercase backdrop-blur">
-        {typeLabels[type]()}
+        {series ? m.collection_series() : typeLabels[type]()}
       </span>
       <span className="pointer-events-none absolute top-2 right-2">
         <StatusIcon availability={availability} refused={refused} />

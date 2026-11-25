@@ -99,6 +99,9 @@ Shown when the database has no user.
 ### 4.3f Series and authors (decided 2026-11-24)
 
 - Series pages (`/series/<type>/<id>`, Audible series ASIN or Hardcover series id), linked from a title's series badge: the volumes in reading order with their status, and **Request the series**: a dialog to pick the volumes (those you have or already requested are disabled), each requested with the usual checks (permissions, blocklist, language, limits).
+- **Versions in another language (decided 2026-11-25).** Hardcover keeps a translation cut into other volumes as its own series, with no link to the original ("Solo Leveling (French Numbering)" next to "Solo Leveling (Comic)"). So:
+  - search shows a **Book series** row below the books (Hardcover's series search), the series in a language Chaptarr accepts first; a series' languages are those of its first 3 books;
+  - a title or a series refused for its language (every volume refused) shows **"Also in <languages>:"** with links to the series of the same name apart from a trailing qualifier (`(…)`, `[…]`) that Chaptarr accepts. A name match, not a link Hardcover makes: it can include another medium (the novel next to the comic), whose name says so.
 - Author pages (`/authors/<type>/<id>`), linked from a title's authors: photo and bio (Audnexus for audiobooks, Hardcover for eBooks) and their works.
 
 ### 4.3e Manage a title (decided 2026-11-24)

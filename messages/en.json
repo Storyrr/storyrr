@@ -692,5 +692,7 @@
   "discover_add_row": "Add a search row",
   "discover_row_title": "Row title",
   "discover_row_query": "Search",
-  "discover_reset": "Reset to default"
+  "discover_reset": "Reset to default",
+  "search_series_title": "Book series",
+  "media_also_in_languages": "Also in {languages}:"
 }

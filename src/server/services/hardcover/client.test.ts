@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeFetch, json, jsonBody } from "#/server/services/test-utils";
 
-import { createHardcoverClient, exploreQuery } from "./client";
+import { createHardcoverClient, exploreQuery, seriesBaseName } from "./client";
 import book from "./fixtures/book.json" with { type: "json" };
 import search from "./fixtures/search.json" with { type: "json" };
 
@@ -220,5 +220,146 @@ describe("Hardcover explore query", () => {
       ],
     });
     expect(order).toEqual([{ users_count: "desc" }, { release_date: "asc" }]);
+  });
+});
+
+describe("Hardcover series", () => {
+  const seriesHits = {
+    data: {
+      search: {
+        results: {
+          hits: [
+            {
+              document: {
+                id: "225411",
+                name: "Solo Leveling (Comic)",
+                author_name: "Chugong",
+                books_count: 15,
+                primary_books_count: 15,
+              },
+            },
+            {
+              document: {
+                id: "42570",
+                name: "Solo Leveling (French Numbering)",
+                author_name: "Chugong",
+                books_count: 19,
+                primary_books_count: 19,
+              },
+            },
+            {
+              document: {
+                id: "282109",
+                name: "Solo Leveling: Ragnarok",
+                books_count: 1,
+                primary_books_count: 1,
+              },
+            },
+            {
+              document: {
+                id: "285785",
+                name: "Solo Leveling Series",
+                books_count: 0,
+                primary_books_count: 0,
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+  const seriesLanguages = {
+    data: {
+      series: [
+        {
+          id: 225411,
+          book_series: [
+            {
+              book: {
+                image: { url: "https://example.test/comic-1.jpg" },
+                editions: [{ language: { code3: "eng" } }],
+              },
+            },
+            { book: { image: null, editions: [{ language: { code3: "kor" } }] } },
+          ],
+        },
+        {
+          id: 42570,
+          book_series: [
+            {
+              book: {
+                image: { url: "https://example.test/fr-1.jpg" },
+                editions: [{ language: { code3: "fre" } }, { language: null }],
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const fetchSeries = () =>
+    fakeFetch((_url, init) =>
+      JSON.stringify(jsonBody(init)).includes("StoryrrSeriesLanguages")
+        ? json(seriesLanguages)
+        : json(seriesHits),
+    );
+
+  it("strips a series name's trailing qualifiers", () => {
+    expect(seriesBaseName("Solo Leveling (French Numbering)")).toBe("Solo Leveling");
+    expect(seriesBaseName("Solo Leveling (1-in-2 Comic) [FR]")).toBe("Solo Leveling");
+    expect(seriesBaseName("Solo Leveling: Ragnarok")).toBe("Solo Leveling: Ragnarok");
+    expect(seriesBaseName("(Untitled)")).toBe("");
+  });
+
+  it("searches series with their first books' languages and cover, empty ones left out", async () => {
+    const { fetch, calls } = fetchSeries();
+    const result = await createHardcoverClient({ token: "abc", fetch }).searchSeries(
+      "solo leveling",
+    );
+
+    expect(jsonBody(calls[0]?.init)).toMatchObject({
+      variables: { query: "solo leveling", perPage: 10 },
+    });
+    expect(jsonBody(calls[1]?.init)).toMatchObject({ variables: { ids: [225411, 42570, 282109] } });
+    expect(result.ok && result.value).toEqual([
+      {
+        id: "225411",
+        name: "Solo Leveling (Comic)",
+        author: "Chugong",
+        booksCount: 15,
+        coverUrl: "https://example.test/comic-1.jpg",
+        languages: ["eng", "kor"],
+      },
+      {
+        id: "42570",
+        name: "Solo Leveling (French Numbering)",
+        author: "Chugong",
+        booksCount: 19,
+        coverUrl: "https://example.test/fr-1.jpg",
+        languages: ["fra", null],
+      },
+      // Not in the languages answer: no cover, languages unknown.
+      {
+        id: "282109",
+        name: "Solo Leveling: Ragnarok",
+        author: undefined,
+        booksCount: 1,
+        coverUrl: undefined,
+        languages: undefined,
+      },
+    ]);
+  });
+
+  it("finds the other series with the same name apart from a qualifier", async () => {
+    const { fetch, calls } = fetchSeries();
+    const result = await createHardcoverClient({ token: "abc", fetch }).relatedSeries(
+      "225411",
+      "Solo Leveling (Comic)",
+    );
+
+    expect(jsonBody(calls[0]?.init)).toMatchObject({ variables: { query: "Solo Leveling" } });
+    expect(result.ok && result.value.map((series) => series.name)).toEqual([
+      "Solo Leveling (French Numbering)",
+    ]);
   });
 });

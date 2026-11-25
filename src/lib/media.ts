@@ -49,3 +49,15 @@ export type MediaCollection = {
   imageUrl?: string;
   items: MediaSummary[];
 };
+
+/** A series found by search (eBooks: Hardcover), for its card. */
+export type SeriesSummary = {
+  id: string;
+  name: string;
+  author?: string;
+  booksCount: number;
+  /** The first book's cover. */
+  coverUrl?: string;
+  /** Languages of its first books, as in MediaSummary (undefined: unknown). */
+  languages?: (string | null)[];
+};

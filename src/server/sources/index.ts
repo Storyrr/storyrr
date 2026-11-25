@@ -1,6 +1,12 @@
 import "@tanstack/react-start/server-only";
 
-import type { MediaCollection, MediaDetails, MediaSummary, MediaTagPage } from "#/lib/media";
+import type {
+  MediaCollection,
+  MediaDetails,
+  MediaSummary,
+  MediaTagPage,
+  SeriesSummary,
+} from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
 import { ownedAsins, ownedTitles } from "#/server/library";
@@ -23,6 +29,14 @@ export type MediaSource = {
   trending(services: Services, page?: number): Promise<ServiceResult<MediaSummary[]>>;
   /** A series' works in reading order. */
   series(services: Services, id: string): Promise<ServiceResult<MediaCollection>>;
+  /** Series matching a search (empty where the provider can't search series). */
+  searchSeries(services: Services, query: string): Promise<ServiceResult<SeriesSummary[]>>;
+  /** Other versions of a series, e.g. a translation numbered apart (empty where unsupported). */
+  relatedSeries(
+    services: Services,
+    id: string,
+    name: string,
+  ): Promise<ServiceResult<SeriesSummary[]>>;
   /** An author's works (`name`: Audible searches by name). */
   author(services: Services, id: string, name: string): Promise<ServiceResult<MediaCollection>>;
   /** A genre's or keyword's titles, most popular first (`id`: MediaTag.id). */
@@ -46,6 +60,9 @@ const audiobooks: MediaSource = {
   async series(services, id) {
     return (await services.audible()).series(id);
   },
+  // Audible has no series search, and an audiobook's translation is its own series ASIN.
+  searchSeries: async () => ok([]),
+  relatedSeries: async () => ok([]),
   async author(services, id, name) {
     return (await services.audible()).author(id, name);
   },
@@ -95,6 +112,18 @@ const ebooks: MediaSource = {
   async series(services, id) {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.series(id) : fail("not_configured", "Hardcover token missing");
+  },
+  async searchSeries(services, query) {
+    const hardcover = await services.hardcover();
+    return hardcover
+      ? hardcover.searchSeries(query)
+      : fail("not_configured", "Hardcover token missing");
+  },
+  async relatedSeries(services, id, name) {
+    const hardcover = await services.hardcover();
+    return hardcover
+      ? hardcover.relatedSeries(id, name)
+      : fail("not_configured", "Hardcover token missing");
   },
   async author(services, id) {
     const hardcover = await services.hardcover();

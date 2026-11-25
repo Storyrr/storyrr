@@ -4,7 +4,9 @@ import {
   getAuthor,
   getDiscoverLayout,
   getMedia,
+  getRelatedSeries,
   getSeries,
+  searchSeries,
   getTitleAdmin,
   exploreMedia,
   getGenreOptions,
@@ -23,7 +25,29 @@ export const mediaKeys = {
   admin: (type: SearchableType, id: string) => [...mediaKeys.all, "admin", type, id] as const,
   series: (type: SearchableType, id: string) => [...mediaKeys.all, "series", type, id] as const,
   author: (type: SearchableType, id: string) => [...mediaKeys.all, "author", type, id] as const,
+  seriesSearch: (type: SearchableType, query: string) =>
+    [...mediaKeys.all, "series-search", type, query] as const,
+  relatedSeries: (type: SearchableType, id: string) =>
+    [...mediaKeys.all, "related-series", type, id] as const,
 };
+
+/** Series matching the top bar's search (Hardcover). */
+export const seriesSearchQuery = (type: SearchableType, query: string) =>
+  queryOptions({
+    queryKey: mediaKeys.seriesSearch(type, query),
+    queryFn: () => searchSeries({ data: { type, query } }),
+    enabled: query.trim().length >= 2,
+    staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
+  });
+
+/** A series' other versions in a language Chaptarr accepts. */
+export const relatedSeriesQuery = (type: SearchableType, id: string, name: string) =>
+  queryOptions({
+    queryKey: mediaKeys.relatedSeries(type, id),
+    queryFn: () => getRelatedSeries({ data: { type, id, name } }),
+    staleTime: 30 * 60_000,
+  });
 
 export const seriesQuery = (type: SearchableType, id: string) =>
   queryOptions({

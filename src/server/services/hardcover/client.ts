@@ -7,7 +7,9 @@ import type {
   MediaSummary,
   MediaTag,
   MediaTagPage,
+  SeriesSummary,
 } from "#/lib/media";
+import { titleKey } from "#/lib/match";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { EXPLORE_PAGE_SIZE, type BookFilters, type BookSort } from "#/lib/explore";
@@ -176,6 +178,23 @@ const SEARCH_QUERY = `query StoryrrSearch($query: String!, $perPage: Int!) {
 // One edition per language is enough to know which languages a book exists in.
 const EDITION_LANGUAGES = `editions(distinct_on: language_id, order_by: {language_id: asc}) { language { code3 code2 } }`;
 
+const SERIES_SEARCH_QUERY = `query StoryrrSeriesSearch($query: String!, $perPage: Int!) {
+  search(query: $query, query_type: "Series", per_page: $perPage, page: 1) { results }
+}`;
+
+/** Languages of a series = those of its first main books (a translation is often numbered apart). */
+const SERIES_SAMPLE_BOOKS = 3;
+const SERIES_LANGUAGES_QUERY = `query StoryrrSeriesLanguages($ids: [Int!]!) {
+  series(where: {id: {_in: $ids}}) {
+    id
+    book_series(
+      where: {compilation: {_eq: false}, book: {canonical_id: {_is_null: true}}}
+      order_by: {position: asc_nulls_last}
+      limit: ${SERIES_SAMPLE_BOOKS}
+    ) { book { image { url } ${EDITION_LANGUAGES} } }
+  }
+}`;
+
 const LANGUAGES_QUERY = `query StoryrrLanguages($ids: [Int!]!) {
   books(where: {id: {_in: $ids}}) { id ${EDITION_LANGUAGES} }
 }`;
@@ -313,6 +332,51 @@ export function exploreQuery(filters: BookFilters, today = new Date()) {
 
 const ExploreDataSchema = v.object({ books: v.array(BookSchema) });
 
+// Series search documents, checked live on 2026-11-25 (no cover: the first book's is used).
+const SeriesSearchDataSchema = v.object({
+  search: v.object({
+    results: v.looseObject({
+      hits: v.optional(
+        v.array(
+          v.looseObject({
+            document: v.looseObject({
+              id: v.union([v.string(), v.number()]),
+              name: v.string(),
+              author_name: v.optional(v.nullable(v.string())),
+              books_count: v.optional(v.nullable(v.number())),
+              primary_books_count: v.optional(v.nullable(v.number())),
+            }),
+          }),
+        ),
+        [],
+      ),
+    }),
+  }),
+});
+
+const SeriesLanguagesDataSchema = v.object({
+  series: v.array(
+    v.looseObject({
+      id: v.number(),
+      book_series: v.optional(
+        v.array(
+          v.looseObject({
+            book: v.nullable(
+              v.looseObject({
+                image: v.optional(
+                  v.nullable(v.looseObject({ url: v.optional(v.nullable(v.string())) })),
+                ),
+                editions: EditionLanguagesSchema,
+              }),
+            ),
+          }),
+        ),
+        [],
+      ),
+    }),
+  ),
+});
+
 const TrendingDataSchema = v.object({
   books_trending: v.looseObject({
     ids: v.optional(v.nullable(v.array(v.number())), []),
@@ -366,6 +430,46 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
     return ok(payload);
   }
 
+  /** Series matching a search, with their languages and first book's cover; empty series left out. */
+  async function searchSeries(
+    query: string,
+    { limit = 10 } = {},
+  ): Promise<ServiceResult<SeriesSummary[]>> {
+    const result = await graphql(
+      SERIES_SEARCH_QUERY,
+      { query, perPage: limit },
+      SeriesSearchDataSchema,
+    );
+    if (!result.ok) return result;
+    const hits = result.value.search.results.hits
+      .map(({ document }) => document)
+      .filter((doc) => (doc.primary_books_count ?? doc.books_count ?? 0) > 0);
+    const ids = hits.map((doc) => Number(doc.id)).filter(Number.isInteger);
+    if (ids.length === 0) return ok([]);
+    // Best effort, like book search: without it, series just have no cover or languages.
+    const details = await graphql(SERIES_LANGUAGES_QUERY, { ids }, SeriesLanguagesDataSchema);
+    const byId = new Map(
+      details.ok ? details.value.series.map((series) => [String(series.id), series]) : [],
+    );
+    return ok(
+      hits.map((doc) => {
+        const books = byId
+          .get(String(doc.id))
+          ?.book_series.flatMap(({ book }) => (book ? [book] : []));
+        return {
+          id: String(doc.id),
+          name: doc.name,
+          author: doc.author_name ?? undefined,
+          booksCount: doc.primary_books_count ?? doc.books_count ?? 0,
+          coverUrl: books?.find((book) => book.image?.url)?.image?.url ?? undefined,
+          languages: books
+            ? [...new Set(books.flatMap((book) => editionLanguages(book.editions)))]
+            : undefined,
+        };
+      }),
+    );
+  }
+
   return {
     async search(query: string, { limit = 20 } = {}): Promise<ServiceResult<MediaSummary[]>> {
       const result = await graphql(SEARCH_QUERY, { query, perPage: limit }, SearchDataSchema);
@@ -382,6 +486,26 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
         languages.value.books.map((book) => [String(book.id), editionLanguages(book.editions)]),
       );
       return ok(items.map((item) => ({ ...item, languages: byId.get(item.externalId) })));
+    },
+
+    searchSeries,
+
+    /**
+     * Other series with the same name apart from a qualifier, e.g. "Solo Leveling
+     * (French Numbering)" for "Solo Leveling (Comic)": Hardcover keeps a translation
+     * cut into other volumes as its own series, with no link between the two.
+     */
+    async relatedSeries(id: string, name: string): Promise<ServiceResult<SeriesSummary[]>> {
+      const base = seriesBaseName(name);
+      if (!base) return ok([]);
+      const result = await searchSeries(base, { limit: 25 });
+      if (!result.ok) return result;
+      const key = titleKey(base);
+      return ok(
+        result.value.filter(
+          (series) => series.id !== id && titleKey(seriesBaseName(series.name)) === key,
+        ),
+      );
     },
 
     /** Books the most Hardcover readers finished this month (worldwide), in rank order. */
@@ -512,6 +636,11 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
 }
 
 export type HardcoverClient = ReturnType<typeof createHardcoverClient>;
+
+/** A series' name without its trailing qualifiers: "Solo Leveling (French Numbering)" → "Solo Leveling". */
+export function seriesBaseName(name: string): string {
+  return name.replace(/(\s*[([][^()[\]]*[)\]])+\s*$/u, "").trim();
+}
 
 const positionText = (position: number | null | undefined) =>
   position === null || position === undefined ? undefined : String(position);
