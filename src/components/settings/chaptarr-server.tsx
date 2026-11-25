@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LibraryBigIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
@@ -73,7 +73,8 @@ export function ChaptarrServer({
             ))}
           </dl>
         </div>
-        <LibraryBigIcon className="size-10 shrink-0 text-muted-foreground" aria-hidden />
+        {/* Chaptarr's logo, from its repository (Logo/chaptarr.png). */}
+        <img src="/services/chaptarr.png" alt="" className="size-10 shrink-0" />
       </CardContent>
       <CardFooter className="grid grid-cols-2 divide-x border-t p-0">
         <DialogTrigger isOpen={open} onOpenChange={setOpen}>
