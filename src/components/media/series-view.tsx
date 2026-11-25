@@ -309,28 +309,31 @@ function VolumeRow({
 
   return (
     <li className="relative flex items-center gap-4 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50">
-      <Cover src={item.coverUrl} type={type} className="w-12 shrink-0 rounded-md" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        {position ? (
-          <span className="text-xs font-medium text-muted-foreground">
-            {collection
-              ? m.series_collection_volumes({ position })
-              : m.collection_volume({ position })}
-          </span>
-        ) : null}
-        <Link
-          to="/media/$type/$id"
-          params={{ type, id: item.externalId }}
-          className="truncate font-medium after:absolute after:inset-0 hover:underline"
-        >
-          {item.title}
-        </Link>
-        {details.length > 0 ? (
-          <span className="text-xs text-muted-foreground">{details.join(" · ")}</span>
-        ) : null}
+      <Cover src={item.coverUrl} type={type} className="w-12 shrink-0 self-start rounded-md" />
+      {/* Narrow screens: the status goes under the text, which keeps the width for the title. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {position ? (
+            <span className="text-xs font-medium text-muted-foreground">
+              {collection
+                ? m.series_collection_volumes({ position })
+                : m.collection_volume({ position })}
+            </span>
+          ) : null}
+          <Link
+            to="/media/$type/$id"
+            params={{ type, id: item.externalId }}
+            className="line-clamp-2 font-medium after:absolute after:inset-0 hover:underline sm:line-clamp-1"
+          >
+            {item.title}
+          </Link>
+          {details.length > 0 ? (
+            <span className="text-xs text-muted-foreground">{details.join(" · ")}</span>
+          ) : null}
+        </div>
+        {/* Above the row's link, so its button or tooltip stays usable. */}
+        {status ? <div className="relative z-10 shrink-0">{status}</div> : null}
       </div>
-      {/* Above the row's link, so its button or tooltip stays usable. */}
-      {status ? <div className="relative z-10 shrink-0">{status}</div> : null}
     </li>
   );
 }
