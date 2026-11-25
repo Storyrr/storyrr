@@ -6,11 +6,13 @@ import { Cover } from "#/components/media/cover";
 import { RelatedSeries } from "#/components/media/related-series";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { RequestSeriesDialog } from "#/components/media/request-series-dialog";
+import { TagList } from "#/components/media/tag-list";
 import { Badge } from "#/components/ui/badge";
 import { Card, CardContent } from "#/components/ui/card";
 import { formatDuration, formatList, formatNumber, yearOf } from "#/lib/format";
 import { useImageUrl } from "#/lib/images";
 import { canonicalLanguage, formatLanguages, languageName } from "#/lib/languages";
+import type { MediaTag } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import { seriesAvailability, type AnnotatedTitle, type SeriesAvailability } from "#/lib/series";
 import { cn } from "#/lib/utils";
@@ -87,6 +89,7 @@ export function SeriesView({
   description,
   items,
   collections,
+  tags,
   acceptedLanguages,
   canRequest,
 }: {
@@ -97,6 +100,8 @@ export function SeriesView({
   items: AnnotatedTitle[];
   /** Box sets and omnibuses: listed apart, out of the counts and of Request the series. */
   collections: AnnotatedTitle[];
+  /** The genres and moods most volumes share. */
+  tags: MediaTag[];
   acceptedLanguages: readonly string[] | null;
   canRequest: boolean;
 }) {
@@ -173,6 +178,11 @@ export function SeriesView({
                 ))}
               </p>
             ) : null}
+            {tags.length > 0 ? (
+              <div className="pt-2">
+                <TagList type={type} tags={tags} />
+              </div>
+            ) : null}
           </div>
           {canRequest && items.length > 0 ? (
             <div className="shrink-0">
@@ -234,7 +244,9 @@ export function SeriesView({
             </section>
           ) : null}
         </div>
-        <aside>
+        {/* A heading like the volumes': the card lines up with the list. */}
+        <aside className="flex flex-col gap-3">
+          <h2 className="font-heading text-xl font-semibold">{m.series_details()}</h2>
           <Card size="sm">
             <CardContent>
               <dl className="flex flex-col divide-y text-sm">

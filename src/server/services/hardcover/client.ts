@@ -10,7 +10,7 @@ import type {
   SeriesSummary,
 } from "#/lib/media";
 import { titleKey } from "#/lib/match";
-import { isCollectionPosition } from "#/lib/series";
+import { isCollectionPosition, seriesTags } from "#/lib/series";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { EXPLORE_PAGE_SIZE, type BookFilters, type BookSort } from "#/lib/explore";
@@ -246,7 +246,7 @@ const SERIES_QUERY = `query StoryrrSeries($id: Int!) {
       where: {compilation: {_eq: false}, book: {canonical_id: {_is_null: true}}}
       distinct_on: position
       order_by: [{position: asc}, {book: {users_count: desc}}]
-    ) { position details book { ${BOOK_CARD} } }
+    ) { position details book { ${BOOK_CARD} cached_tags } }
     compilations: book_series(
       where: {compilation: {_eq: true}, book: {canonical_id: {_is_null: true}}}
       order_by: {book: {users_count: desc}}
@@ -593,6 +593,13 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
         name: series.name,
         description: series.description ? htmlToText(series.description) : undefined,
         items: main.filter((item) => !isCollection(item)),
+        tags: seriesTags(
+          series.book_series
+            .filter(({ book, details, position }) =>
+              book ? !isCollectionPosition(details ?? positionText(position)) : false,
+            )
+            .map(({ book }) => bookTags(book?.cached_tags)),
+        ),
         collections: collections.filter(
           (item, index) => collections.findIndex((c) => c.externalId === item.externalId) === index,
         ),

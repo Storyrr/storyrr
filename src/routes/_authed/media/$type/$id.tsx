@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { TagIcon } from "lucide-react";
 
 import { FormError } from "#/components/form/form-error";
 import { AvailabilityBadge } from "#/components/media/availability-badge";
@@ -11,6 +10,7 @@ import { ReportIssueDialog } from "#/components/issues/report-issue-dialog";
 import { BlockButton } from "#/components/media/block-button";
 import { ManageTitle } from "#/components/media/manage-title";
 import { RequestDialog } from "#/components/media/request-dialog";
+import { TagList } from "#/components/media/tag-list";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
 import { languageName } from "#/lib/languages";
@@ -181,20 +181,7 @@ function MediaPage() {
         {item.description ? (
           <p className="whitespace-pre-line text-sm leading-relaxed">{item.description}</p>
         ) : null}
-        {item.tags && item.tags.length > 0 ? (
-          <ul aria-label={m.media_tags()} className="flex flex-wrap gap-2">
-            {item.tags.map((tag) => (
-              <li key={tag.id}>
-                <Link to="/tags/$type/$id" params={{ type, id: tag.id }}>
-                  <Badge variant="outline" className="h-7 gap-1.5 px-3 text-sm hover:bg-muted">
-                    <TagIcon aria-hidden />
-                    {tag.name}
-                  </Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <TagList type={type} tags={item.tags ?? []} />
       </div>
     </article>
   );

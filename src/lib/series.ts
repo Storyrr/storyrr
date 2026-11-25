@@ -1,4 +1,4 @@
-import type { MediaSummary, SeriesSummary } from "#/lib/media";
+import type { MediaSummary, MediaTag, SeriesSummary } from "#/lib/media";
 import type { MediaAvailability } from "#/lib/request-status";
 
 /**
@@ -123,4 +123,24 @@ export function groupBySeries(
     });
   }
   return entries;
+}
+
+/**
+ * A series' tags: those on at least half of its volumes, the most shared first
+ * (a tag on one volume only says little about the series).
+ */
+export function seriesTags(perVolume: readonly (readonly MediaTag[])[], max = 10): MediaTag[] {
+  const counts = new Map<string, { tag: MediaTag; volumes: number }>();
+  for (const tags of perVolume) {
+    for (const tag of new Map(tags.map((t) => [t.id, t])).values()) {
+      const entry = counts.get(tag.id);
+      counts.set(tag.id, { tag, volumes: (entry?.volumes ?? 0) + 1 });
+    }
+  }
+  const tagged = perVolume.filter((tags) => tags.length > 0).length;
+  return [...counts.values()]
+    .filter((entry) => entry.volumes * 2 >= tagged)
+    .toSorted((a, b) => b.volumes - a.volumes)
+    .slice(0, max)
+    .map((entry) => entry.tag);
 }

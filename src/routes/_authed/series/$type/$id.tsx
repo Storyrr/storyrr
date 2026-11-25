@@ -52,6 +52,7 @@ function SeriesContent({
       description={data.description}
       items={data.results}
       collections={data.collections}
+      tags={data.tags}
       acceptedLanguages={data.acceptedLanguages}
       canRequest={canRequest}
     />

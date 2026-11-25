@@ -50,6 +50,8 @@ export type MediaCollection = {
   items: MediaSummary[];
   /** Series only: box sets and omnibuses of several volumes, kept apart from the volumes. */
   collections?: MediaSummary[];
+  /** Series only: the genres and moods most of its volumes share. */
+  tags?: MediaTag[];
 };
 
 /** A series found by search (eBooks: Hardcover), for its card. */

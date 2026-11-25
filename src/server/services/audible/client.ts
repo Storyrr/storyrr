@@ -13,7 +13,7 @@ import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/serve
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
 import { EXPLORE_PAGE_SIZE, type AudiobookFilters, type AudiobookSort } from "#/lib/explore";
 import { canonicalLanguage } from "#/lib/languages";
-import { isCollectionPosition } from "#/lib/series";
+import { isCollectionPosition, seriesTags } from "#/lib/series";
 import { htmlToText } from "#/server/services/text";
 
 const RESPONSE_GROUPS =
@@ -115,10 +115,15 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
   const base = `https://${audibleHost(region)}/1.0/catalog/products`;
 
   /** Several products by ASIN, in the given order (unknown ones left out). */
-  async function byAsins(asins: readonly string[]): Promise<ServiceResult<MediaSummary[]>> {
-    const found = new Map<string, MediaSummary>();
+  async function byAsins(
+    asins: readonly string[],
+    { withGenres = false } = {},
+  ): Promise<ServiceResult<(MediaSummary & { tags?: MediaTag[] })[]>> {
+    const found = new Map<string, MediaSummary & { tags?: MediaTag[] }>();
     for (let i = 0; i < asins.length; i += BATCH) {
-      const result = await list({ asins: asins.slice(i, i + BATCH).join(",") }, BATCH);
+      const result = await list({ asins: asins.slice(i, i + BATCH).join(",") }, BATCH, {
+        withGenres,
+      });
       if (!result.ok) return result;
       for (const item of result.value) found.set(item.externalId, item);
     }
@@ -128,12 +133,13 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
   async function list(
     params: Record<string, string>,
     limit: number,
-  ): Promise<ServiceResult<MediaSummary[]>> {
+    { withGenres = false } = {},
+  ): Promise<ServiceResult<(MediaSummary & { tags?: MediaTag[] })[]>> {
     const url = new URL(base);
     url.search = new URLSearchParams({
       ...params,
       num_results: String(limit),
-      response_groups: RESPONSE_GROUPS,
+      response_groups: withGenres ? `${RESPONSE_GROUPS},category_ladders` : RESPONSE_GROUPS,
       image_sizes: "500",
     }).toString();
     const result = await requestJson({
@@ -143,7 +149,13 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       schema: SearchResponseSchema,
     });
     if (!result.ok) return result;
-    return ok(result.value.products.flatMap((product) => toSummary(product) ?? []));
+    return ok(
+      result.value.products.flatMap((product) => {
+        const summary = toSummary(product);
+        if (!summary) return [];
+        return withGenres ? [{ ...summary, tags: genres(product) }] : [summary];
+      }),
+    );
   }
 
   return {
@@ -175,7 +187,10 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       const children = product.relationships
         .filter((r) => r.relationship_to_product === "child" && r.relationship_type === "series")
         .toSorted((a, b) => Number(a.sort ?? 0) - Number(b.sort ?? 0));
-      const items = await byAsins(children.map((r) => r.asin));
+      const items = await byAsins(
+        children.map((r) => r.asin),
+        { withGenres: true },
+      );
       if (!items.ok) return items;
       // Box sets ("Books 1-3") are children too: kept apart from the volumes.
       const isCollection = (item: MediaSummary) =>
@@ -183,8 +198,11 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
       return ok({
         name: product.title,
         description: product.publisher_summary ? htmlToText(product.publisher_summary) : undefined,
-        items: items.value.filter((item) => !isCollection(item)),
-        collections: items.value.filter(isCollection),
+        items: items.value.filter((item) => !isCollection(item)).map(withoutTags),
+        collections: items.value.filter(isCollection).map(withoutTags),
+        tags: seriesTags(
+          items.value.filter((item) => !isCollection(item)).map((item) => item.tags ?? []),
+        ),
       });
     },
 
@@ -290,6 +308,9 @@ export type AudibleClient = ReturnType<typeof createAudibleClient>;
 
 /** Contributors listed with a role suffix ("Name - traducteur") are not authors. */
 const ROLE_SUFFIX = / - [^-]+$/;
+
+/** A list item without the genres fetched for its series' tags. */
+const withoutTags = ({ tags: _tags, ...item }: MediaSummary & { tags?: MediaTag[] }) => item;
 
 /** A product's genres, broadest first, each once (only with the `category_ladders` group). */
 function genres(product: Product): MediaTag[] {

@@ -709,5 +709,6 @@
   "series_collections": "Box sets and collections",
   "series_collections_description": "Several volumes in one book: not counted above, nor in Request the series.",
   "series_collection_volumes": "Volumes {position}",
-  "series_languages_more": "{languages} and {count} more"
+  "series_languages_more": "{languages} and {count} more",
+  "series_details": "Details"
 }

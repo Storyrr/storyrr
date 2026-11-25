@@ -4,6 +4,7 @@ import {
   groupBySeries,
   isCollectionPosition,
   seriesAvailability,
+  seriesTags,
   type AnnotatedTitle,
 } from "./series";
 
@@ -108,5 +109,20 @@ describe("isCollectionPosition", () => {
       expect(isCollectionPosition(position)).toBe(true);
     for (const position of ["1", "0.5", "12", "Book 3", undefined])
       expect(isCollectionPosition(position)).toBe(false);
+  });
+});
+
+const tag = (id: string) => ({ id, name: id });
+
+describe("seriesTags", () => {
+  it("keeps the tags on at least half of the tagged volumes, most shared first", () => {
+    expect(
+      seriesTags([
+        [tag("fantasy"), tag("dark")],
+        [tag("fantasy"), tag("dark"), tag("romance")],
+        [tag("fantasy")],
+        [],
+      ]).map((t) => t.id),
+    ).toEqual(["fantasy", "dark"]);
   });
 });
