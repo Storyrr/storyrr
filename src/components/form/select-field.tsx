@@ -55,7 +55,8 @@ export function SelectField({
         placeholder={placeholder}
         className={row ? cn(SETTINGS_ROW, "md:items-center") : "flex flex-col gap-2"}
       >
-        <Label>{label}</Label>
+        {/* Same line height as FieldLabel, so a select lines up with the text fields beside it. */}
+        <Label className="leading-snug">{label}</Label>
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
