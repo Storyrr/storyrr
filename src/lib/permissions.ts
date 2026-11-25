@@ -51,6 +51,20 @@ export function expandPermissions(granted: readonly Permission[]): Permission[] 
   return PERMISSIONS.filter((p) => all.has(p));
 }
 
+/**
+ * Whether an account holds a permission the caller lacks. A user manager who
+ * isn't an admin can't change such an account, nor grant what they lack:
+ * otherwise they could hand themselves (through an account they create) any
+ * permission.
+ */
+export function holdsMoreThan(
+  account: readonly Permission[],
+  caller: readonly Permission[],
+): boolean {
+  if (caller.includes("admin")) return false;
+  return expandPermissions(account).some((p) => !caller.includes(p));
+}
+
 export function hasPermission(effective: readonly Permission[], permission: Permission): boolean {
   return effective.includes("admin") || effective.includes(permission);
 }

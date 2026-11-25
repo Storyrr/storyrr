@@ -388,6 +388,8 @@
   "request_not_allowed": "Ihr Konto kann dieses Format nicht anfordern. Wenden Sie sich an einen Administrator.",
   "users_admin_only": "Nur ein Administrator kann das Konto eines Administrators ändern.",
   "users_owner_protected": "Nur der Eigentümer kann das Konto des Eigentümers ändern.",
+  "users_outranked": "Dieser Benutzer hat Berechtigungen, die Sie nicht haben: Nur ein Administrator kann das Konto dieses Benutzers ändern.",
+  "users_grant_beyond_yours": "Sie können nur Berechtigungen vergeben, die Sie selbst haben.",
   "permission_admin": "Administrator",
   "permission_admin_description": "Vollzugriff; ignoriert alle anderen Berechtigungen.",
   "permission_manage_users": "Benutzer verwalten",

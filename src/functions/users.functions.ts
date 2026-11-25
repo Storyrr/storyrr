@@ -13,6 +13,7 @@ import {
   UserIdSchema,
 } from "#/lib/schemas/users";
 import { MEDIA_SERVERS, type MediaServer } from "#/lib/media-server-login";
+import { holdsMoreThan, type Permission } from "#/lib/permissions";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { banAccount, removeAccount, unbanAccount, updateAccount } from "#/server/auth/accounts";
@@ -26,40 +27,47 @@ import {
 import { services } from "#/server/services";
 import { fail, ok } from "#/server/services/result";
 import { db } from "#/server/db";
-import { ownerId } from "#/server/owner";
 import { user } from "#/server/db/schema";
-import { setUserPermissions } from "#/server/permissions";
+import { accountLock, setUserPermissions } from "#/server/permissions";
+import { settings } from "#/server/settings";
 import { setUserRequestLimits } from "#/server/requests/quota";
 import { listUsers } from "#/server/users";
 
 const requireManageUsers = requirePermission("manage_users");
 
-type Caller = { session: { user: { id: string } }; permissions: readonly string[] };
+type Caller = { session: { user: { id: string } }; permissions: readonly Permission[] };
 
 /**
  * Checks a change to another account: never one's own (no locking oneself out),
- * and only admins change admins. The change itself goes through
- * `#/server/auth/accounts`.
+ * never the Owner's, and only admins change admins or accounts with permissions
+ * the caller lacks. The change itself goes through `#/server/auth/accounts`.
  */
-function assertCanManage(caller: Caller, userId: string) {
+async function assertCanManage(caller: Caller, userId: string) {
   if (userId === caller.session.user.id) {
     setResponseStatus(409);
     throw new Error(m.users_not_yourself());
   }
-  const target = db.select({ role: user.role }).from(user).where(eq(user.id, userId)).get();
+  const target = db
+    .select({ id: user.id, role: user.role })
+    .from(user)
+    .where(eq(user.id, userId))
+    .get();
   if (!target) {
     setResponseStatus(404);
     throw new Error(m.users_not_found());
   }
-  if (userId === ownerId(db)) {
+  const lock = await accountLock({ db, settings }, caller.permissions, target);
+  if (lock) {
     setResponseStatus(403);
-    throw new Error(m.users_owner_protected());
-  }
-  if (target.role === "admin" && !caller.permissions.includes("admin")) {
-    setResponseStatus(403);
-    throw new Error(m.users_admin_only());
+    throw new Error(accountLockMessage[lock]());
   }
 }
+
+const accountLockMessage = {
+  owner: m.users_owner_protected,
+  admin_only: m.users_admin_only,
+  outranked: m.users_outranked,
+} as const;
 
 export const getUsers = createServerFn({ method: "GET" })
   .middleware([requireManageUsers])
@@ -81,7 +89,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
   .validator(SetRoleSchema)
   .handler(async ({ data, context }) => {
-    assertCanManage(context, data.userId);
+    await assertCanManage(context, data.userId);
     await updateAccount(data.userId, { role: data.role });
     return { ok: true };
   });
@@ -90,8 +98,12 @@ export const setUserRole = createServerFn({ method: "POST" })
 export const setUserPermissionList = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
   .validator(SetPermissionsSchema)
-  .handler(({ data, context }) => {
-    assertCanManage(context, data.userId);
+  .handler(async ({ data, context }) => {
+    await assertCanManage(context, data.userId);
+    if (data.permissions && holdsMoreThan(data.permissions, context.permissions)) {
+      setResponseStatus(403);
+      throw new Error(m.users_grant_beyond_yours());
+    }
     setUserPermissions(db, data.userId, data.permissions);
     return { ok: true };
   });
@@ -101,7 +113,7 @@ export const setUserBanned = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
   .validator(SetBannedSchema)
   .handler(async ({ data, context }) => {
-    assertCanManage(context, data.userId);
+    await assertCanManage(context, data.userId);
     if (data.banned) await banAccount(data.userId);
     else await unbanAccount(data.userId);
     return { ok: true };
@@ -112,7 +124,7 @@ export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
   .validator(UserIdSchema)
   .handler(async ({ data, context }) => {
-    assertCanManage(context, data.userId);
+    await assertCanManage(context, data.userId);
     await removeAccount(data.userId);
     return { ok: true };
   });
@@ -121,8 +133,8 @@ export const deleteUser = createServerFn({ method: "POST" })
 export const setUserLimits = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
   .validator(SetRequestLimitsSchema)
-  .handler(({ data, context }) => {
-    assertCanManage(context, data.userId);
+  .handler(async ({ data, context }) => {
+    await assertCanManage(context, data.userId);
     setUserRequestLimits(db, data.userId, data.requestLimits);
     return { ok: true };
   });

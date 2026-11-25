@@ -25,7 +25,7 @@ import { db } from "#/server/db";
 import { ownerId } from "#/server/owner";
 import { request, user, userPreference } from "#/server/db/schema";
 import { setUserLocale } from "#/server/profile";
-import { permissionsOf } from "#/server/permissions";
+import { accountLock, permissionsOf } from "#/server/permissions";
 import { requestQuota } from "#/server/requests/quota";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
@@ -33,12 +33,18 @@ import { mediaServerSignIn } from "#/server/settings/definitions";
 
 type Caller = { session: { user: { id: string } }; permissions: readonly Permission[] };
 
+const accountLockMessage = {
+  owner: m.users_owner_protected,
+  admin_only: m.users_admin_only,
+  outranked: m.users_outranked,
+} as const;
+
 /**
  * Whose account a call is about: the caller's own, or (user managers) the
- * given user's. `write`: only admins change an admin's account. Throws
- * 403 / 404 otherwise.
+ * given user's. `write`: the caller must be allowed to change it (see
+ * `accountLock`). Throws 403 / 404 otherwise.
  */
-function resolveTarget(caller: Caller, userId: string | undefined, write = false) {
+async function resolveTarget(caller: Caller, userId: string | undefined, write = false) {
   const id = userId ?? caller.session.user.id;
   const self = id === caller.session.user.id;
   if (!self && !hasPermission(caller.permissions, "manage_users")) {
@@ -51,13 +57,12 @@ function resolveTarget(caller: Caller, userId: string | undefined, write = false
     throw new Error(m.users_not_found());
   }
   const owner = row.id === ownerId(db);
-  const editable =
-    self || (!owner && (row.role !== "admin" || hasPermission(caller.permissions, "admin")));
-  if (write && !editable) {
+  const lock = self ? null : await accountLock({ db, settings }, caller.permissions, row);
+  if (write && lock) {
     setResponseStatus(403);
-    throw new Error(owner ? m.users_owner_protected() : m.users_admin_only());
+    throw new Error(accountLockMessage[lock]());
   }
-  return { row, self, owner, editable };
+  return { row, self, owner, lock, editable: lock === null };
 }
 
 /** An account's details, request counts, permissions and limits (own, or any for admins). */
@@ -65,7 +70,7 @@ export const getAccount = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .validator(AccountTargetSchema)
   .handler(async ({ data, context }) => {
-    const { row, self, owner, editable } = resolveTarget(context, data.userId);
+    const { row, self, owner, lock, editable } = await resolveTarget(context, data.userId);
     const isAdmin = row.role === "admin";
     const permissions = await permissionsOf({ db, settings }, row);
     const pref = db.select().from(userPreference).where(eq(userPreference.userId, row.id)).get();
@@ -90,6 +95,8 @@ export const getAccount = createServerFn({ method: "GET" })
       isOwner: owner,
       /** Whether the caller may change this account. */
       editable,
+      /** Why they may not (null when they may). */
+      lock,
       banned: row.banned ?? false,
       locale: pref?.locale ?? null,
       /** Effective permissions (with the defaults and what they imply). */
@@ -108,7 +115,7 @@ export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(ProfileSchema)
   .handler(async ({ data, context }) => {
-    const { row, self } = resolveTarget(context, data.userId, true);
+    const { row, self } = await resolveTarget(context, data.userId, true);
     if (data.email.toLowerCase() !== row.email.toLowerCase()) {
       // Emails are unique: say so on the field rather than failing on the constraint.
       const taken = db
@@ -162,7 +169,7 @@ export const setUserPassword = createServerFn({ method: "POST" })
       setResponseStatus(409);
       throw new Error(m.users_own_password());
     }
-    resolveTarget(context, data.userId, true);
+    await resolveTarget(context, data.userId, true);
     await setAccountPassword(data.userId, data.newPassword);
     return { ok: true };
   });

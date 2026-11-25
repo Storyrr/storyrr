@@ -388,6 +388,8 @@
   "request_not_allowed": "Your account can't request this format. Ask an administrator.",
   "users_admin_only": "Only an administrator can change an administrator's account.",
   "users_owner_protected": "Only the owner can change the owner's account.",
+  "users_outranked": "This user has permissions you don't have: only an administrator can change their account.",
+  "users_grant_beyond_yours": "You can only grant permissions you have yourself.",
   "permission_admin": "Administrator",
   "permission_admin_description": "Full access; ignores every other permission.",
   "permission_manage_users": "Manage users",

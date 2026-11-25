@@ -139,6 +139,7 @@ function EditPermissions({ userId }: { userId: string }) {
             value={useDefaults ? defaults.defaultPermissions : granted}
             onChange={setGranted}
             isDisabled={useDefaults || account.isAdmin}
+            grantable={me.permissions}
             admin={{
               isSelected: account.isAdmin,
               // Only admins grant or remove the admin role.

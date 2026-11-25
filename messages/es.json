@@ -388,6 +388,8 @@
   "request_not_allowed": "Su cuenta no puede solicitar este formato. Consulte a un administrador.",
   "users_admin_only": "Solo un administrador puede cambiar la cuenta de un administrador.",
   "users_owner_protected": "Solo el propietario puede cambiar la cuenta del propietario.",
+  "users_outranked": "Este usuario tiene permisos que usted no tiene: solo un administrador puede cambiar su cuenta.",
+  "users_grant_beyond_yours": "Solo puede conceder los permisos que usted mismo tiene.",
   "permission_admin": "Administrador",
   "permission_admin_description": "Acceso completo; ignora todos los demás permisos.",
   "permission_manage_users": "Gestionar usuarios",

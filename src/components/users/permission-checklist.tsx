@@ -103,12 +103,15 @@ export function PermissionChecklist({
   value,
   onChange,
   isDisabled = false,
+  grantable,
   admin,
 }: {
   label: string;
   value: readonly AssignablePermission[];
   onChange: (value: AssignablePermission[]) => void;
   isDisabled?: boolean;
+  /** The permissions the editor may grant or remove (theirs); all when left out. */
+  grantable?: readonly Permission[];
   admin?: { isSelected: boolean; isDisabled: boolean; onChange: (value: boolean) => void };
 }) {
   const effective = expandPermissions(admin?.isSelected ? ["admin"] : value);
@@ -122,7 +125,7 @@ export function PermissionChecklist({
         key={permission}
         permission={permission}
         isSelected={effective.includes(permission)}
-        isDisabled={isDisabled || implied}
+        isDisabled={isDisabled || implied || (grantable ? !grantable.includes(permission) : false)}
         onChange={(on) => toggle(permission, on)}
       />
     );
