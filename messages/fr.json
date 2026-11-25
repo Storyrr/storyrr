@@ -163,6 +163,8 @@
   "media_pages": "Pages",
   "request_language_not_accepted": "Chaptarr n’accepte que les livres en {languages}, et celui-ci n’existe pas dans cette langue. Cherchez une édition en {languages}.",
   "media_language_not_accepted": "Pas en {languages} : Chaptarr ne l’ajoutera pas.",
+  "media_add_edition": "Ajouter une édition en {languages} sur Hardcover",
+  "media_add_edition_hint": "Une fois sur Hardcover, Chaptarr peut mettre un moment à la voir.",
   "media_languages": "Langues",
   "language_en": "English",
   "language_fr": "Français",

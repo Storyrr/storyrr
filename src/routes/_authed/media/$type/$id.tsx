@@ -77,7 +77,10 @@ function MediaPage() {
           <AvailabilityBadge availability={availability} />
         ) : accepted === false && acceptedLanguages ? (
           <>
-            <LanguageNotice acceptedLanguages={acceptedLanguages} />
+            <LanguageNotice
+              acceptedLanguages={acceptedLanguages}
+              addEditionUrl={item.addEditionUrl}
+            />
             {refusedSeries?.id ? (
               <RelatedSeries
                 type={type}

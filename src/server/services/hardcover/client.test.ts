@@ -115,6 +115,16 @@ describe("Hardcover client", () => {
     ]);
   });
 
+  it("links to Hardcover's form to add an edition of the book", async () => {
+    const { fetch } = fakeFetch(() =>
+      json({ data: { books_by_pk: { id: 1, slug: "dune", title: "Dune" } } }),
+    );
+    const result = await createHardcoverClient({ token: "abc", fetch }).getById("1");
+    expect(result.ok && result.value.addEditionUrl).toBe(
+      "https://hardcover.app/books/dune/editions/new/identifier",
+    );
+  });
+
   it("pages through a tag's books, the most read first", async () => {
     const { fetch, calls } = fakeFetch(() =>
       json({ data: { tags: [{ tag: "Space Opera" }], books: [{ id: 7, title: "Hyperion" }] } }),

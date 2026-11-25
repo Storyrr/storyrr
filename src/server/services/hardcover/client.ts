@@ -86,6 +86,8 @@ const CachedTagsSchema = v.record(
 
 const BookSchema = v.looseObject({
   id: v.number(),
+  /** The last part of the book's address on Hardcover (hardcover.app/books/<slug>). */
+  slug: v.optional(v.nullable(v.string())),
   cached_tags: v.optional(v.nullable(CachedTagsSchema)),
   title: v.nullable(v.string()),
   subtitle: v.optional(v.nullable(v.string())),
@@ -424,7 +426,7 @@ const TagDataSchema = v.object({
 
 const BOOK_QUERY = `query StoryrrBook($id: Int!) {
   books_by_pk(id: $id) {
-    id title subtitle description release_date pages rating ratings_count cached_tags
+    id slug title subtitle description release_date pages rating ratings_count cached_tags
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
@@ -791,5 +793,9 @@ function toDetails(book: HardcoverBook): MediaDetails {
     rating: bookRating(book),
     languages: editionLanguages(book.editions),
     description: book.description ? htmlToText(book.description) : undefined,
+    // Hardcover's "add an edition" form for this book (by ISBN or another identifier).
+    addEditionUrl: book.slug
+      ? `https://hardcover.app/books/${encodeURIComponent(book.slug)}/editions/new/identifier`
+      : undefined,
   };
 }
