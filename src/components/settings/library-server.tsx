@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { RefreshCwIcon } from "lucide-react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
@@ -78,6 +79,9 @@ function Libraries({ service, description }: { service: LibraryService; descript
   });
   const sync = useMutation({
     mutationFn: () => syncFn({ data: { service } }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success(m.settings_libraries_synced({ count: result.value.items }));
+    },
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: settingsKeys.libraries(service) }),
@@ -98,10 +102,6 @@ function Libraries({ service, description }: { service: LibraryService; descript
   let syncFeedback: React.ReactNode = null;
   if (sync.data && !sync.data.ok)
     syncFeedback = <FormError message={serviceErrorMessage(service, sync.data.error)} />;
-  else if (sync.data?.ok)
-    syncFeedback = (
-      <FormSuccess message={m.settings_libraries_synced({ count: sync.data.value.items })} />
-    );
   else if (sync.error)
     syncFeedback = <FormError message={sync.error.message || m.error_generic()} />;
 

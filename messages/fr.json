@@ -488,6 +488,7 @@
   "notification_events_personal": "Chaque utilisateur choisit les évènements qu’il reçoit par ce canal, dans ses paramètres de notification.",
   "notification_events_required": "Choisissez au moins un évènement avant d’activer ce canal.",
   "settings_tab_notifications": "Notifications",
+  "toasts_region": "Notifications",
   "notification_general_title": "Paramètres des notifications",
   "notification_general_description": "Storyrr notifie les demandes et les problèmes via les canaux ci-dessous. Les canaux partagés reçoivent chaque évènement choisi ; chacun reçoit aussi les siens par e-mail, Telegram, Pushover ou Pushbullet, et les mentions Discord, depuis ses paramètres.",
   "notification_language": "Langue des notifications partagées",

@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { toast } from "sonner";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
@@ -36,7 +37,10 @@ export function AudibleRegionForm({ current }: { current: MetadataSettings }) {
   const saveFn = useServerFn(saveMetadataSettings);
   const save = useMutation({
     mutationFn: (data: MetadataSettings) => saveFn({ data }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.all }),
+    onSuccess: () => {
+      toast.success(m.action_saved());
+      return queryClient.invalidateQueries({ queryKey: settingsKeys.all });
+    },
   });
   const form = useForm({
     defaultValues: current,
@@ -79,7 +83,7 @@ export function AudibleRegionForm({ current }: { current: MetadataSettings }) {
       </FieldGroup>
       <SettingsActions>
         <Button type="submit" isDisabled={save.isPending}>
-          {save.isSuccess ? m.action_saved() : m.action_save()}
+          {m.action_save()}
         </Button>
       </SettingsActions>
     </form>

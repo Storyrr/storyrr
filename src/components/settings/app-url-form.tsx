@@ -2,8 +2,9 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
 import { SettingsActions } from "#/components/settings/settings-section";
 import { Button } from "#/components/ui/button";
@@ -25,7 +26,10 @@ export function AppUrlForm({ value, fromEnv }: { value: string | null; fromEnv: 
   const saveFn = useServerFn(saveAppUrl);
   const save = useMutation({
     mutationFn: (data: { url: string }) => saveFn({ data }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.all }),
+    onSuccess: () => {
+      toast.success(m.action_saved());
+      return queryClient.invalidateQueries({ queryKey: settingsKeys.all });
+    },
   });
   const form = useForm({
     defaultValues: { url: value ?? "" },
@@ -46,7 +50,6 @@ export function AppUrlForm({ value, fromEnv }: { value: string | null; fromEnv: 
     >
       <FieldGroup>
         <FormError message={save.error ? save.error.message || m.error_generic() : null} />
-        {save.isSuccess ? <FormSuccess message={m.action_saved()} /> : null}
         <form.Field name="url">
           {(field) => (
             <TextField

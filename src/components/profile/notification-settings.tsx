@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { toast } from "sonner";
 
 import { FormError } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
@@ -191,7 +192,10 @@ function ChannelForm({
   const saveFn = useServerFn(saveMyNotificationChannel);
   const save = useMutation({
     mutationFn: (input: UserNotificationChannel) => saveFn({ data: input }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success(m.action_saved());
+      return queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
   });
   const specs = textFields(channel, adminPushover);
   const form = useForm({
@@ -286,7 +290,7 @@ function ChannelForm({
           {(isSubmitting) => (
             <Button type="submit" isDisabled={isSubmitting}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-              {save.isSuccess && save.data.ok ? m.action_saved() : m.action_save()}
+              {m.action_save()}
             </Button>
           )}
         </form.Subscribe>

@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { DownloadIcon } from "lucide-react";
 import { useId, useState } from "react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -86,7 +87,12 @@ export function ImportUsersDialog() {
   });
   const run = useMutation({
     mutationFn: () => importFn({ data: { server, keys: selected } }),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      toast.success(
+        result.skipped > 0
+          ? m.users_import_done_skipped({ count: result.imported, skipped: result.skipped })
+          : m.users_import_done({ count: result.imported }),
+      );
       setSelected([]);
       await queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
@@ -139,18 +145,6 @@ export function ImportUsersDialog() {
           </div>
         ) : null}
         <FormError message={run.error ? run.error.message || m.error_generic() : null} />
-        {run.data ? (
-          <FormSuccess
-            message={
-              run.data.skipped > 0
-                ? m.users_import_done_skipped({
-                    count: run.data.imported,
-                    skipped: run.data.skipped,
-                  })
-                : m.users_import_done({ count: run.data.imported })
-            }
-          />
-        ) : null}
         <DialogFooter>
           <DialogClose>{m.action_close()}</DialogClose>
           <Button isDisabled={run.isPending || selected.length === 0} onPress={() => run.mutate()}>

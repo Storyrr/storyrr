@@ -1,8 +1,9 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
 import { ReadOnlyNotice } from "#/components/profile/read-only-notice";
 import { SettingsActions, SettingsSection } from "#/components/settings/settings-section";
@@ -31,6 +32,9 @@ function ChangeOwnPassword() {
   const changeFn = useServerFn(changePassword);
   const change = useMutation({
     mutationFn: (data: ChangePasswordInput) => changeFn({ data }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success(m.profile_password_changed());
+    },
   });
   const form = useForm({
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
@@ -82,7 +86,6 @@ function ChangeOwnPassword() {
       >
         <FieldGroup>
           <FormError message={change.error ? change.error.message || m.error_generic() : null} />
-          {change.data?.ok ? <FormSuccess message={m.profile_password_changed()} /> : null}
           {fields.map((f) => (
             <form.Field key={f.name} name={f.name}>
               {(field) => (
@@ -121,6 +124,7 @@ function SetPasswordForm({ userId }: { userId: string }) {
   const setFn = useServerFn(setUserPassword);
   const set = useMutation({
     mutationFn: (newPassword: string) => setFn({ data: { userId, newPassword } }),
+    onSuccess: () => toast.success(m.profile_password_changed()),
   });
   const form = useForm({
     defaultValues: { newPassword: "", confirmPassword: "" },
@@ -154,7 +158,6 @@ function SetPasswordForm({ userId }: { userId: string }) {
       >
         <FieldGroup>
           <FormError message={set.error ? set.error.message || m.error_generic() : null} />
-          {set.isSuccess ? <FormSuccess message={m.profile_password_changed()} /> : null}
           {fields.map((f) => (
             <form.Field key={f.name} name={f.name}>
               {(field) => (

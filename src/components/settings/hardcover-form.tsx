@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SecretField } from "#/components/form/secret-field";
 import { Button, LinkButton } from "#/components/ui/button";
 import { SettingsActions } from "#/components/settings/settings-section";
@@ -35,18 +36,16 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
     mutationFn: (data: HardcoverTokenForm) => testFn({ data }),
     onMutate: () => setFeedback(null),
     onSuccess: (result) =>
-      setFeedback(
-        result.ok
-          ? { tone: "success", message: m.test_ok_hardcover() }
-          : { tone: "error", message: serviceErrorMessage("hardcover", result.error) },
-      ),
+      result.ok
+        ? toast.success(m.test_ok_hardcover())
+        : setFeedback({ tone: "error", message: serviceErrorMessage("hardcover", result.error) }),
     onError,
   });
   const save = useMutation({
     mutationFn: (data: HardcoverTokenForm) => saveFn({ data }),
     onMutate: () => setFeedback(null),
     onSuccess: async () => {
-      setFeedback({ tone: "success", message: m.action_saved() });
+      toast.success(m.action_saved());
       await queryClient.invalidateQueries({ queryKey: settingsKeys.all });
     },
     onError,
@@ -70,7 +69,6 @@ export function HardcoverForm({ hasToken }: { hasToken: boolean }) {
     >
       <FieldGroup>
         {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
-        {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
         <form.Field name="token">
           {(field) => (
             <SecretField

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 import { FormError } from "#/components/form/form-error";
 import { TextField } from "#/components/form/text-field";
@@ -48,7 +49,10 @@ function NetworkPage() {
     ]);
   const save = useMutation({
     mutationFn: (value: NetworkSettings) => saveFn({ data: value }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      toast.success(m.action_saved());
+      return invalidate();
+    },
   });
   const clear = useMutation({ mutationFn: () => clearFn(), onSuccess: invalidate });
   const form = useForm({
@@ -152,7 +156,7 @@ function NetworkPage() {
           {(isSubmitting) => (
             <Button type="submit" isDisabled={isSubmitting}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-              {save.isSuccess ? m.action_saved() : m.action_save()}
+              {m.action_save()}
             </Button>
           )}
         </form.Subscribe>

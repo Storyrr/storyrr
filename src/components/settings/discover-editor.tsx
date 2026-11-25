@@ -3,8 +3,9 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
@@ -50,6 +51,7 @@ export function DiscoverEditor() {
   const save = useMutation({
     mutationFn: (next: DiscoverRow[] | null) => saveFn({ data: { rows: next } }),
     onSuccess: async (_, next) => {
+      toast.success(m.action_saved());
       await queryClient.invalidateQueries({ queryKey: discoverLayoutQuery().queryKey });
       if (next === null) setRows((await queryClient.fetchQuery(discoverLayoutQuery())) ?? []);
     },
@@ -75,7 +77,6 @@ export function DiscoverEditor() {
       description={m.discover_editor_description()}
     >
       <FormError message={save.error ? save.error.message || m.error_generic() : null} />
-      {save.isSuccess ? <FormSuccess message={m.action_saved()} /> : null}
       <ol className="flex max-w-2xl flex-col divide-y rounded-xl border bg-card">
         {rows.map((row, index) => (
           <li key={row.id} className="flex items-center gap-3 px-4 py-2">

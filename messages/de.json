@@ -488,6 +488,7 @@
   "notification_events_personal": "Jeder Benutzer wählt in seinen Benachrichtigungseinstellungen, welche Ereignisse er über diesen Kanal erhält.",
   "notification_events_required": "Wählen Sie mindestens ein Ereignis, bevor Sie diesen Kanal aktivieren.",
   "settings_tab_notifications": "Benachrichtigungen",
+  "toasts_region": "Benachrichtigungen",
   "notification_general_title": "Benachrichtigungseinstellungen",
   "notification_general_description": "Storyrr benachrichtigt über Anfragen und Probleme über die Kanäle unten. Gemeinsame Kanäle erhalten jedes gewählte Ereignis; Benutzer erhalten zusätzlich ihre eigenen per E-Mail, Telegram, Pushover oder Pushbullet sowie Discord-Erwähnungen, je nach ihren Einstellungen.",
   "notification_language": "Sprache gemeinsamer Benachrichtigungen",

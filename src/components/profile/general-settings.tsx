@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type * as v from "valibot";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
 import { FormError } from "#/components/form/form-error";
 import { SelectField } from "#/components/form/select-field";
@@ -66,6 +67,7 @@ export function GeneralSettings({ userId }: { userId?: string }) {
     mutationFn: (data: ProfileForm) => updateFn({ data: { ...data, userId } }),
     onSuccess: async (result, data) => {
       if (!result.ok) return;
+      toast.success(m.action_saved());
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: authKeys.all }),
         queryClient.invalidateQueries({ queryKey: profileKeys.all }),
@@ -178,7 +180,7 @@ export function GeneralSettings({ userId }: { userId?: string }) {
               {(isSubmitting) => (
                 <Button type="submit" isDisabled={isSubmitting}>
                   {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-                  {save.isSuccess ? m.action_saved() : m.action_save()}
+                  {m.action_save()}
                 </Button>
               )}
             </form.Subscribe>

@@ -2,8 +2,9 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useRouteContext } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SwitchField } from "#/components/form/switch-field";
 import { RequestLimitFields } from "#/components/settings/request-limit-fields";
 import { PermissionChecklist } from "#/components/users/permission-checklist";
@@ -75,10 +76,14 @@ export function PermissionSettings({ userId }: { userId?: string }) {
 
 const isAssignable = (p: Permission): p is AssignablePermission => p !== "admin";
 
-function useAccountMutation<TInput>(fn: (input: TInput) => Promise<unknown>) {
+/** A change to the account; `saved`: toast once it's done (switches show their own state). */
+function useAccountMutation<TInput>(fn: (input: TInput) => Promise<unknown>, saved = false) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
+    onSuccess: () => {
+      if (saved) toast.success(m.action_saved());
+    },
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: profileKeys.all }),
@@ -98,8 +103,10 @@ function EditPermissions({ userId }: { userId: string }) {
   const role = useAccountMutation((admin: boolean) =>
     roleFn({ data: { userId, role: admin ? "admin" : "user" } }),
   );
-  const savePermissions = useAccountMutation((value: AssignablePermission[] | null) =>
-    permissionsFn({ data: { userId, permissions: value } }),
+  const savePermissions = useAccountMutation(
+    (value: AssignablePermission[] | null) =>
+      permissionsFn({ data: { userId, permissions: value } }),
+    true,
   );
   const [useDefaults, setUseDefaults] = useState(account.grantedPermissions === null);
   const [granted, setGranted] = useState<AssignablePermission[]>(
@@ -108,8 +115,9 @@ function EditPermissions({ userId }: { userId: string }) {
   const banned = useAccountMutation((value: boolean) =>
     bannedFn({ data: { userId, banned: value } }),
   );
-  const limits = useAccountMutation((value: RequestLimits | null) =>
-    limitsFn({ data: { userId, requestLimits: value } }),
+  const limits = useAccountMutation(
+    (value: RequestLimits | null) => limitsFn({ data: { userId, requestLimits: value } }),
+    true,
   );
   const [override, setOverride] = useState(account.requestLimits !== null);
   const [ownLimits, setOwnLimits] = useState<RequestLimits>(
@@ -153,7 +161,7 @@ function EditPermissions({ userId }: { userId: string }) {
               onPress={() => savePermissions.mutate(useDefaults ? null : granted)}
             >
               {savePermissions.isPending ? <Spinner data-icon="inline-start" /> : null}
-              {savePermissions.isSuccess ? m.action_saved() : m.action_save()}
+              {m.action_save()}
             </Button>
           </SettingsActions>
           <SettingsRow label={m.users_banned()} description={m.users_ban_description()}>
@@ -169,7 +177,6 @@ function EditPermissions({ userId }: { userId: string }) {
       {account.isAdmin ? null : (
         <SettingsSection title={m.users_limits()} description={m.users_limits_description()}>
           <FieldGroup>
-            {limits.isSuccess ? <FormSuccess message={m.action_saved()} /> : null}
             <SettingsRow label={m.users_limits_custom()}>
               <SwitchField
                 label={m.users_limits_override()}

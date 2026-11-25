@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useId, useState } from "react";
 import * as v from "valibot";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SecretField } from "#/components/form/secret-field";
 import { TextField } from "#/components/form/text-field";
 import {
@@ -121,7 +122,7 @@ export function AgentForm({
       }),
     onMutate: () => setFeedback(null),
     onSuccess: async () => {
-      setFeedback({ tone: "success", message: m.action_saved() });
+      toast.success(m.action_saved());
       await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),
@@ -130,11 +131,9 @@ export function AgentForm({
     mutationFn: (config: Values) => testFn({ data: { agent, config: toConfig(agent, config) } }),
     onMutate: () => setFeedback(null),
     onSuccess: (result) =>
-      setFeedback(
-        result.ok
-          ? { tone: "success", message: m.notification_test_sent() }
-          : { tone: "error", message: result.error },
-      ),
+      result.ok
+        ? toast.success(m.notification_test_sent())
+        : setFeedback({ tone: "error", message: result.error }),
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),
   });
 
@@ -174,7 +173,6 @@ export function AgentForm({
       >
         <FieldGroup>
           {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
-          {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
           <form.Field name="enabled">
             {(field) => (
               <SettingsRow label={m.notification_enable_agent()}>

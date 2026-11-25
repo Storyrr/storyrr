@@ -16,6 +16,7 @@ import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import { Toaster } from "#/components/ui/sonner";
 import { RegisterServiceWorker } from "#/components/pwa/register-service-worker";
 import { authStateQuery } from "#/lib/queries/auth";
 
@@ -107,6 +108,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           {children}
         </AriaRouterProvider>
+        {/* Above the phone's bottom bar (mobile-nav.tsx). */}
+        <Toaster
+          containerAriaLabel={m.toasts_region()}
+          position="bottom-right"
+          mobileOffset={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+        />
         <RegisterServiceWorker />
         {import.meta.env.DEV ? (
           <TanStackDevtools

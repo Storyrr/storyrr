@@ -1,6 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
 import { FormError } from "#/components/form/form-error";
 import { Button } from "#/components/ui/button";
@@ -23,7 +24,10 @@ export function UserSettingsForm() {
   const saveFn = useServerFn(saveUserSettings);
   const save = useMutation({
     mutationFn: (data: UserSettings) => saveFn({ data }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: settingsKeys.users() }),
+    onSuccess: () => {
+      toast.success(m.action_saved());
+      return queryClient.invalidateQueries({ queryKey: settingsKeys.users() });
+    },
   });
   const form = useForm({
     defaultValues: current,
@@ -83,7 +87,7 @@ export function UserSettingsForm() {
         <SettingsActions>
           <Button type="submit" isDisabled={save.isPending}>
             {save.isPending ? <Spinner data-icon="inline-start" /> : null}
-            {save.isSuccess ? m.action_saved() : m.action_save()}
+            {m.action_save()}
           </Button>
         </SettingsActions>
       </form>

@@ -2,8 +2,9 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { FormError, FormSuccess } from "#/components/form/form-error";
+import { FormError } from "#/components/form/form-error";
 import { SecretField } from "#/components/form/secret-field";
 import { TextField } from "#/components/form/text-field";
 import { Button } from "#/components/ui/button";
@@ -61,16 +62,14 @@ export function ConnectionForm({
     onSuccess: (result) => {
       if (!result.ok)
         return setFeedback({ tone: "error", message: serviceErrorMessage(service, result.error) });
-      setFeedback({
-        tone: "success",
-        message:
-          service === "chaptarr"
-            ? [
-                m.test_ok_chaptarr({ version: result.version ?? "" }),
-                ...(result.warnings ?? []).map((warning) => m.test_chaptarr_warning({ warning })),
-              ].join(" ")
-            : libraryTestMessages[service]({ count: result.libraries ?? 0 }),
-      });
+      toast.success(
+        service === "chaptarr"
+          ? [
+              m.test_ok_chaptarr({ version: result.version ?? "" }),
+              ...(result.warnings ?? []).map((warning) => m.test_chaptarr_warning({ warning })),
+            ].join(" ")
+          : libraryTestMessages[service]({ count: result.libraries ?? 0 }),
+      );
     },
     onError: (error) => setFeedback({ tone: "error", message: error.message || m.error_generic() }),
   });
@@ -79,7 +78,7 @@ export function ConnectionForm({
     mutationFn: (connection: ConnectionForm) => saveFn({ data: { service, connection } }),
     onMutate: () => setFeedback(null),
     onSuccess: async () => {
-      setFeedback({ tone: "success", message: m.action_saved() });
+      toast.success(m.action_saved());
       await queryClient.invalidateQueries({ queryKey: settingsKeys.all });
       onSaved?.();
     },
@@ -124,7 +123,6 @@ export function ConnectionForm({
     >
       <FieldGroup>
         {feedback?.tone === "error" ? <FormError message={feedback.message} /> : null}
-        {feedback?.tone === "success" ? <FormSuccess message={feedback.message} /> : null}
         <form.Field name="url">
           {(field) => (
             <TextField
