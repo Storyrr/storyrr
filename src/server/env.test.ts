@@ -36,8 +36,16 @@ describe("parseEnv", () => {
     expect(() => parseEnv(env)).toThrow(key);
   });
 
+  it("needs no URL or secret (set in the app, generated)", () => {
+    expect(parseEnv({ DATABASE_URL: "test.db" })).toEqual({
+      DATABASE_URL: "test.db",
+      NODE_ENV: "development",
+      PORT: 3000,
+    });
+  });
+
   it("lists every invalid variable in one error", () => {
-    expect(() => parseEnv({})).toThrow(
+    expect(() => parseEnv({ BETTER_AUTH_URL: "nope", BETTER_AUTH_SECRET: "short" })).toThrow(
       /DATABASE_URL[\s\S]*BETTER_AUTH_URL[\s\S]*BETTER_AUTH_SECRET/,
     );
   });
@@ -57,5 +65,8 @@ describe("getEnv", () => {
 
     vi.stubEnv("DATABASE_URL", "second.db");
     expect(getEnv()).toBe(first);
+    // Hidden from better-auth, which would otherwise pin sign-ins to it.
+    expect(first.BETTER_AUTH_URL).toBe(valid.BETTER_AUTH_URL);
+    expect(process.env.BETTER_AUTH_URL).toBeUndefined();
   });
 });

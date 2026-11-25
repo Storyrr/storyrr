@@ -127,6 +127,18 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   requestLimits: DEFAULT_REQUEST_LIMITS,
 };
 
+/**
+ * The application URL (Settings → General, the setup wizard): the address
+ * links in emails and notifications point to. Kept as an origin only.
+ */
+export const AppUrlSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.url(() => m.validation_url()),
+  v.regex(/^https?:\/\//i, () => m.validation_url()),
+  v.transform((value) => new URL(value).origin),
+);
+
 /** Settings → Network. */
 export const NetworkSettingsSchema = v.object({
   /** http(s)://[user:pass@]host:port for Storyrr's outbound calls; empty: none. */

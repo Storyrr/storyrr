@@ -43,7 +43,7 @@ function app() {
   const services = createServices(settings, fetch);
   return createAuth(
     db,
-    { BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: "s".repeat(40) },
+    { secret: "s".repeat(40), appUrl: async () => "http://localhost:3000" },
     {
       resolveMediaServerSignIn: (input) =>
         resolveMediaServerSignIn({ db, services, settings }, input),

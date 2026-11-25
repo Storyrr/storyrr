@@ -23,7 +23,7 @@ let queue: Promise<unknown> = Promise.resolve();
 export function createInitialAdmin(
   db: AppDatabase,
   auth: Auth,
-  input: SetupInput,
+  input: Pick<SetupInput, "name" | "email" | "password">,
 ): Promise<CreateInitialAdminResult> {
   const run = async (): Promise<CreateInitialAdminResult> => {
     if (await isSetupComplete(db)) return { status: "already_done" };

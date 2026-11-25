@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest, setResponseStatus } from "@tanstack/react-start/server";
 import * as v from "valibot";
 
 import {
+  AppUrlSchema,
   DEFAULT_USER_SETTINGS,
   FormatInputSchema,
   HardcoverTokenFormSchema,
@@ -26,11 +28,14 @@ import { m } from "#/paraglide/messages.js";
 import { requirePermission } from "#/server/auth/middleware";
 
 const requireSettings = requirePermission("manage_settings");
+import { appUrlFromEnv, getAppUrl } from "#/server/app-url";
+import { requestOrigin } from "#/server/auth/origins";
 import { getEnv } from "#/server/env";
 import { services } from "#/server/services";
 import { fail, ok, type ServiceError, type ServiceResult } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import {
+  appUrlSetting,
   connectionSettings,
   formatDefaults,
   hardcoverToken,
@@ -112,8 +117,8 @@ export const getServiceSettings = createServerFn({ method: "GET" })
       // Never send the token back: only whether one is stored.
       hardcover: { hasToken: hardcover !== undefined },
       metadata: metadata ?? { audibleRegion: DEFAULT_AUDIBLE_REGION },
-      /** Public URL Storyrr is served at (BETTER_AUTH_URL), shown read-only. */
-      appUrl: getEnv().BETTER_AUTH_URL,
+      /** The application URL; `fromEnv`: set by BETTER_AUTH_URL, read-only here. */
+      appUrl: { value: await getAppUrl(settings), fromEnv: appUrlFromEnv() !== null },
       defaults: { audiobook: audiobook ?? null, ebook: ebook ?? null },
     };
   });
@@ -227,12 +232,27 @@ export const getChaptarrOptions = createServerFn({ method: "GET" })
     };
   });
 
+/** Sets the application URL (Settings → General), unless BETTER_AUTH_URL overrides it. */
+export const saveAppUrl = createServerFn({ method: "POST" })
+  .middleware([requireSettings])
+  .validator(v.object({ url: AppUrlSchema }))
+  .handler(async ({ data }) => {
+    if (appUrlFromEnv()) {
+      setResponseStatus(409);
+      throw new Error(m.settings_app_url_from_env());
+    }
+    await settings.set(appUrlSetting, data.url);
+    return { ok: true };
+  });
+
 /** The URL to paste into Chaptarr → Settings → Connect → Webhook. Manage settings. */
 export const getChaptarrWebhookUrl = createServerFn({ method: "GET" })
   .middleware([requireSettings])
   .handler(async () => {
     const token = await getOrCreateWebhookToken(settings);
-    const url = new URL("/api/webhooks/chaptarr", getEnv().BETTER_AUTH_URL);
+    // Until the application URL is set, the address this page was opened at.
+    const base = (await getAppUrl(settings)) ?? requestOrigin(getRequest()) ?? "http://localhost";
+    const url = new URL("/api/webhooks/chaptarr", base);
     url.searchParams.set("token", token);
     return { url: url.toString() };
   });

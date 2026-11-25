@@ -35,7 +35,7 @@ Permissions (decided 2026-11-24, like Seerr): besides the **Admin** role (everyt
 
 ### 4.1 First run (setup wizard)
 
-Shown when the database has no user: it creates the admin account (name, email, password), which becomes the **Owner**, then opens the home page. Services (Chaptarr, Audiobookshelf, Kavita, Komga, Jellyfin, metadata) and the default target per format are set afterwards in Settings, each with a **Test** button and a clear error on failure. Defaults come from the live lists:
+Shown when the database has no user: it creates the admin account (name, email, password), which becomes the **Owner**, and asks for the application URL (prefilled with the address the wizard is open at), then opens the home page. No environment variable is required (the auth secret is generated in the data folder). Services (Chaptarr, Audiobookshelf, Kavita, Komga, Jellyfin, metadata) and the default target per format are set afterwards in Settings, each with a **Test** button and a clear error on failure. Defaults come from the live lists:
 
 - audiobook → a Chaptarr root folder with `folderType` 1 (audiobook) or 0 (mixed);
 - eBook → a Chaptarr root folder with `folderType` 2 (eBook) or 0 (mixed).
@@ -161,7 +161,7 @@ When the Email notification agent is set up, the sign-in page offers "Forgot pas
 
 Seerr-like tabs (decided 2026-11-24), label column on the left, control on the right:
 
-- **General:** application URL (read-only, from `BETTER_AUTH_URL`).
+- **General:** application URL (decided 2026-11-25, like Seerr): the address links in emails and notifications point to, e.g. a tunnel's; read-only when `BETTER_AUTH_URL` sets it. Storyrr works at its other addresses too (its LAN IP over http, the tunnel over https).
 - **Metadata:** provider status (Audible, Hardcover) with a Test button, then the Audible region and the Hardcover token.
 - **About:** version (and whether a newer GitHub release exists, checked hourly), total titles and requests, data directory, time zone; help links; the latest releases with their notes.
 - **Users:** auto-approve new users by default; global request limits per format ("Unlimited" or N requests every D days). Denied and cancelled requests give their slot back; joining an active request is free; admins are never limited.
@@ -223,7 +223,7 @@ See CLAUDE.md "Integrations: hard-won pitfalls" before implementing any of them.
 - Secrets encrypted at rest, redacted in logs and API responses.
 - Responsive: usable on a phone (search + request + approve).
 - i18n: English source, French translation as soon as the UI stabilizes; locale per user, fallback to the browser's.
-- Link previews and search engines (decided 2026-11-24): Open Graph / Twitter card tags with a 1200×630 card per locale (`public/og-image.<locale>.png`, absolute URLs from `BETTER_AUTH_URL`) and a translated description; `robots: noindex, nofollow`, since an instance is private and invite-only. Pages behind sign-in have no per-title previews (bots can't sign in, and titles would leak).
+- Link previews and search engines (decided 2026-11-24): Open Graph / Twitter card tags with a 1200×630 card per locale (`public/og-image.<locale>.png`, absolute URLs from the application URL) and a translated description; `robots: noindex, nofollow`, since an instance is private and invite-only. Pages behind sign-in have no per-title previews (bots can't sign in, and titles would leak).
 - Observability: structured logs, `/api/health` with per-service status, job run history in Settings.
 
 ## 8. Milestones

@@ -19,7 +19,7 @@ import { locales } from "#/paraglide/runtime.js";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
 import { pushSubscription, userPreference } from "#/server/db/schema";
-import { getEnv } from "#/server/env";
+import { getAppUrl } from "#/server/app-url";
 import { loadAgents, testAgent } from "#/server/notifications";
 import {
   getOrCreateVapidKeys,
@@ -155,7 +155,7 @@ export const testNotificationAgent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const target = toTarget[data.agent](await withStoredSecrets(data.agent, data.config));
     const result = await testAgent(
-      { db, settings, fetch: globalFetch, appUrl: getEnv().BETTER_AUTH_URL.replace(/\/+$/, "") },
+      { db, settings, fetch: globalFetch, appUrl: await getAppUrl(settings) },
       target,
       context.session.user.id,
     );

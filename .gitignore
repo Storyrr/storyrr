@@ -18,6 +18,8 @@ todos.json
 *.db-wal
 *.db-shm
 /data/
+# Generated next to the database when BETTER_AUTH_SECRET isn't set
+auth-secret
 
 # Paraglide output
 src/paraglide/

@@ -8,13 +8,13 @@ import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { passwordResetAvailable } from "#/server/auth/password-reset";
 import { getNetworkSettings } from "#/server/network";
-import { mediaServerSignIn } from "#/server/settings/definitions";
+import { appUrlSetting, mediaServerSignIn } from "#/server/settings/definitions";
 import { db } from "#/server/db";
 import { userLocale } from "#/server/profile";
 import { permissionsOf } from "#/server/permissions";
 import { settings } from "#/server/settings";
 import { createInitialAdmin, isSetupComplete } from "#/server/setup";
-import { getEnv } from "#/server/env";
+import { appUrlFromEnv, getAppUrl } from "#/server/app-url";
 import { APP_VERSION } from "#/server/version";
 
 export type SessionUser = {
@@ -52,7 +52,7 @@ export const getAuthState = createServerFn({ method: "GET" }).handler(async () =
     setupComplete,
     user,
     version: APP_VERSION,
-    appUrl: getEnv().BETTER_AUTH_URL,
+    appUrl: await getAppUrl(settings),
     /** "Forgot password?" works (email is set up). */
     passwordReset: await passwordResetAvailable(),
     /** Media servers whose accounts can sign in. */
@@ -71,6 +71,7 @@ export const completeSetup = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const result = await createInitialAdmin(db, auth, data);
     if (result.status === "already_done") throw new Error(m.setup_already_done());
+    if (!appUrlFromEnv()) await settings.set(appUrlSetting, data.appUrl);
     await auth.api.signInEmail({
       body: { email: data.email, password: data.password },
       headers: getRequestHeaders(),

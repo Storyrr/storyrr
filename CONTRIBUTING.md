@@ -19,7 +19,7 @@ Requirements: [Node.js](https://nodejs.org/) 22.12+ (it runs the app) and [Bun](
 
 ```bash
 bun install
-cp .env.example .env.local   # then fill in BETTER_AUTH_SECRET (openssl rand -base64 48)
+cp .env.example .env.local   # optional: both variables can stay unset
 bun run dev                  # http://localhost:3000, the first visit runs the setup wizard
 ```
 

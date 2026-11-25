@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SetupSchema } from "#/lib/schemas/auth";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, AccountSchema } from "#/lib/schemas/auth";
 import { AssignablePermissionsSchema, RequestLimitsSchema } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
 
@@ -8,7 +8,7 @@ export const USER_ROLES = ["user", "admin"] as const;
 
 /** New account: same fields as the first admin; it gets the default permissions. */
 export const CreateUserSchema = v.object({
-  ...SetupSchema.entries,
+  ...AccountSchema.entries,
   password: v.pipe(
     v.string(),
     v.minLength(PASSWORD_MIN_LENGTH, () => m.validation_password_min({ min: PASSWORD_MIN_LENGTH })),

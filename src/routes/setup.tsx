@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect } from "react";
 
 import { AuthCard } from "#/components/auth-card";
 import { FormError } from "#/components/form/form-error";
@@ -37,12 +38,16 @@ function SetupPage() {
   });
 
   const form = useForm({
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "", appUrl: "" },
     validators: { onSubmit: SetupSchema },
     onSubmit: async ({ value }) => {
       await setup.mutateAsync(value).catch(() => undefined);
     },
   });
+  // The address the wizard is open at: usually right, else the admin edits it.
+  useEffect(() => {
+    if (!form.getFieldValue("appUrl")) form.setFieldValue("appUrl", window.location.origin);
+  }, [form]);
 
   return (
     <AuthCard title={m.setup_title()} description={m.setup_description()}>
@@ -90,6 +95,20 @@ function SetupPage() {
                 name={field.name}
                 type="password"
                 autoComplete="new-password"
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                errors={field.state.meta.errors}
+              />
+            )}
+          </form.Field>
+          <form.Field name="appUrl">
+            {(field) => (
+              <TextField
+                label={m.setup_app_url()}
+                description={m.setup_app_url_description()}
+                name={field.name}
+                autoComplete="url"
                 value={field.state.value}
                 onChange={field.handleChange}
                 onBlur={field.handleBlur}

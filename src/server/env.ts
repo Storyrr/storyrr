@@ -12,10 +12,19 @@ const EnvSchema = v.object({
   NODE_ENV: v.optional(v.picklist(["development", "production", "test"]), "development"),
   /** SQLite database file, e.g. `dev.db` locally or `/data/storyrr.db` in Docker. */
   DATABASE_URL: v.pipe(v.string(), v.nonEmpty("must not be empty")),
-  /** Public base URL of the app, used by better-auth for redirects and cookies. */
-  BETTER_AUTH_URL: v.pipe(v.string(), v.url()),
-  /** Signing/encryption secret for better-auth (and stored service credentials). */
-  BETTER_AUTH_SECRET: v.pipe(v.string(), v.minLength(32, "must be at least 32 characters")),
+  /**
+   * Optional: the application URL, used in links (emails, notifications, the
+   * Chaptarr webhook). Set, it overrides Settings → General. Sign-in works from
+   * any address Storyrr is reached at either way (see `src/server/auth/config.ts`).
+   */
+  BETTER_AUTH_URL: v.optional(v.pipe(v.string(), v.url())),
+  /**
+   * Optional: signing/encryption secret for better-auth (and stored service
+   * credentials). Without it, one is generated next to the database.
+   */
+  BETTER_AUTH_SECRET: v.optional(
+    v.pipe(v.string(), v.minLength(32, "must be at least 32 characters")),
+  ),
   PORT: v.optional(
     v.pipe(v.string(), v.toNumber(), v.integer(), v.minValue(1), v.maxValue(65535)),
     "3000",
@@ -36,6 +45,12 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
 let cached: Env | undefined;
 
 export function getEnv(): Env {
-  cached ??= parseEnv(process.env);
+  if (!cached) {
+    cached = parseEnv(process.env);
+    // better-auth reads BETTER_AUTH_URL from the environment by itself and would
+    // then accept sign-ins from that one address only. Storyrr passes it no URL
+    // (it trusts the address each request comes to) and uses this value for links.
+    delete process.env.BETTER_AUTH_URL;
+  }
   return cached;
 }

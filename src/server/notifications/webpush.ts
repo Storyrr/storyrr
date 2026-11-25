@@ -42,7 +42,7 @@ export function removeSubscription(db: AppDatabase, endpoint: string): void {
  * longer knows (404 / 410) are forgotten.
  */
 export async function sendWebPush(
-  { db, settings, appUrl }: { db: AppDatabase; settings: SettingsStore; appUrl: string },
+  { db, settings, appUrl }: { db: AppDatabase; settings: SettingsStore; appUrl: string | null },
   userId: string,
   n: Outgoing,
 ): Promise<SendResult[]> {
@@ -54,7 +54,7 @@ export async function sendWebPush(
   if (subscriptions.length === 0) return [];
   const keys = await getOrCreateVapidKeys(settings);
   // The VAPID subject must be an https URL or a mailto: (a placeholder when served over http).
-  const subject = appUrl.startsWith("https://") ? appUrl : "mailto:storyrr@localhost.invalid";
+  const subject = appUrl?.startsWith("https://") ? appUrl : "mailto:storyrr@localhost.invalid";
   const payload = JSON.stringify({
     title: n.subject,
     body: n.message,

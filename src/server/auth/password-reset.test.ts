@@ -10,7 +10,7 @@ describe("password reset", () => {
     const sent: { email: string; url: string }[] = [];
     const auth = createAuth(
       db,
-      { BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: "s".repeat(40) },
+      { secret: "s".repeat(40), appUrl: async () => "http://localhost:3000" },
       { sendResetPassword: async ({ email, url }) => void sent.push({ email, url }) },
     );
     await auth.api.createUser({

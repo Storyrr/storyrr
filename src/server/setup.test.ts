@@ -7,8 +7,8 @@ import { user } from "#/server/db/schema";
 import { createInitialAdmin, isSetupComplete } from "./setup";
 
 const env = {
-  BETTER_AUTH_URL: "http://localhost:3000",
-  BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
+  secret: "test-secret-that-is-at-least-32-characters",
+  appUrl: async () => "http://localhost:3000",
 };
 const admin = { name: "Admin", email: "admin@example.com", password: "correct horse battery" };
 

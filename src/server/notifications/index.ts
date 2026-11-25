@@ -43,9 +43,13 @@ export type NotifyDeps = {
   db: AppDatabase;
   settings: SettingsStore;
   fetch: FetchFn;
-  /** Public URL, for links back to Storyrr. */
-  appUrl: string;
+  /** The application URL, for links back to Storyrr (none until it's set). */
+  appUrl: string | null;
 };
+
+/** An absolute link into Storyrr, when the application URL is known. */
+const link = (deps: Pick<NotifyDeps, "appUrl">, path: string) =>
+  deps.appUrl ? `${deps.appUrl}${path}` : undefined;
 
 type Planned = { data: NotificationData & { event: NotificationEvent }; recipientIds: string[] };
 
@@ -72,7 +76,7 @@ export async function planNotification(
       requestId: row.request.id,
       requestedBy: row.requester.name,
       reason: event.message,
-      url: `${deps.appUrl}/media/${row.media.type}/${encodeURIComponent(row.media.externalId)}`,
+      url: link(deps, `/media/${row.media.type}/${encodeURIComponent(row.media.externalId)}`),
     };
     if (kind === "request_pending" || kind === "request_auto_approved") {
       const managers = await usersWith(deps, "manage_requests");
@@ -98,7 +102,7 @@ export async function planNotification(
   const base = {
     media: mediaOf(found.media),
     issue: { id: found.issue.id, type: found.issue.type, reportedBy: found.reporter.name },
-    url: `${deps.appUrl}/issues/${found.issue.id}`,
+    url: link(deps, `/issues/${found.issue.id}`),
   };
   const managers = () => usersWith(deps, "manage_issues");
   switch (event.kind) {
@@ -370,7 +374,7 @@ export async function testAgent(
   target: AgentTarget,
   testerId: string,
 ): Promise<SendResult> {
-  const data: NotificationData = { event: "test", url: deps.appUrl };
+  const data: NotificationData = { event: "test", url: deps.appUrl ?? undefined };
   const [tester] = recipientsFor(deps.db, [testerId]);
   const email = tester?.email ?? emailOf(deps.db, testerId);
   // The tester gets it on every channel of theirs this agent backs, whatever their events.
@@ -413,13 +417,13 @@ declare global {
 }
 
 /** Sends notifications for request and issue changes (started by the server entry). */
-export function startNotifications(deps: () => NotifyDeps): void {
+export function startNotifications(deps: () => Promise<NotifyDeps>): void {
   if (globalThis.storyrrNotifications) return;
   globalThis.storyrrNotifications = true;
   onAppEvent((event) => {
     // After the write that emitted it; never blocks or fails the request.
     void (async () => {
-      const d = deps();
+      const d = await deps();
       const planned = await planNotification(d, event);
       if (planned) await deliver(d, planned);
     })().catch((error: unknown) => console.error("[notifications] failed:", error));

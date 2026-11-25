@@ -2,6 +2,7 @@ import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
 import {
+  AppUrlSchema,
   FormatDefaultsSchema,
   NetworkSettingsSchema,
   LibrarySelectionSchema,
@@ -155,6 +156,13 @@ export const vapidKeys = defineSetting({
 export const mediaServerSignIn = defineSetting({
   key: "auth.media-servers",
   schema: MediaServerSignInSettingsSchema,
+  secret: false,
+});
+
+/** The application URL (Settings → General), unless BETTER_AUTH_URL overrides it. */
+export const appUrlSetting = defineSetting({
+  key: "general.app-url",
+  schema: AppUrlSchema,
   secret: false,
 });
 
