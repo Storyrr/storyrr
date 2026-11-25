@@ -67,4 +67,4 @@ bun run dev                  # http://localhost:3000
 | `bun run test`        | Vitest (use this, not `bun test`)                                    |
 | `bun run db:generate` | Generate a migration from `src/server/db/schema/`                    |
 
-Contributor and agent guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
+How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md). Full guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
