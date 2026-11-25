@@ -60,10 +60,6 @@ export async function runJob(name: JobName): Promise<void> {
   }
 }
 
-export function jobStatus(name: JobName): JobRun | undefined {
-  return lastRuns.get(name);
-}
-
 export const JOB_NAMES: readonly JobName[] = ["library-sync", "submit-approved"];
 
 /** Settings → Jobs: each job's schedule, last run and next run. */

@@ -5,7 +5,6 @@ import { AssignablePermissionsSchema, RequestLimitsSchema } from "#/lib/schemas/
 import { m } from "#/paraglide/messages.js";
 
 export const USER_ROLES = ["user", "admin"] as const;
-export type UserRole = (typeof USER_ROLES)[number];
 
 /** New account: same fields as the first admin; it gets the default permissions. */
 export const CreateUserSchema = v.object({

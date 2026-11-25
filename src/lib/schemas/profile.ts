@@ -24,7 +24,6 @@ export const ProfileSchema = v.object({
   ...AccountTargetSchema.entries,
   ...ProfileFormSchema.entries,
 });
-export type ProfileInput = v.InferOutput<typeof ProfileSchema>;
 
 const newPassword = v.pipe(
   v.string(),

@@ -54,8 +54,6 @@ const json = (body: unknown) => ({
 /** Brand accent (#F5B800) for embeds. */
 const ACCENT = 0xf5b800;
 
-const combine = (results: SendResult[]): SendResult => results.find((r) => !r.ok) ?? { ok: true };
-
 /** Variables of the webhook template. */
 export function webhookVariables(n: Outgoing): Record<string, string> {
   const d = n.data;
@@ -295,5 +293,3 @@ ${link ? `<tr><td style="padding-top:20px"><a href="${escapeHtml(link)}" style="
     return { ok: false, error: `SMTP: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
-
-export const combineResults = combine;

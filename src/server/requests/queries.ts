@@ -72,8 +72,6 @@ export function activeRequestsByExternalId(
   return byId;
 }
 
-export type RequestListFilter = RequestFilter;
-
 const filterStatuses: Record<Exclude<RequestFilter, "all">, RequestStatus[]> = {
   pending: ["pending"],
   processing: ["approved", "submitted"],
