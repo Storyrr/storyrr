@@ -20,6 +20,7 @@ describe("permissionsOf", () => {
     expect(await permissionsOf(deps, { id: "b" })).toEqual([
       "request_audiobook",
       "request_ebook",
+      "view_requests",
       "create_issues",
     ]);
     await settings.set(userSettings, {
@@ -52,6 +53,7 @@ describe("accountLock", () => {
     const deps = { db, settings };
     const manager = expandPermissions([
       "manage_users",
+      "view_requests",
       "request_audiobook",
       "request_ebook",
       "create_issues",

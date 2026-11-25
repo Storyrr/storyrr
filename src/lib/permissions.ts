@@ -26,7 +26,9 @@ export const ASSIGNABLE_PERMISSIONS = PERMISSIONS.filter(
 );
 export type AssignablePermission = (typeof ASSIGNABLE_PERMISSIONS)[number];
 
+/** Everyone sees everyone's requests by default (decided 2026-11-26), unlike Seerr. */
 export const DEFAULT_PERMISSIONS: readonly AssignablePermission[] = [
+  "view_requests",
   "request_audiobook",
   "request_ebook",
   "create_issues",
