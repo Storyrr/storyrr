@@ -107,6 +107,15 @@ describe("submitRequest", () => {
   });
 });
 
+describe("concurrent submissions", () => {
+  it("sends a request to Chaptarr once when the job and an approval race", async () => {
+    const d = deps();
+    const results = await Promise.all([submitRequest(d, requestId), submitRequest(d, requestId)]);
+    expect(results.toSorted()).toEqual(["skipped", "submitted"]);
+    expect(d.chaptarr.calls("POST", "/api/v1/book/import")).toHaveLength(1);
+  });
+});
+
 describe("checkAvailability", () => {
   it("marks a submitted request available once Audiobookshelf holds its ASIN", async () => {
     const d = deps();

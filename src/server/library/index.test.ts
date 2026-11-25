@@ -7,7 +7,15 @@ import { createJellyfinClient } from "#/server/services/jellyfin/client";
 import { createKomgaClient } from "#/server/services/komga/client";
 import { fakeFetch, json } from "#/server/services/test-utils";
 
-import { libraryStats, ownedTitles, syncJellyfin, syncKavita, syncKomga } from "./index";
+import {
+  libraryStats,
+  ownedAsins,
+  ownedTitles,
+  replaceIndex,
+  syncJellyfin,
+  syncKavita,
+  syncKomga,
+} from "./index";
 
 describe("Kavita library index", () => {
   it("indexes every name of every series and matches titles loosely", async () => {
@@ -66,6 +74,68 @@ describe("Kavita library index", () => {
       counts: new Map([["1", 1]]),
       lastSyncedAt: now,
     });
+  });
+});
+
+describe("a failed sync", () => {
+  it("keeps the index it had while the media server is down", async () => {
+    const db = createDatabase(":memory:");
+    const up = fakeFetch((url) =>
+      url.pathname === "/api/Plugin/authenticate"
+        ? json({ token: "jwt" })
+        : json([{ id: 1, name: "Dune", libraryId: 1 }]),
+    );
+    await syncKavita(db, createKavitaClient({ url: "http://kavita", apiKey: "k" }, up.fetch));
+
+    const down = fakeFetch(() => new Response("Bad Gateway", { status: 502 }));
+    const result = await syncKavita(
+      db,
+      createKavitaClient({ url: "http://kavita", apiKey: "k" }, down.fetch),
+    );
+    expect(result.ok).toBe(false);
+    expect(ownedTitles(db, "ebook", ["Dune"])).toEqual(new Set(["dune"]));
+  });
+});
+
+describe("ownership", () => {
+  it("matches Audiobookshelf by ASIN only, the others by title", () => {
+    const db = createDatabase(":memory:");
+    replaceIndex(db, "audiobookshelf", [
+      {
+        itemId: "abs1",
+        libraryId: "lib",
+        format: "audiobook",
+        externalId: "B07Q44JYLF",
+        // Folder-derived title: wrong, so never trusted.
+        titles: ["T01-Dune"],
+        author: "Benjamin Jungers",
+      },
+      {
+        itemId: "abs2",
+        libraryId: "lib",
+        format: "audiobook",
+        externalId: null,
+        titles: ["Hyperion"],
+        author: "",
+      },
+    ]);
+    replaceIndex(db, "jellyfin", [
+      {
+        itemId: "jf1",
+        libraryId: "lib",
+        format: "audiobook",
+        externalId: null,
+        titles: ["Foundation"],
+        author: "",
+      },
+    ]);
+
+    expect(ownedAsins(db, ["b07q44jylf", "B000000000"])).toEqual(new Set(["B07Q44JYLF"]));
+    expect(ownedTitles(db, "audiobook", ["Hyperion", "Foundation", "T01-Dune"])).toEqual(
+      new Set(["foundation"]),
+    );
+    // Formats stay apart.
+    expect(ownedTitles(db, "ebook", ["Foundation"]).size).toBe(0);
   });
 });
 
