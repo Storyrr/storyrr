@@ -13,7 +13,7 @@ import { formatDuration, formatList, formatNumber, yearOf } from "#/lib/format";
 import { useImageUrl } from "#/lib/images";
 import { canonicalLanguage, formatLanguages, languageName } from "#/lib/languages";
 import type { MediaTag } from "#/lib/media";
-import type { SearchableType } from "#/lib/media-types";
+import { FORMAT_BADGE, type SearchableType } from "#/lib/media-types";
 import { seriesAvailability, type AnnotatedTitle, type SeriesAvailability } from "#/lib/series";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
@@ -149,7 +149,9 @@ export function SeriesView({
           />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{kickers[type]()}</Badge>
+              <Badge className={cn("border-transparent", FORMAT_BADGE[type])}>
+                {kickers[type]()}
+              </Badge>
               <SeriesStatus status={seriesAvailability(items)} />
             </div>
             <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>

@@ -45,6 +45,11 @@
   --chart-4: oklch(0.4 0.06 75);
   --chart-5: oklch(0.3 0.03 80);
   /* Discover genre cards: varied hues, dark enough for cream text in both themes. */
+  /* Format colors (title and series badges), like Seerr's movie / series badges.
+     Kept off the brand amber, which means "available" and primary actions. Same
+     in both themes: white text on a solid color. */
+  --format-audiobook: oklch(0.5 0.2 300);
+  --format-ebook: oklch(0.52 0.12 200);
   --genre-1: oklch(0.45 0.15 300);
   --genre-2: oklch(0.5 0.12 220);
   --genre-3: oklch(0.52 0.13 70);
@@ -127,6 +132,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-format-audiobook: var(--format-audiobook);
+  --color-format-ebook: var(--format-ebook);
   --color-genre-1: var(--genre-1);
   --color-genre-2: var(--genre-2);
   --color-genre-3: var(--genre-3);

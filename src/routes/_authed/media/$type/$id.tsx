@@ -14,10 +14,11 @@ import { TagList } from "#/components/media/tag-list";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
 import { languageName } from "#/lib/languages";
-import { isSearchableType } from "#/lib/media-types";
+import { FORMAT_BADGE, isSearchableType } from "#/lib/media-types";
 import { mediaQuery } from "#/lib/queries/media";
 import { serviceErrorMessage } from "#/lib/service-errors";
 import { can } from "#/lib/permissions";
+import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
 export const Route = createFileRoute("/_authed/media/$type/$id")({
@@ -119,7 +120,7 @@ function MediaPage() {
       </div>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <Badge variant="outline">
+          <Badge className={cn("border-transparent", FORMAT_BADGE[type])}>
             {type === "ebook" ? m.media_type_ebook() : m.media_type_audiobook()}
           </Badge>
           <h1 className="text-2xl font-semibold">{item.title}</h1>

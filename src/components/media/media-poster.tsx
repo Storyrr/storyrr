@@ -3,7 +3,7 @@ import { BanIcon, CheckIcon, ClockIcon, LanguagesIcon, LoaderIcon, MinusIcon } f
 
 import { Cover } from "#/components/media/cover";
 import { formatList, yearOf } from "#/lib/format";
-import type { SearchableType } from "#/lib/media-types";
+import { FORMAT_BADGE, type SearchableType } from "#/lib/media-types";
 import type { MediaAvailability } from "#/lib/request-status";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
@@ -136,7 +136,12 @@ export function MediaPoster({
         ) : null}
       </div>
       {/* After the panel, so they stay on top of it like Seerr's. */}
-      <span className="pointer-events-none absolute top-2 left-2 rounded-full bg-background/80 px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide uppercase backdrop-blur">
+      <span
+        className={cn(
+          "pointer-events-none absolute top-2 left-2 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide uppercase shadow-md",
+          FORMAT_BADGE[type],
+        )}
+      >
         {series ? m.collection_series() : typeLabels[type]()}
       </span>
       <span className="pointer-events-none absolute top-2 right-2">
