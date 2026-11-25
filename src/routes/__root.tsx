@@ -10,7 +10,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { m } from "#/paraglide/messages.js";
-import { getLocale } from "#/paraglide/runtime.js";
+import { baseLocale, getLocale, type Locale } from "#/paraglide/runtime.js";
 
 import appCss from "../styles.css?url";
 
@@ -22,6 +22,11 @@ import { authStateQuery } from "#/lib/queries/auth";
 interface MyRouterContext {
   queryClient: QueryClient;
 }
+
+/** Open Graph locale per UI language. */
+const OG_LOCALES: Record<Locale, string> = { en: "en_US", fr: "fr_FR", de: "de_DE", es: "es_ES" };
+/** Languages with their own link preview card (`public/og-image.<locale>.png`); others use the English one. */
+const OG_IMAGE_LOCALES = new Set<Locale>(["en", "fr"]);
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   // Setup state and the signed-in user, for route guards and the app shell. This is
@@ -35,6 +40,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     const appUrl = match.context.authState?.appUrl;
     const absolute = (path: string) => (appUrl ? new URL(path, appUrl).toString() : path);
     const locale = getLocale();
+    const ogImageLocale = OG_IMAGE_LOCALES.has(locale) ? locale : baseLocale;
     return {
       meta: [
         {
@@ -59,16 +65,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         { property: "og:site_name", content: m.app_name() },
         { property: "og:title", content: m.app_name() },
         { property: "og:description", content: m.meta_description() },
-        { property: "og:locale", content: locale === "fr" ? "fr_FR" : "en_US" },
+        { property: "og:locale", content: OG_LOCALES[locale] },
         ...(appUrl ? [{ property: "og:url", content: appUrl }] : []),
-        { property: "og:image", content: absolute(`/og-image.${locale}.png`) },
+        { property: "og:image", content: absolute(`/og-image.${ogImageLocale}.png`) },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
         { property: "og:image:alt", content: m.meta_image_alt() },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: m.app_name() },
         { name: "twitter:description", content: m.meta_description() },
-        { name: "twitter:image", content: absolute(`/og-image.${locale}.png`) },
+        { name: "twitter:image", content: absolute(`/og-image.${ogImageLocale}.png`) },
       ],
       links: [
         {

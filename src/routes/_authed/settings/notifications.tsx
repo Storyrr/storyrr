@@ -22,7 +22,12 @@ export const Route = createFileRoute("/_authed/settings/notifications")({
   component: NotificationsLayout,
 });
 
-const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
+const languageLabels: Record<Locale, () => string> = {
+  en: m.language_en,
+  fr: m.language_fr,
+  de: m.language_de,
+  es: m.language_es,
+};
 const TABS = NOTIFICATION_AGENTS.map((agent) => ({
   to: `/settings/notifications/${agent}`,
   label: AGENT_DEFINITIONS[agent].label,

@@ -34,7 +34,12 @@ import {
 } from "#/paraglide/runtime.js";
 
 /** Each language in its own language, whatever the current one. */
-const languageLabels: Record<Locale, () => string> = { en: m.language_en, fr: m.language_fr };
+const languageLabels: Record<Locale, () => string> = {
+  en: m.language_en,
+  fr: m.language_fr,
+  de: m.language_de,
+  es: m.language_es,
+};
 
 type ProfileForm = v.InferOutput<typeof ProfileFormSchema>;
 
