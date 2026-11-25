@@ -7,10 +7,10 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 6066",
     "build": "vite build",
-    "start": "node .output/server/index.mjs",
-    "preview": "vite preview",
+    "start": "PORT=${PORT:-6066} node .output/server/index.mjs",
+    "preview": "vite preview --port 6066",
     "i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy cookie preferredLanguage baseLocale --silent",
     "check": "bun run i18n:compile && bun run format:check && bun run lint && bun run test",
     "format": "oxfmt",

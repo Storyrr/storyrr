@@ -10,7 +10,7 @@ const valid = {
 
 describe("parseEnv", () => {
   it("accepts a minimal valid environment and applies defaults", () => {
-    expect(parseEnv(valid)).toEqual({ ...valid, NODE_ENV: "development", PORT: 3000 });
+    expect(parseEnv(valid)).toEqual({ ...valid, NODE_ENV: "development", PORT: 6066 });
   });
 
   it("converts PORT to a number", () => {
@@ -40,7 +40,7 @@ describe("parseEnv", () => {
     expect(parseEnv({})).toEqual({
       DATABASE_URL: "database/dev.db",
       NODE_ENV: "development",
-      PORT: 3000,
+      PORT: 6066,
     });
   });
 

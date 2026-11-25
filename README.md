@@ -25,12 +25,12 @@ services:
     image: ghcr.io/storyrr/storyrr:latest
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "6066:6066"
     volumes:
       - ./data:/data
 ```
 
-Then open `http://<server-ip>:3000`: the first visit runs the setup wizard, which creates the administrator account and asks for the application URL, the address your users open Storyrr at (for example a Cloudflare Tunnel's): links in emails and notifications use it. Storyrr keeps working at every address it's reached at, so you can use it on your local network while friends use the tunnel. Connect Chaptarr, your media servers and a Hardcover token in Settings afterwards. There is no public sign-up; the administrator creates or imports the other accounts.
+Then open `http://<server-ip>:6066`: the first visit runs the setup wizard, which creates the administrator account and asks for the application URL, the address your users open Storyrr at (for example a Cloudflare Tunnel's): links in emails and notifications use it. Storyrr keeps working at every address it's reached at, so you can use it on your local network while friends use the tunnel. Connect Chaptarr, your media servers and a Hardcover token in Settings afterwards. There is no public sign-up; the administrator creates or imports the other accounts.
 
 The SQLite database lives in `/data` (keep it on a volume); migrations run automatically at startup. `GET /api/health` reports the app version and database state, and the image uses it as its healthcheck.
 
@@ -41,7 +41,7 @@ The SQLite database lives in `/data` (keep it on a volume); migrations run autom
 | `BETTER_AUTH_URL`    | no       |                    | The application URL; overrides the one set in Settings → General.                                                          |
 | `BETTER_AUTH_SECRET` | no       | generated          | At least 32 random characters. Signs sessions and encrypts stored service keys; generated in `/data/auth-secret` if unset. |
 | `DATABASE_URL`       | no       | `/data/storyrr.db` | SQLite database file (outside Docker: `database/dev.db`).                                                                  |
-| `PORT`               | no       | `3000`             | HTTP port inside the container.                                                                                            |
+| `PORT`               | no       | `6066`             | HTTP port inside the container.                                                                                            |
 
 Behind a reverse proxy or Cloudflare Tunnel, the proxy must pass the original `Host` (or `X-Forwarded-Host`) and `X-Forwarded-Proto`; cookies are marked secure on HTTPS requests. Back up `/data` as a whole: `auth-secret` is needed to read the service keys stored in the database.
 
@@ -51,7 +51,7 @@ Requirements: [Node.js](https://nodejs.org/) 22.12+ (runs the app) and [Bun](htt
 
 ```bash
 bun install
-bun run dev   # http://localhost:3000; the database goes to database/dev.db
+bun run dev   # http://localhost:6066; the database goes to database/dev.db
 ```
 
 | Script                | What it does                                                         |

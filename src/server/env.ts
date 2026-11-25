@@ -31,7 +31,7 @@ const EnvSchema = v.object({
   ),
   PORT: v.optional(
     v.pipe(v.string(), v.toNumber(), v.integer(), v.minValue(1), v.maxValue(65535)),
-    "3000",
+    "6066",
   ),
 });
 
