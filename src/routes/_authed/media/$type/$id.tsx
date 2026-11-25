@@ -9,6 +9,7 @@ import { RelatedSeries } from "#/components/media/related-series";
 import { ReportIssueDialog } from "#/components/issues/report-issue-dialog";
 import { BlockButton } from "#/components/media/block-button";
 import { ManageTitle } from "#/components/media/manage-title";
+import { Rating } from "#/components/media/rating";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { TagList } from "#/components/media/tag-list";
 import { Badge } from "#/components/ui/badge";
@@ -150,6 +151,7 @@ function MediaPage() {
               {m.media_narrated_by({ narrators: formatList(item.narrators) })}
             </p>
           ) : null}
+          {item.rating ? <Rating rating={item.rating} type={type} /> : null}
           <div className="flex flex-wrap gap-1">
             {item.series.map((series) => {
               const label = series.position

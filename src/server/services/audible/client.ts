@@ -4,6 +4,7 @@ import * as v from "valibot";
 import type {
   MediaCollection,
   MediaDetails,
+  MediaRating,
   MediaSummary,
   MediaTag,
   MediaTagPage,
@@ -17,7 +18,7 @@ import { isCollectionPosition, seriesTags } from "#/lib/series";
 import { htmlToText } from "#/server/services/text";
 
 const RESPONSE_GROUPS =
-  "contributors,media,product_attrs,product_desc,product_extended_attrs,series";
+  "contributors,media,product_attrs,product_desc,product_extended_attrs,rating,series";
 
 const ProductSchema = v.object({
   asin: v.string(),
@@ -42,6 +43,14 @@ const ProductSchema = v.object({
   product_images: v.optional(v.record(v.string(), v.string()), {}),
   publisher_summary: v.optional(v.string()),
   merchandising_summary: v.optional(v.string()),
+  /** Listeners' ratings (`rating` group), verified on api.audible.fr on 2026-11-25. */
+  rating: v.optional(
+    v.object({
+      overall_distribution: v.optional(
+        v.object({ average_rating: v.number(), num_ratings: v.number() }),
+      ),
+    }),
+  ),
   /** Genre paths ("Science fiction › Space opera"), verified on api.audible.fr on 2026-11-24. */
   category_ladders: v.optional(
     v.array(v.object({ ladder: v.array(v.object({ id: v.string(), name: v.string() })) })),
@@ -363,5 +372,14 @@ function toSummary(product: Product): MediaSummary | null {
     language: product.language,
     languages: product.language ? [canonicalLanguage(product.language)] : undefined,
     durationMinutes: product.runtime_length_min,
+    rating: productRating(product),
   };
+}
+
+/** The overall rating, when anyone rated it (unrated titles report 0 of 0). */
+function productRating(product: Product): MediaRating | undefined {
+  const overall = product.rating?.overall_distribution;
+  return overall && overall.num_ratings > 0
+    ? { value: overall.average_rating, count: overall.num_ratings }
+    : undefined;
 }

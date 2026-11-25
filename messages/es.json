@@ -552,6 +552,8 @@
   "collection_select_all": "Seleccionar todo",
   "collection_request_count": "Solicitar ({count})",
   "media_by_prefix": "De",
+  "media_rating_value": "{value}/5",
+  "media_rating_count": "({count} valoraciones en {source})",
   "settings_tab_jobs": "Tareas y registros",
   "jobs_title": "Tareas",
   "jobs_description": "Lo que Storyrr hace en segundo plano. Las horas son las del servidor.",

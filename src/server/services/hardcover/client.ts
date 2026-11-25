@@ -4,6 +4,7 @@ import * as v from "valibot";
 import type {
   MediaCollection,
   MediaDetails,
+  MediaRating,
   MediaSummary,
   MediaTag,
   MediaTagPage,
@@ -91,6 +92,8 @@ const BookSchema = v.looseObject({
   description: v.optional(v.nullable(v.string())),
   release_date: v.optional(v.nullable(v.string())),
   pages: v.optional(v.nullable(v.number())),
+  rating: v.optional(v.nullable(v.number())),
+  ratings_count: v.optional(v.nullable(v.number())),
   image: v.optional(v.nullable(v.looseObject({ url: v.optional(v.nullable(v.string())) }))),
   contributions: v.optional(
     v.array(
@@ -226,7 +229,7 @@ const TRENDING_QUERY = `query StoryrrTrending($limit: Int!) {
 }`;
 
 // Card fields for a list of books (trending, series, author), languages included.
-const BOOK_CARD = `id title subtitle release_date pages
+const BOOK_CARD = `id title subtitle release_date pages rating ratings_count
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
@@ -421,7 +424,7 @@ const TagDataSchema = v.object({
 
 const BOOK_QUERY = `query StoryrrBook($id: Int!) {
   books_by_pk(id: $id) {
-    id title subtitle description release_date pages cached_tags
+    id title subtitle description release_date pages rating ratings_count cached_tags
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
@@ -758,6 +761,13 @@ function bookTags(cached: HardcoverBook["cached_tags"]): MediaTag[] {
   );
 }
 
+/** Readers' average, when anyone rated it. */
+function bookRating(book: HardcoverBook): MediaRating | undefined {
+  return book.rating && book.ratings_count
+    ? { value: book.rating, count: book.ratings_count }
+    : undefined;
+}
+
 function toDetails(book: HardcoverBook): MediaDetails {
   const series = book.featured_book_series;
   const edition = book.default_ebook_edition;
@@ -778,6 +788,7 @@ function toDetails(book: HardcoverBook): MediaDetails {
     coverUrl: book.image?.url ?? undefined,
     language: edition?.language?.language,
     pages: book.pages ?? undefined,
+    rating: bookRating(book),
     languages: editionLanguages(book.editions),
     description: book.description ? htmlToText(book.description) : undefined,
   };

@@ -1,4 +1,4 @@
-import type { MediaSummary, MediaTag, SeriesSummary } from "#/lib/media";
+import type { MediaRating, MediaSummary, MediaTag, SeriesSummary } from "#/lib/media";
 import type { MediaAvailability } from "#/lib/request-status";
 
 /**
@@ -147,4 +147,18 @@ export function seriesTags(perVolume: readonly (readonly MediaTag[])[], max = 10
     .toSorted((a, b) => b.volumes - a.volumes)
     .slice(0, max)
     .map((entry) => entry.tag);
+}
+
+/** A series' rating: its volumes' averages weighted by how many rated each. */
+export function seriesRating(
+  items: readonly Pick<MediaSummary, "rating">[],
+): MediaRating | undefined {
+  let count = 0;
+  let total = 0;
+  for (const { rating } of items) {
+    if (!rating) continue;
+    count += rating.count;
+    total += rating.value * rating.count;
+  }
+  return count > 0 ? { value: total / count, count } : undefined;
 }

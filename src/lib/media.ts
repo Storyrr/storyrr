@@ -28,7 +28,11 @@ export type MediaSummary = {
    * edition without one). Undefined when the provider didn't say.
    */
   languages?: (string | null)[];
+  /** Readers' average out of 5 and how many rated it (left out when nobody did). */
+  rating?: MediaRating;
 };
+
+export type MediaRating = { value: number; count: number };
 
 /** A genre or keyword of a title (Audible category, Hardcover genre or mood), browsable. */
 export type MediaTag = { id: string; name: string };

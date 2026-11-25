@@ -552,6 +552,8 @@
   "collection_select_all": "Alle auswählen",
   "collection_request_count": "{count} anfordern",
   "media_by_prefix": "Von",
+  "media_rating_value": "{value}/5",
+  "media_rating_count": "({count} Bewertungen auf {source})",
   "settings_tab_jobs": "Aufgaben & Protokolle",
   "jobs_title": "Aufgaben",
   "jobs_description": "Was Storyrr im Hintergrund erledigt. Die Zeiten sind die des Servers.",

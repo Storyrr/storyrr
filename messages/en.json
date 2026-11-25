@@ -552,6 +552,8 @@
   "collection_select_all": "Select all",
   "collection_request_count": "Request {count}",
   "media_by_prefix": "By",
+  "media_rating_value": "{value}/5",
+  "media_rating_count": "({count} ratings on {source})",
   "settings_tab_jobs": "Jobs & logs",
   "jobs_title": "Jobs",
   "jobs_description": "What Storyrr does in the background. Times are the server's.",

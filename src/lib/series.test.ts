@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  seriesRating,
   groupBySeries,
   isCollectionPosition,
   seriesAvailability,
@@ -134,5 +135,21 @@ describe("seriesTags", () => {
         [],
       ]).map((t) => t.id),
     ).toEqual(["fantasy", "dark"]);
+  });
+});
+
+describe("seriesRating", () => {
+  it("weights each volume by its number of ratings", () => {
+    expect(
+      seriesRating([
+        { rating: { value: 5, count: 30 } },
+        { rating: { value: 3, count: 10 } },
+        { rating: undefined },
+      ]),
+    ).toEqual({ value: 4.5, count: 40 });
+  });
+
+  it("is undefined when no volume was rated", () => {
+    expect(seriesRating([{ rating: undefined }])).toBeUndefined();
   });
 });

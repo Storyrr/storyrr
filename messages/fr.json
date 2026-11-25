@@ -552,6 +552,8 @@
   "collection_select_all": "Tout sélectionner",
   "collection_request_count": "Demander ({count})",
   "media_by_prefix": "De",
+  "media_rating_value": "{value}/5",
+  "media_rating_count": "({count} notes sur {source})",
   "settings_tab_jobs": "Tâches et journaux",
   "jobs_title": "Tâches",
   "jobs_description": "Ce que Storyrr fait en arrière-plan. Les heures sont celles du serveur.",

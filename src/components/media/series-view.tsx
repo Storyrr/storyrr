@@ -5,6 +5,7 @@ import { AvailabilityBadge } from "#/components/media/availability-badge";
 import { Cover } from "#/components/media/cover";
 import { RelatedSeries } from "#/components/media/related-series";
 import { RequestDialog } from "#/components/media/request-dialog";
+import { Rating } from "#/components/media/rating";
 import { RequestSeriesDialog } from "#/components/media/request-series-dialog";
 import { SameAuthorRow } from "#/components/media/same-author-row";
 import { TagList } from "#/components/media/tag-list";
@@ -15,7 +16,12 @@ import { useImageUrl } from "#/lib/images";
 import { canonicalLanguage, formatLanguages, languageName } from "#/lib/languages";
 import type { MediaTag } from "#/lib/media";
 import { FORMAT_BADGE, type SearchableType } from "#/lib/media-types";
-import { seriesAvailability, type AnnotatedTitle, type SeriesAvailability } from "#/lib/series";
+import {
+  seriesAvailability,
+  seriesRating,
+  type AnnotatedTitle,
+  type SeriesAvailability,
+} from "#/lib/series";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
@@ -114,6 +120,7 @@ export function SeriesView({
     Boolean(author.id),
   );
   const years = yearSpan(items);
+  const rating = seriesRating(items);
   const allRefused = items.length > 0 && items.every((item) => item.accepted === false);
   const narrators = [...new Set(items.flatMap((item) => item.narrators))];
   const publishers = [...new Set(items.flatMap((item) => item.publisher ?? []))];
@@ -185,6 +192,7 @@ export function SeriesView({
                 ))}
               </p>
             ) : null}
+            {rating ? <Rating rating={rating} type={type} /> : null}
             {tags.length > 0 ? (
               <div className="pt-2">
                 <TagList type={type} tags={tags} />
