@@ -368,3 +368,47 @@ describe("Hardcover series", () => {
     ]);
   });
 });
+
+const seriesBook = (id: number, title: string) => ({ id, title, contributions: [], editions: [] });
+
+describe("Hardcover series page", () => {
+  it("keeps box sets apart from the volumes, flagged or not", async () => {
+    const { fetch } = fakeFetch(() =>
+      json({
+        data: {
+          series_by_pk: {
+            id: 1015,
+            name: "The Hunger Games",
+            book_series: [
+              // Hardcover leaves this one unflagged: its range of volumes gives it away.
+              {
+                position: 0,
+                details: "0-3",
+                book: seriesBook(10, "Hunger Games 4-Book Collection"),
+              },
+              { position: 1, details: "1", book: seriesBook(11, "The Hunger Games") },
+              { position: 2, details: "2", book: seriesBook(12, "Catching Fire") },
+            ],
+            compilations: [
+              { position: null, details: "1-3", book: seriesBook(20, "The Hunger Games Trilogy") },
+              {
+                position: 0,
+                details: "0-3",
+                book: seriesBook(10, "Hunger Games 4-Book Collection"),
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const result = await createHardcoverClient({ token: "abc", fetch }).series("1015");
+    expect(result.ok && result.value.items.map((item) => item.title)).toEqual([
+      "The Hunger Games",
+      "Catching Fire",
+    ]);
+    expect(result.ok && result.value.collections?.map((item) => item.title)).toEqual([
+      "Hunger Games 4-Book Collection",
+      "The Hunger Games Trilogy",
+    ]);
+  });
+});

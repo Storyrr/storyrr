@@ -13,6 +13,7 @@ import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/serve
 import { audibleHost, type AudibleRegion } from "#/lib/audible-regions";
 import { EXPLORE_PAGE_SIZE, type AudiobookFilters, type AudiobookSort } from "#/lib/explore";
 import { canonicalLanguage } from "#/lib/languages";
+import { isCollectionPosition } from "#/lib/series";
 import { htmlToText } from "#/server/services/text";
 
 const RESPONSE_GROUPS =
@@ -176,10 +177,14 @@ export function createAudibleClient({ fetch, region }: { fetch: FetchFn; region:
         .toSorted((a, b) => Number(a.sort ?? 0) - Number(b.sort ?? 0));
       const items = await byAsins(children.map((r) => r.asin));
       if (!items.ok) return items;
+      // Box sets ("Books 1-3") are children too: kept apart from the volumes.
+      const isCollection = (item: MediaSummary) =>
+        isCollectionPosition(item.series.find((s) => s.id === asin)?.position);
       return ok({
         name: product.title,
         description: product.publisher_summary ? htmlToText(product.publisher_summary) : undefined,
-        items: items.value,
+        items: items.value.filter((item) => !isCollection(item)),
+        collections: items.value.filter(isCollection),
       });
     },
 

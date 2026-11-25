@@ -48,6 +48,8 @@ export type MediaCollection = {
   description?: string;
   imageUrl?: string;
   items: MediaSummary[];
+  /** Series only: box sets and omnibuses of several volumes, kept apart from the volumes. */
+  collections?: MediaSummary[];
 };
 
 /** A series found by search (eBooks: Hardcover), for its card. */

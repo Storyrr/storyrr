@@ -190,13 +190,12 @@ export const getSeries = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const result = await mediaSources[data.type].series(services, data.id);
     if (!result.ok) return { ok: false as const, error: result.error };
-    const { name, description, imageUrl } = result.value;
-    return {
-      ...(await annotate(data.type, result.value.items, false)),
-      name,
-      description,
-      imageUrl,
-    };
+    const { name, description, imageUrl, items, collections = [] } = result.value;
+    const [volumes, sets] = await Promise.all([
+      annotate(data.type, items, false),
+      annotate(data.type, collections, false),
+    ]);
+    return { ...volumes, collections: sets.results, name, description, imageUrl };
   });
 
 /** Each series with Chaptarr's language acceptance (from its first books). */

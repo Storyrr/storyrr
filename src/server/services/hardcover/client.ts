@@ -10,6 +10,7 @@ import type {
   SeriesSummary,
 } from "#/lib/media";
 import { titleKey } from "#/lib/match";
+import { isCollectionPosition } from "#/lib/series";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
 import { EXPLORE_PAGE_SIZE, type BookFilters, type BookSort } from "#/lib/explore";
@@ -143,6 +144,16 @@ const SeriesDataSchema = v.object({
         ),
         [],
       ),
+      compilations: v.optional(
+        v.array(
+          v.looseObject({
+            position: v.optional(v.nullable(v.number())),
+            details: v.optional(v.nullable(v.string())),
+            book: v.nullable(BookSchema),
+          }),
+        ),
+        [],
+      ),
     }),
   ),
 });
@@ -224,7 +235,10 @@ const BOOKS_QUERY = `query StoryrrBooks($ids: [Int!]!) {
   books(where: {id: {_in: $ids}}) { ${BOOK_CARD} }
 }`;
 
-// Main books only (no compilations or duplicates), one per position, the most read first.
+const SERIES_COLLECTIONS = 12;
+
+// Main books (no duplicates), one per position, the most read first; then the compilations
+// (box sets, omnibuses), the most read first.
 const SERIES_QUERY = `query StoryrrSeries($id: Int!) {
   series_by_pk(id: $id) {
     id name description
@@ -232,6 +246,11 @@ const SERIES_QUERY = `query StoryrrSeries($id: Int!) {
       where: {compilation: {_eq: false}, book: {canonical_id: {_is_null: true}}}
       distinct_on: position
       order_by: [{position: asc}, {book: {users_count: desc}}]
+    ) { position details book { ${BOOK_CARD} } }
+    compilations: book_series(
+      where: {compilation: {_eq: true}, book: {canonical_id: {_is_null: true}}}
+      order_by: {book: {users_count: desc}}
+      limit: ${SERIES_COLLECTIONS}
     ) { position details book { ${BOOK_CARD} } }
   }
 }`;
@@ -555,10 +574,8 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       if (!result.ok) return result;
       const series = result.value.series_by_pk;
       if (!series) return fail("not_found", `No Hardcover series ${id}`);
-      return ok({
-        name: series.name,
-        description: series.description ? htmlToText(series.description) : undefined,
-        items: series.book_series.flatMap(({ book, details, position }) => {
+      const entries = (list: typeof series.book_series) =>
+        list.flatMap(({ book, details, position }) => {
           if (!book?.title) return [];
           const { description: _description, ...summary } = toDetails(book);
           // The position in *this* series (a book's featured series may be another one).
@@ -568,7 +585,17 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
               series: [{ name: series.name, id, position: details ?? positionText(position) }],
             },
           ];
-        }),
+        });
+      const main = entries(series.book_series);
+      // Unflagged box sets ("0-3") join the flagged ones.
+      const collections = [...main.filter(isCollection), ...entries(series.compilations)];
+      return ok({
+        name: series.name,
+        description: series.description ? htmlToText(series.description) : undefined,
+        items: main.filter((item) => !isCollection(item)),
+        collections: collections.filter(
+          (item, index) => collections.findIndex((c) => c.externalId === item.externalId) === index,
+        ),
       });
     },
 
@@ -673,6 +700,9 @@ function featuredSeries(
     },
   ];
 }
+
+/** A box set or omnibus listed among a series' volumes (its position is a range). */
+const isCollection = (item: MediaSummary) => isCollectionPosition(item.series[0]?.position);
 
 const positionText = (position: number | null | undefined) =>
   position === null || position === undefined ? undefined : String(position);

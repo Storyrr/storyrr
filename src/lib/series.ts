@@ -1,6 +1,15 @@
 import type { MediaSummary, SeriesSummary } from "#/lib/media";
 import type { MediaAvailability } from "#/lib/request-status";
 
+/**
+ * Whether a series position covers several volumes ("1-3", "0, 3", "1 & 2"): a box
+ * set or omnibus, not a volume. Hardcover's own compilation flag is unreliable
+ * (checked on 2026-11-25: a 4-book collection unflagged, a first volume flagged).
+ */
+export function isCollectionPosition(position: string | undefined): boolean {
+  return position !== undefined && /\d\s*[-–—,&+]\s*\d/u.test(position);
+}
+
 /** A search result with its status, as the media server functions return it. */
 export type AnnotatedTitle = MediaSummary & {
   availability: MediaAvailability;

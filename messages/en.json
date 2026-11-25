@@ -705,5 +705,8 @@
   "series_column_title": "Title",
   "series_column_status": "Status",
   "series_select_volumes": "Select volumes",
-  "request_default_option": "{label} (default)"
+  "request_default_option": "{label} (default)",
+  "series_collections": "Box sets and collections",
+  "series_collections_description": "Several volumes in one book: not counted above, nor in Request the series.",
+  "series_collection_volumes": "Volumes {position}"
 }

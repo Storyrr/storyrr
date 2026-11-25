@@ -67,6 +67,7 @@ export function SeriesView({
   name,
   description,
   items,
+  collections,
   acceptedLanguages,
   canRequest,
 }: {
@@ -75,6 +76,8 @@ export function SeriesView({
   name: string;
   description?: string;
   items: AnnotatedTitle[];
+  /** Box sets and omnibuses: listed apart, out of the counts and of Request the series. */
+  collections: AnnotatedTitle[];
   acceptedLanguages: readonly string[] | null;
   canRequest: boolean;
 }) {
@@ -186,6 +189,28 @@ export function SeriesView({
               </ol>
             )}
           </section>
+          {collections.length > 0 ? (
+            <section className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <h2 className="font-heading text-xl font-semibold">{m.series_collections()}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {m.series_collections_description()}
+                </p>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {collections.map((item) => (
+                  <VolumeRow
+                    key={item.externalId}
+                    type={type}
+                    item={item}
+                    acceptedLanguages={acceptedLanguages}
+                    canRequest={canRequest}
+                    collection
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
         <aside>
           <Card size="sm">
@@ -214,11 +239,14 @@ function VolumeRow({
   item,
   acceptedLanguages,
   canRequest,
+  collection = false,
 }: {
   type: SearchableType;
   item: AnnotatedTitle;
   acceptedLanguages: readonly string[] | null;
   canRequest: boolean;
+  /** A box set: its position is a range of volumes. */
+  collection?: boolean;
 }) {
   const position = item.series[0]?.position;
   const refused = item.availability === "none" && item.accepted === false;
@@ -251,7 +279,9 @@ function VolumeRow({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {position ? (
           <span className="text-xs font-medium text-muted-foreground">
-            {m.collection_volume({ position })}
+            {collection
+              ? m.series_collection_volumes({ position })
+              : m.collection_volume({ position })}
           </span>
         ) : null}
         <Link

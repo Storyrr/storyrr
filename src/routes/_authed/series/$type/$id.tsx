@@ -51,6 +51,7 @@ function SeriesContent({
       name={data.name}
       description={data.description}
       items={data.results}
+      collections={data.collections}
       acceptedLanguages={data.acceptedLanguages}
       canRequest={canRequest}
     />

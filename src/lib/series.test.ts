@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { groupBySeries, seriesAvailability, type AnnotatedTitle } from "./series";
+import {
+  groupBySeries,
+  isCollectionPosition,
+  seriesAvailability,
+  type AnnotatedTitle,
+} from "./series";
 
 const title = (
   id: string,
@@ -94,5 +99,14 @@ describe("seriesAvailability", () => {
     );
     expect(seriesAvailability([{ availability: "none" }])).toBe("none");
     expect(seriesAvailability([])).toBe("none");
+  });
+});
+
+describe("isCollectionPosition", () => {
+  it("tells box sets (a range of volumes) from volumes", () => {
+    for (const position of ["0-3", "1-3", "0, 3", "1 & 2", "1–5"])
+      expect(isCollectionPosition(position)).toBe(true);
+    for (const position of ["1", "0.5", "12", "Book 3", undefined])
+      expect(isCollectionPosition(position)).toBe(false);
   });
 });
