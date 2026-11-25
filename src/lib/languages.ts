@@ -3,6 +3,8 @@ import { getLocale } from "#/paraglide/runtime.js";
 
 /** Bibliographic (ISO 639-2/B) codes → terminology (639-2/T, also 639-3) codes, which Intl understands. */
 const B_TO_T: Record<string, string> = {
+  // Hardcover's code for Brazilian Portuguese (not ISO 639): Portuguese for Chaptarr's filter.
+  pob: "por",
   alb: "sqi",
   arm: "hye",
   baq: "eus",

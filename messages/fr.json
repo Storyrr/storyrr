@@ -708,5 +708,6 @@
   "request_default_option": "{label} (par défaut)",
   "series_collections": "Coffrets et intégrales",
   "series_collections_description": "Plusieurs tomes en un seul livre : ni comptés ci-dessus, ni inclus dans « Demander la série ».",
-  "series_collection_volumes": "Tomes {position}"
+  "series_collection_volumes": "Tomes {position}",
+  "series_languages_more": "{languages} et {count} autres"
 }

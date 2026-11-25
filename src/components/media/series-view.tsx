@@ -10,11 +10,12 @@ import { Badge } from "#/components/ui/badge";
 import { Card, CardContent } from "#/components/ui/card";
 import { formatDuration, formatList, formatNumber, yearOf } from "#/lib/format";
 import { useImageUrl } from "#/lib/images";
-import { formatLanguages } from "#/lib/languages";
+import { canonicalLanguage, formatLanguages, languageName } from "#/lib/languages";
 import type { SearchableType } from "#/lib/media-types";
 import { seriesAvailability, type AnnotatedTitle, type SeriesAvailability } from "#/lib/series";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
+import { getLocale } from "#/paraglide/runtime.js";
 
 const kickers: Record<SearchableType, () => string> = {
   audiobook: m.series_kicker_audiobook,
@@ -45,6 +46,24 @@ function seriesAuthors(items: readonly AnnotatedTitle[]) {
   const credited = items.filter((item) => item.authors.length > 0).length;
   const main = [...counts].filter(([, entry]) => entry.volumes >= credited * 0.75);
   return main.map(([name, entry]) => ({ name, id: entry.id }));
+}
+
+const SHOWN_LANGUAGES = 4;
+
+/**
+ * A long list of languages cut short (a famous series exists in dozens): those
+ * Chaptarr accepts and the reader's own first, then "and N more".
+ */
+function shortLanguageList(languages: readonly string[], accepted: readonly string[] | null) {
+  const mine = canonicalLanguage(getLocale());
+  const rank = (code: string) => (accepted?.includes(code) ? 0 : code === mine ? 1 : 2);
+  const sorted = languages.toSorted((a, b) => rank(a) - rank(b));
+  if (sorted.length <= SHOWN_LANGUAGES + 1) return formatLanguages(sorted);
+  return m.series_languages_more({
+    // A plain list ("French, English"): the message adds the "and".
+    languages: sorted.slice(0, SHOWN_LANGUAGES).map(languageName).join(", "),
+    count: sorted.length - SHOWN_LANGUAGES,
+  });
 }
 
 /** "2019 – 2025", or one year. */
@@ -98,7 +117,10 @@ export function SeriesView({
     [m.series_fact_published(), years],
     [m.series_fact_narrators(), narrators.length > 0 ? formatList(narrators.slice(0, 4)) : null],
     [m.media_publisher(), publishers.length > 0 ? formatList(publishers.slice(0, 3)) : null],
-    [m.media_languages(), languages.length > 0 ? formatLanguages(languages) : null],
+    [
+      m.media_languages(),
+      languages.length > 0 ? shortLanguageList(languages, acceptedLanguages) : null,
+    ],
     [m.media_duration(), minutes > 0 ? formatDuration(minutes) : null],
     [m.media_pages(), pages > 0 ? formatNumber(pages) : null],
   ];
