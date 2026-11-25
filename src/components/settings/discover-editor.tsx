@@ -139,7 +139,10 @@ export function DiscoverEditor() {
         }}
         className="flex max-w-2xl flex-col gap-4 rounded-xl border border-dashed p-4"
       >
-        <h3 className="text-sm font-medium">{m.discover_add_row()}</h3>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm font-medium">{m.discover_add_row()}</h3>
+          <p className="text-sm text-muted-foreground">{m.discover_add_row_description()}</p>
+        </div>
         <FieldGroup className="grid gap-4 sm:grid-cols-3">
           <form.Field name="type">
             {(field) => (
@@ -158,6 +161,7 @@ export function DiscoverEditor() {
             {(field) => (
               <TextField
                 label={m.discover_row_title()}
+                placeholder={m.discover_row_title_placeholder()}
                 name={field.name}
                 value={field.state.value}
                 onChange={field.handleChange}
@@ -170,6 +174,7 @@ export function DiscoverEditor() {
             {(field) => (
               <TextField
                 label={m.discover_row_query()}
+                placeholder={m.discover_row_query_placeholder()}
                 name={field.name}
                 value={field.state.value}
                 onChange={field.handleChange}
