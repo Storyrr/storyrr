@@ -10,6 +10,7 @@ import type {
   SeriesSummary,
 } from "#/lib/media";
 import { titleKey } from "#/lib/match";
+import { hardcoverTagName } from "#/lib/hardcover-tags";
 import { isCollectionPosition, seriesTags } from "#/lib/series";
 import { fail, ok, requestJson, type FetchFn, type ServiceResult } from "#/server/services/result";
 
@@ -651,7 +652,9 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
     async genres(): Promise<ServiceResult<MediaTag[]>> {
       const result = await graphql(GENRES_QUERY, {}, GenresDataSchema);
       if (!result.ok) return result;
-      return ok(result.value.tags.map((tag) => ({ id: tag.slug, name: tag.tag })));
+      return ok(
+        result.value.tags.map((tag) => ({ id: tag.slug, name: hardcoverTagName(tag.tag) })),
+      );
     },
 
     /** A genre's or mood's books, the most read first, page by page. */
@@ -665,7 +668,7 @@ export function createHardcoverClient({ token, fetch }: { token: string; fetch: 
       const [tag] = result.value.tags;
       if (!tag) return fail("not_found", `No Hardcover tag ${slug}`);
       return ok({
-        name: tag.tag,
+        name: hardcoverTagName(tag.tag),
         items: result.value.books.flatMap((book) => {
           if (!book.title) return [];
           const { description: _description, ...summary } = toDetails(book);
@@ -747,11 +750,11 @@ function bookTags(cached: HardcoverBook["cached_tags"]): MediaTag[] {
       .filter((tag) => (tag.spoilerRatio ?? 0) < 0.5)
       .toSorted((a, b) => b.count - a.count)
       .slice(0, count)
-      // Readers type some in lowercase ("challenging").
-      .map((tag) => ({
-        id: tag.tagSlug,
-        name: tag.tag.charAt(0).toUpperCase() + tag.tag.slice(1),
-      })),
+      .map((tag) => {
+        const name = hardcoverTagName(tag.tag);
+        // Readers type some in lowercase ("challenging").
+        return { id: tag.tagSlug, name: name.charAt(0).toUpperCase() + name.slice(1) };
+      }),
   );
 }
 
