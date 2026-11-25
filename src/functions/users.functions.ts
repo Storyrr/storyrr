@@ -17,7 +17,12 @@ import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
 import { banAccount, removeAccount, unbanAccount, updateAccount } from "#/server/auth/accounts";
 import { requireAdmin, requirePermission } from "#/server/auth/middleware";
-import { linkAccount, linkedUserId, placeholderEmail } from "#/server/auth/media-server";
+import {
+  emailInUse,
+  linkAccount,
+  linkedUserId,
+  placeholderEmail,
+} from "#/server/auth/media-server";
 import { services } from "#/server/services";
 import { fail, ok } from "#/server/services/result";
 import { db } from "#/server/db";
@@ -124,7 +129,11 @@ export const setUserLimits = createServerFn({ method: "POST" })
 
 const ServerSchema = v.object({ server: v.picklist(MEDIA_SERVERS) });
 
-/** A media server's accounts, with whether each already has a Storyrr account. User managers. */
+/**
+ * A media server's accounts, with whether each already has a Storyrr account,
+ * and whether its email is already another account's (not importable: that
+ * user links it in their settings). User managers.
+ */
 export const getImportableUsers = createServerFn({ method: "GET" })
   .middleware([requireManageUsers])
   .validator(ServerSchema)
@@ -136,13 +145,16 @@ export const getImportableUsers = createServerFn({ method: "GET" })
       users: accounts.value.map((a) => ({
         ...a,
         imported: linkedUserId(db, data.server, a.key) !== null,
+        emailTaken: a.email !== null && emailInUse(db, a.email),
       })),
     };
   });
 
 /**
  * Creates Storyrr accounts for media-server accounts, linked to them, with the
- * default permissions. They sign in with their media-server password.
+ * default permissions. They sign in with their media-server password. Accounts
+ * whose email a Storyrr account already uses are skipped: never linked by
+ * email, their owner links them in their settings.
  */
 export const importUsers = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
@@ -156,8 +168,13 @@ export const importUsers = createServerFn({ method: "POST" })
     const accounts = await serverAccounts(data.server);
     if (!accounts.ok) throw new Error(accounts.error.message);
     let imported = 0;
+    let skipped = 0;
     for (const account of accounts.value.filter((a) => data.keys.includes(a.key))) {
       if (linkedUserId(db, data.server, account.key)) continue;
+      if (account.email && emailInUse(db, account.email)) {
+        skipped++;
+        continue;
+      }
       const { user: created } = await auth.api.createUser({
         body: {
           name: account.name,
@@ -170,7 +187,7 @@ export const importUsers = createServerFn({ method: "POST" })
       linkAccount(db, data.server, created.id, account.key);
       imported++;
     }
-    return { imported };
+    return { imported, skipped };
   });
 
 /** A media server's accounts, keyed like sign-in links (ABS, Komga and Jellyfin ids, Kavita lowercased username). */

@@ -631,6 +631,8 @@
   "users_import_server": "Desde",
   "users_import_done": "{count} usuarios importados.",
   "users_import_already": "Ya tiene una cuenta",
+  "users_import_email_taken": "Su correo ya se usa aquí: ese usuario lo vincula en sus ajustes",
+  "users_import_done_skipped": "{count} usuarios importados, {skipped} omitidos (correo ya en uso aquí).",
   "users_import_submit": "Importar ({count})",
   "update_title": "Storyrr se actualizó",
   "update_description": "El servidor ahora ejecuta la versión {version}. Recargue para usarla (la página abierta podría no funcionar bien con ella).",

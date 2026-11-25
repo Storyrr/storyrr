@@ -37,23 +37,34 @@ function AccountOption({
   isSelected,
   onChange,
 }: {
-  account: { key: string; name: string; email: string | null; imported: boolean };
+  account: {
+    key: string;
+    name: string;
+    email: string | null;
+    imported: boolean;
+    emailTaken: boolean;
+  };
   isSelected: boolean;
   onChange: (value: boolean) => void;
 }) {
   const id = useId();
+  const disabled = account.imported || account.emailTaken;
   return (
-    <Field orientation="horizontal" data-disabled={account.imported || undefined}>
+    <Field orientation="horizontal" data-disabled={disabled || undefined}>
       <Checkbox
         id={id}
         isSelected={isSelected || account.imported}
-        isDisabled={account.imported}
+        isDisabled={disabled}
         onChange={onChange}
       />
       <div className="flex flex-col">
         <FieldLabel htmlFor={id}>{account.name}</FieldLabel>
         <FieldDescription>
-          {account.imported ? m.users_import_already() : (account.email ?? "")}
+          {account.imported
+            ? m.users_import_already()
+            : account.emailTaken
+              ? m.users_import_email_taken()
+              : (account.email ?? "")}
         </FieldDescription>
       </div>
     </Field>
@@ -129,7 +140,16 @@ export function ImportUsersDialog() {
         ) : null}
         <FormError message={run.error ? run.error.message || m.error_generic() : null} />
         {run.data ? (
-          <FormSuccess message={m.users_import_done({ count: run.data.imported })} />
+          <FormSuccess
+            message={
+              run.data.skipped > 0
+                ? m.users_import_done_skipped({
+                    count: run.data.imported,
+                    skipped: run.data.skipped,
+                  })
+                : m.users_import_done({ count: run.data.imported })
+            }
+          />
         ) : null}
         <DialogFooter>
           <DialogClose>{m.action_close()}</DialogClose>

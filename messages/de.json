@@ -631,6 +631,8 @@
   "users_import_server": "Von",
   "users_import_done": "{count} Benutzer importiert.",
   "users_import_already": "Hat bereits ein Konto",
+  "users_import_email_taken": "Die E-Mail-Adresse wird hier bereits verwendet: Dieser Benutzer verknüpft das Konto in seinen Einstellungen",
+  "users_import_done_skipped": "{count} Benutzer importiert, {skipped} übersprungen (E-Mail-Adresse wird hier bereits verwendet).",
   "users_import_submit": "Importieren ({count})",
   "update_title": "Storyrr wurde aktualisiert",
   "update_description": "Der Server läuft jetzt mit Version {version}. Laden Sie neu, um sie zu verwenden (die geöffnete Seite funktioniert damit möglicherweise nicht richtig).",

@@ -133,7 +133,8 @@ export async function resolveMediaServerSignIn(
   };
 }
 
-function emailInUse(db: AppDatabase, email: string): boolean {
+/** Whether a Storyrr account already uses this email (case ignored). */
+export function emailInUse(db: AppDatabase, email: string): boolean {
   return Boolean(
     db
       .select({ id: user.id })
