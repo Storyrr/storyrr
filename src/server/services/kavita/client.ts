@@ -25,10 +25,30 @@ const SeriesSchema = v.looseObject({
   libraryId: v.number(),
 });
 
+/** A series' volumes and their chapters: in a book library, each chapter is a book (one EPUB). */
+const VolumesSchema = v.array(
+  v.looseObject({
+    chapters: v.optional(
+      v.array(v.looseObject({ titleName: v.optional(v.nullable(v.string())) })),
+      [],
+    ),
+  }),
+);
+
+/**
+ * Library types whose series group whole books (Kavita's LibraryType: Book 2,
+ * LightNovel 4). There a series may be a real series ("Mistborn") or a list
+ * from the EPUB's metadata ("The Guardian's 100 Best Novels"): either way the
+ * books' own titles are in the chapters.
+ */
+const BOOK_LIBRARY_TYPES = new Set([2, 4]);
+/** Series whose volumes are fetched at once. */
+const VOLUME_CONCURRENCY = 8;
+
 export type KavitaSeries = { seriesId: number; libraryId: number; names: string[] };
 
-// UNVERIFIED: login and user shapes follow Kareadita/Kavita's AccountController
-// (POST /api/Account/login → UserDto) and UsersController (GET /api/Users), not a recording.
+// Login (POST /api/Account/login → UserDto) and users (GET /api/Users), checked
+// against a running Kavita 0.9.1 on 2026-11-25.
 const KavitaUserSchema = v.looseObject({
   id: v.optional(v.number()),
   username: v.string(),
@@ -119,7 +139,7 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
     /** Also the connection test: authenticates with the Auth Key. */
     libraries: () => call("GET", "/api/Library/libraries", v.array(LibrarySchema)),
 
-    /** Every series the key's user can see, across libraries. */
+    /** Every series the key's user can see, across libraries, with its books' titles in book libraries. */
     async allSeries(): Promise<ServiceResult<KavitaSeries[]>> {
       const series: KavitaSeries[] = [];
       for (let page = 1; page <= MAX_PAGES; page++) {
@@ -132,11 +152,35 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
           const names = [item.name, item.localizedName, item.originalName].filter(
             (name): name is string => Boolean(name),
           );
-          series.push({ seriesId: item.id, libraryId: item.libraryId, names: [...new Set(names)] });
+          series.push({ seriesId: item.id, libraryId: item.libraryId, names });
         }
         if (result.value.length < PAGE_SIZE) break;
       }
-      return ok(series);
+      const libraries = await call("GET", "/api/Library/libraries", v.array(LibrarySchema));
+      if (!libraries.ok) return libraries;
+      const bookLibraries = new Set(
+        libraries.value.filter((l) => BOOK_LIBRARY_TYPES.has(l.type ?? -1)).map((l) => l.id),
+      );
+      const books = series.filter((item) => bookLibraries.has(item.libraryId));
+      for (let start = 0; start < books.length; start += VOLUME_CONCURRENCY) {
+        const batch = books.slice(start, start + VOLUME_CONCURRENCY);
+        const volumes = await Promise.all(
+          batch.map((item) =>
+            call("GET", "/api/Series/volumes", VolumesSchema, {
+              query: { seriesId: String(item.seriesId) },
+            }),
+          ),
+        );
+        for (const [index, result] of volumes.entries()) {
+          if (!result.ok) return result;
+          const item = batch[index];
+          if (!item) continue;
+          for (const volume of result.value)
+            for (const chapter of volume.chapters)
+              if (chapter.titleName) item.names.push(chapter.titleName);
+        }
+      }
+      return ok(series.map((item) => ({ ...item, names: [...new Set(item.names)] })));
     },
   };
 }
