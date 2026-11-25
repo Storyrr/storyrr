@@ -33,7 +33,6 @@ export function LanguageNotice({
             rel="noreferrer"
             // The notice above names the languages; the full label is for screen readers.
             aria-label={m.media_add_edition({ languages })}
-            className="self-start"
           >
             {m.media_add_edition_short()}
             <ExternalLinkIcon data-icon="inline-end" />
