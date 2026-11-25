@@ -1,0 +1,40 @@
+# Dependency update pull requests. Commit messages follow the repo's
+# Conventional Commits (AGENTS.md › Commits): build(deps) for packages,
+# ops(deps) for GitHub Actions; release-please keeps both out of the changelog.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      # Released together, and expected to stay on matching versions.
+      tanstack:
+        patterns: ["@tanstack/*"]
+      # On its own: a new version may change the auth tables (regenerate them
+      # with the `auth` CLI of the same version, AGENTS.md › Verify against installed versions).
+      better-auth:
+        patterns: ["better-auth", "@better-auth/*"]
+      # Still RC: read the changelog before merging (AGENTS.md › Stack).
+      drizzle:
+        patterns: ["drizzle-orm", "drizzle-kit", "drizzle-valibot"]
+      # The rest of the minor and patch updates, in one pull request.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ops
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
