@@ -1,6 +1,7 @@
 import { Badge } from "#/components/ui/badge";
 import type { RequestStatus } from "#/lib/requests";
 import { formatPercent } from "#/lib/format";
+import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
 export const statusLabels: Record<RequestStatus, () => string> = {
@@ -38,12 +39,28 @@ export function RequestStatusBadge({
   if (status === "submitted") {
     // A download wins: Chaptarr may have started one it first only queued.
     if (download) {
-      label =
-        download.progress === null
-          ? m.status_downloading()
-          : m.status_downloading_progress({ percent: formatPercent(download.progress) });
-    } else if (waitingForChaptarr) label = m.status_waiting_for_chaptarr();
-    else label = m.status_requested();
+      const { progress } = download;
+      // Like Seerr: the badge itself fills up as the download goes.
+      return (
+        <Badge variant="secondary" className="relative">
+          <span
+            aria-hidden
+            className={cn(
+              "absolute inset-y-0 left-0 bg-primary/40 transition-[width] duration-500",
+              // Size unknown: the whole badge pulses instead of filling.
+              progress === null && "w-full animate-pulse",
+            )}
+            style={progress === null ? undefined : { width: `${Math.round(progress * 100)}%` }}
+          />
+          <span className="relative">
+            {progress === null
+              ? m.status_downloading()
+              : m.status_downloading_progress({ percent: formatPercent(progress) })}
+          </span>
+        </Badge>
+      );
+    }
+    label = waitingForChaptarr ? m.status_waiting_for_chaptarr() : m.status_requested();
   }
   return <Badge variant={variants[status]}>{label}</Badge>;
 }

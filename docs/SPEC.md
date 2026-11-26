@@ -121,11 +121,12 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - Status: `pending → approved → submitted → available`; failures go to `failed` with the upstream reason and a **Retry** action. While Chaptarr is unreachable or answers 429/502/503/504, an approved request stays `approved` and the 5-minute job sends it later (decided 2026-11-26); a timeout still fails, since Chaptarr may have taken it.
 - A library match by title alone doesn't make a request available when that title was already in the library as the request was sent (decided 2026-11-26: it is another book, or the copy to replace): Chaptarr's file or an exact ID does. Removing a media server forgets its titles.
 - Availability updates from: Chaptarr webhook (import events), a periodic job (every ~15 min) checking Chaptarr files and the media servers (Audiobookshelf, Kavita, Komga, Jellyfin), and a manual "Check now".
-- While Chaptarr downloads a sent request, its progress (from Chaptarr's queue, by provider ID) shows as a bar with a percentage on the Requests page, Discover's recent requests and the title's page, refreshed about every 10 seconds (decided 2026-11-26, like Seerr).
+- While Chaptarr downloads a sent request, its progress (from Chaptarr's queue, by provider ID) fills the status badge itself, with a percentage ("Downloading (63 %)"), on the Requests page, Discover's recent requests and the title's page, refreshed about every 10 seconds (decided 2026-11-26, like Seerr).
 - Every transition is recorded (who, when, from → to, message) and shown in the request history.
 
 ### 4.7 Requests page (user view)
 
+- One request per line, like Seerr (decided 2026-11-26): cover, year, title and authors; then status, when and by whom it was requested, and the folder (managers); then its actions. Above the list, one line of controls: whose requests (managers), then compact format, status and sort menus.
 - My requests with status, filters (all / pending / processing / available / failed), delete while pending (like Seerr: no separate Cancel; managers delete any request, or remove it from Chaptarr once sent).
 
 ### 4.8 Users (admin)

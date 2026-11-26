@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { Cover } from "#/components/media/cover";
-import { DownloadProgress } from "#/components/requests/download-progress";
 import { RequestStatusBadge } from "#/components/requests/request-status-badge";
 import { yearOf } from "#/lib/format";
 import type { MediaType, RequestStatus } from "#/lib/requests";
@@ -65,9 +64,6 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
             download={request.download}
           />
         </span>
-        {request.status === "submitted" && request.download ? (
-          <DownloadProgress download={request.download} />
-        ) : null}
       </div>
       <Cover
         src={request.media.coverUrl}

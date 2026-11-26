@@ -1,8 +1,14 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowDownWideNarrowIcon, ArrowUpNarrowWideIcon, InboxIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowDownWideNarrowIcon,
+  ArrowUpIcon,
+  FilterIcon,
+  InboxIcon,
+  LibraryIcon,
+} from "lucide-react";
 import type { Key } from "react-aria-components";
 
-import { SelectField } from "#/components/form/select-field";
 import { RequestRow } from "#/components/requests/request-row";
 import { Button } from "#/components/ui/button";
 import {
@@ -12,7 +18,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "#/components/ui/empty";
-import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import { requestsQuery, type RequestListParams } from "#/lib/queries/requests";
 import {
   MEDIA_TYPES,
@@ -43,10 +55,8 @@ const formatLabels: Record<MediaType, () => string> = {
   ebook: m.settings_chaptarr_ebooks,
 };
 
-const firstKey = (keys: Set<Key> | "all") => (keys === "all" ? undefined : [...keys][0]);
-
 /**
- * Requests as a card grid with status, format and sort controls (Seerr-like).
+ * Requests one per line, with status, format and sort controls (Seerr-like).
  * `params` comes from the URL; `onChange` writes it back.
  */
 export function RequestList({
@@ -56,7 +66,7 @@ export function RequestList({
 }: {
   params: RequestListParams;
   onChange: (next: Partial<RequestListParams>) => void;
-  /** Extra controls before the filters (e.g. Mine / Everyone's). */
+  /** Extra controls before the menus (e.g. Mine / Everyone's). */
   toolbar?: React.ReactNode;
 }) {
   const { data: requests } = useSuspenseQuery(requestsQuery(params));
@@ -65,31 +75,13 @@ export function RequestList({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end gap-4">
+      {/* One line of controls, like Seerr: whose requests on the left, then format, status and sort. */}
+      <div className="flex flex-wrap items-center gap-2">
         {toolbar}
-        <ToggleGroup
-          aria-label={m.requests_filter_label()}
-          selectionMode="single"
-          disallowEmptySelection
-          selectedKeys={[params.filter]}
-          onSelectionChange={(keys) => {
-            const filter = REQUEST_FILTERS.find((f) => f === firstKey(keys));
-            if (filter) onChange({ filter });
-          }}
-          variant="outline"
-          className="flex-wrap"
-        >
-          {REQUEST_FILTERS.map((filter) => (
-            <ToggleGroupItem key={filter} id={filter}>
-              {filterLabels[filter]()}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="w-44">
-          <SelectField
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <IconSelect
             label={m.requests_format_label()}
+            icon={<LibraryIcon />}
             options={[
               { id: "all", label: m.requests_format_all() },
               ...MEDIA_TYPES.map((format) => ({ id: format, label: formatLabels[format]() })),
@@ -97,25 +89,34 @@ export function RequestList({
             value={params.format ?? "all"}
             onChange={(value) => onChange({ format: MEDIA_TYPES.find((f) => f === value) })}
           />
-        </div>
-        <div className="w-52">
-          <SelectField
+          <IconSelect
+            label={m.requests_filter_label()}
+            icon={<FilterIcon />}
+            options={REQUEST_FILTERS.map((f) => ({ id: f, label: filterLabels[f]() }))}
+            value={params.filter}
+            onChange={(value) => {
+              const filter = REQUEST_FILTERS.find((f) => f === value);
+              if (filter) onChange({ filter });
+            }}
+          />
+          <IconSelect
             label={m.requests_sort_label()}
+            icon={<ArrowDownWideNarrowIcon />}
             options={REQUEST_SORTS.map((s) => ({ id: s, label: sortLabels[s]() }))}
             value={sort}
             onChange={(value) => onChange({ sort: REQUEST_SORTS.find((s) => s === value) })}
           />
+          {sort === "status" ? null : (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={order === "desc" ? m.requests_order_desc() : m.requests_order_asc()}
+              onPress={() => onChange({ order: order === "desc" ? "asc" : "desc" })}
+            >
+              {order === "desc" ? <ArrowDownIcon /> : <ArrowUpIcon />}
+            </Button>
+          )}
         </div>
-        {sort === "status" ? null : (
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label={order === "desc" ? m.requests_order_desc() : m.requests_order_asc()}
-            onPress={() => onChange({ order: order === "desc" ? "asc" : "desc" })}
-          >
-            {order === "desc" ? <ArrowDownWideNarrowIcon /> : <ArrowUpNarrowWideIcon />}
-          </Button>
-        )}
       </div>
       {requests.length === 0 ? (
         <Empty>
@@ -128,12 +129,49 @@ export function RequestList({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <ul className="flex flex-col gap-3">
           {requests.map((request) => (
             <RequestRow key={request.id} request={request} />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/** A compact select whose label is its icon (the label is still read to screen readers). */
+function IconSelect({
+  label,
+  icon,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  options: readonly { id: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Select
+      aria-label={label}
+      value={value}
+      onChange={(key: Key | null) => {
+        if (key !== null) onChange(String(key));
+      }}
+    >
+      <SelectTrigger className="min-w-44">
+        {icon}
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.id} id={option.id}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

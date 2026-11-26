@@ -9,7 +9,6 @@ import { UserAvatar } from "#/components/layout/user-avatar";
 import { Cover } from "#/components/media/cover";
 import { AdvancedOptions, TargetSelects } from "#/components/media/request-dialog";
 import { Button } from "#/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -27,7 +26,7 @@ import {
   retryRequest,
   type getRequests,
 } from "#/functions/requests.functions";
-import { formatDate, formatList, yearOf } from "#/lib/format";
+import { formatDate, formatDaysAgo, formatList, yearOf } from "#/lib/format";
 import { isSearchableType } from "#/lib/media-types";
 import { describeRequestError } from "#/lib/request-errors";
 import type { RequestStatus } from "#/lib/requests";
@@ -38,7 +37,6 @@ import { m } from "#/paraglide/messages.js";
 
 import { DeleteRequestButton, RemoveFromChaptarrButton } from "./request-admin-actions";
 import { RequestHistory } from "./request-history";
-import { DownloadProgress } from "#/components/requests/download-progress";
 import { RequestStatusBadge } from "./request-status-badge";
 import { useRequestAction } from "./use-request-action";
 
@@ -47,7 +45,7 @@ type RequestListItem = Awaited<ReturnType<typeof getRequests>>[number];
 /** Statuses after which Chaptarr may hold the book (or a pending request for it). */
 const SENT_STATUSES: readonly RequestStatus[] = ["submitted", "available", "failed", "cancelled"];
 
-/** One request as a Seerr-like card: cover backdrop, details, status and the actions allowed. */
+/** One request as a Seerr-like line: cover and title, details, then the actions allowed. */
 export function RequestRow({ request }: { request: RequestListItem }) {
   const imageUrl = useImageUrl();
   const { user } = useRouteContext({ from: "/_authed" });
@@ -61,91 +59,105 @@ export function RequestRow({ request }: { request: RequestListItem }) {
 
   const year = yearOf(request.media.releaseDate ?? undefined);
   const requesterName = request.requester?.name ?? m.users_deleted();
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const requestedAt = new Date(request.createdAt);
+  // Stacked full-width in the actions column, like Seerr's.
+  const actions = "flex flex-col gap-2 [&_button]:w-full";
 
   return (
-    <li className="relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-4">
+    <li className="relative overflow-hidden rounded-xl border bg-card">
       {request.media.coverUrl ? (
         <img
           src={imageUrl(request.media.coverUrl)}
           alt=""
           loading="lazy"
-          className="pointer-events-none absolute inset-0 size-full scale-110 object-cover opacity-25 blur-sm"
+          className="pointer-events-none absolute inset-0 size-full scale-110 object-cover opacity-20 blur-sm"
         />
       ) : null}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-card via-card/85 to-card/40"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-card via-card/90 to-card/60"
       />
-      <div className="relative flex gap-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {year ? <span className="text-xs font-medium">{year}</span> : null}
-          {isSearchableType(request.media.type) ? (
-            <Link
-              to="/media/$type/$id"
-              params={{ type: request.media.type, id: request.media.externalId }}
-              className="line-clamp-2 font-semibold hover:underline"
+      {/* One request per line: the title, its details, then its actions. Stacked on phones. */}
+      <div className="relative grid gap-4 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)_13rem] lg:items-center">
+        <div className="flex min-w-0 items-center gap-4">
+          <Cover
+            src={request.media.coverUrl}
+            type={request.media.type}
+            className="w-12 shrink-0 shadow-lg"
+          />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            {year ? <span className="text-xs font-medium">{year}</span> : null}
+            {isSearchableType(request.media.type) ? (
+              <Link
+                to="/media/$type/$id"
+                params={{ type: request.media.type, id: request.media.externalId }}
+                className="line-clamp-2 text-lg font-semibold hover:underline"
+              >
+                {request.media.title}
+              </Link>
+            ) : (
+              <span className="line-clamp-2 text-lg font-semibold">{request.media.title}</span>
+            )}
+            {request.media.authors.length > 0 ? (
+              <p className="truncate text-sm text-muted-foreground">
+                {formatList(request.media.authors)}
+              </p>
+            ) : null}
+            <Button
+              size="xs"
+              variant="ghost"
+              className="-ml-2 w-fit text-muted-foreground"
+              aria-expanded={historyOpen}
+              onPress={() => setHistoryOpen(!historyOpen)}
             >
-              {request.media.title}
-            </Link>
-          ) : (
-            <span className="line-clamp-2 font-semibold">{request.media.title}</span>
-          )}
-          {request.media.authors.length > 0 ? (
-            <p className="truncate text-sm text-muted-foreground">
-              {formatList(request.media.authors)}
-            </p>
-          ) : null}
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <UserAvatar name={requesterName} className="size-5 text-[0.6rem]" />
-            <span className="truncate">
-              {m.requests_requested_on({
-                name: requesterName,
-                date: formatDate(new Date(request.createdAt)),
-              })}
-              {request.watchers > 0
-                ? ` · ${m.requests_watchers({ count: request.watchers })}`
-                : null}
-            </span>
-          </p>
-          {manager && request.target.service === "chaptarr" ? (
-            <p className="truncate text-xs text-muted-foreground">
-              {request.target.rootFolderPath}
-            </p>
-          ) : null}
-          <p className="mt-auto flex items-center gap-2 pt-2 text-xs text-muted-foreground">
-            {m.request_card_status()}
+              <ChevronDownIcon
+                data-icon="inline-start"
+                className={historyOpen ? "rotate-180" : undefined}
+              />
+              {m.requests_history()}
+            </Button>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 text-sm">
+          <dt className="font-medium text-muted-foreground">{m.request_card_status()}</dt>
+          <dd>
             <RequestStatusBadge
               status={request.status}
               waitingForChaptarr={request.waitingForChaptarr}
               download={request.download}
             />
-          </p>
-          {request.status === "submitted" && request.download ? (
-            <DownloadProgress download={request.download} className="max-w-xs" />
+          </dd>
+          <dt className="font-medium text-muted-foreground">{m.requests_requested()}</dt>
+          <dd className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span title={formatDate(requestedAt)}>{formatDaysAgo(requestedAt)}</span>
+            <UserAvatar name={requesterName} className="size-5 text-[0.6rem]" />
+            <span className="truncate font-medium">{requesterName}</span>
+          </dd>
+          {request.watchers > 0 ? (
+            <>
+              <dt className="font-medium text-muted-foreground">{m.requests_watchers_label()}</dt>
+              <dd className="tabular-nums">{request.watchers}</dd>
+            </>
           ) : null}
-          {failure ? <p className="text-sm text-destructive">{failure}</p> : null}
-        </div>
-        <Cover
-          src={request.media.coverUrl}
-          type={request.media.type}
-          className="w-24 shrink-0 self-start shadow-lg"
-        />
-      </div>
-      {error ? (
-        // Positioned like the rest of the content, so it sits above the backdrop.
-        <div className="relative">
-          <FormError message={error.message || m.error_generic()} />
-        </div>
-      ) : null}
-      <div className="relative flex flex-wrap items-center gap-2">
-        {manager && request.status === "pending" ? (
-          <>
-            <ApproveDialog request={request} />
-            <DenyDialog request={request} />
-          </>
-        ) : null}
-        {manager && request.status === "failed" ? (
-          <>
+          {manager && request.target.service === "chaptarr" ? (
+            <>
+              <dt className="font-medium text-muted-foreground">{m.requests_folder()}</dt>
+              <dd className="truncate">{request.target.rootFolderPath}</dd>
+            </>
+          ) : null}
+        </dl>
+
+        <div className={actions}>
+          {manager && request.status === "pending" ? (
+            <>
+              <ApproveDialog request={request} />
+              <DenyDialog request={request} />
+            </>
+          ) : null}
+          {manager && request.status === "failed" ? (
             <Button
               size="sm"
               isDisabled={retry.isPending}
@@ -153,30 +165,22 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             >
               {m.action_retry()}
             </Button>
-          </>
-        ) : null}
-        {manager && SENT_STATUSES.includes(request.status) ? (
-          <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
-        ) : null}
-        {canDelete ? <DeleteRequestButton id={request.id} title={request.media.title} /> : null}
-        <HistoryDisclosure requestId={request.id} />
+          ) : null}
+          {canDelete ? <DeleteRequestButton id={request.id} title={request.media.title} /> : null}
+          {manager && SENT_STATUSES.includes(request.status) ? (
+            <RemoveFromChaptarrButton id={request.id} title={request.media.title} />
+          ) : null}
+        </div>
       </div>
+      {failure || error || historyOpen ? (
+        // Full width under the line: what went wrong, and the history when opened.
+        <div className="relative flex flex-col gap-3 border-t px-4 py-3">
+          {failure ? <p className="text-sm text-destructive">{failure}</p> : null}
+          {error ? <FormError message={error.message || m.error_generic()} /> : null}
+          {historyOpen ? <RequestHistory requestId={request.id} /> : null}
+        </div>
+      ) : null}
     </li>
-  );
-}
-
-function HistoryDisclosure({ requestId }: { requestId: string }) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <Collapsible isExpanded={expanded} onExpandedChange={setExpanded} className="w-full">
-      <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground">
-        <ChevronDownIcon className={expanded ? "rotate-180" : undefined} />
-        {m.requests_history()}
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2">
-        {expanded ? <RequestHistory requestId={requestId} /> : null}
-      </CollapsibleContent>
-    </Collapsible>
   );
 }
 
