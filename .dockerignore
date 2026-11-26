@@ -10,9 +10,13 @@ project.inlang/cache
 .env
 .env.*
 !.env.example
-*.db
-*.db-*
+**/*.db
+**/*.db-*
+**/*.sqlite*
+**/auth-secret
+database
 data
+.dev-stack
 .claude
 .agents
 .intent

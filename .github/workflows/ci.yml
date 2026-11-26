@@ -36,6 +36,8 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
+          # The platforms the release publishes, so a release never meets a broken one first.
+          platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

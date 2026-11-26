@@ -7,16 +7,19 @@
 ARG NODE_VERSION=24
 ARG BUN_VERSION=1.3
 
-FROM oven/bun:${BUN_VERSION}-slim AS bun
+# The build runs on the builder's own platform, never emulated: its output is
+# the same for every platform (JavaScript, plus better-sqlite3's prebuilt
+# binaries for all of them), so only the small runtime stage is per platform.
+FROM --platform=$BUILDPLATFORM oven/bun:${BUN_VERSION}-slim AS bun
 
-FROM node:${NODE_VERSION}-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS build
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
 # Compiles the Paraglide messages (fetches the pinned inlang plugin), then builds.
-RUN bun run build
+RUN bun run build && mkdir /data
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \
@@ -27,7 +30,9 @@ WORKDIR /app
 COPY --from=build /app/.output ./.output
 # Applied automatically at startup.
 COPY --from=build /app/drizzle ./drizzle
-RUN mkdir -p /data && chown node:node /data
+# The data folder, owned by the runtime user. Copied rather than created with RUN,
+# so no command runs in this stage and other platforms build without emulation.
+COPY --from=build --chown=node:node /data /data
 USER node
 VOLUME /data
 EXPOSE 6066
