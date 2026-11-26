@@ -18,6 +18,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "#/components/ui/sonner";
 import { RegisterServiceWorker } from "#/components/pwa/register-service-worker";
+import { RememberTimeZone } from "#/components/remember-time-zone";
 import { authStateQuery } from "#/lib/queries/auth";
 
 interface MyRouterContext {
@@ -115,6 +116,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           mobileOffset={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
         />
         <RegisterServiceWorker />
+        <RememberTimeZone />
         {import.meta.env.DEV ? (
           <TanStackDevtools
             config={{

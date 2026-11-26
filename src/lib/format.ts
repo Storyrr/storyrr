@@ -1,3 +1,4 @@
+import { displayTimeZone } from "#/lib/time-zone";
 import { getLocale } from "#/paraglide/runtime.js";
 
 /** "18 h 5 min" in the current locale (Intl.DurationFormat, or unit formatting where missing). */
@@ -15,7 +16,7 @@ export function formatDuration(totalMinutes: number): string {
   return hours > 0 ? `${unit(hours, "hour")} ${unit(minutes, "minute")}` : unit(minutes, "minute");
 }
 
-/** A date from an ISO string, in the current locale. */
+/** A date from an ISO string, in the current locale and the visitor's time zone. */
 export function formatDate(
   value: string | Date,
   options: Intl.DateTimeFormatOptions = { dateStyle: "medium" },
@@ -23,7 +24,9 @@ export function formatDate(
   const date = typeof value === "string" ? new Date(value) : value;
   return Number.isNaN(date.getTime())
     ? ""
-    : new Intl.DateTimeFormat(getLocale(), options).format(date);
+    : new Intl.DateTimeFormat(getLocale(), { timeZone: displayTimeZone(), ...options }).format(
+        date,
+      );
 }
 
 export const yearOf = (isoDate: string | undefined) => isoDate?.slice(0, 4);
