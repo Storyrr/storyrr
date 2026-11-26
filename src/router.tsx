@@ -3,6 +3,7 @@ import { routeTree } from "./routeTree.gen";
 
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
+import { ErrorPage, NotFoundPage } from "./components/route-fallbacks";
 import { getContext } from "./integrations/tanstack-query/root-provider";
 
 export function getRouter() {
@@ -14,6 +15,9 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
+    // Translated pages inside the app's layout, instead of the router's English defaults.
+    defaultNotFoundComponent: NotFoundPage,
+    defaultErrorComponent: ErrorPage,
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient });
