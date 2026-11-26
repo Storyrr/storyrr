@@ -10,7 +10,7 @@
   <a href="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml"><img alt="Storyrr CI" src="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 <p align="center">
-  <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker pulls" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2FStoryrr%2Fstoryrr%2Fstoryrr&query=downloadCount&label=docker%20pulls"></a>
+  <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker pulls" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2FStoryrr%2Fstoryrr%2Fstoryrr&query=downloadCount&label=docker%20pulls&cacheSeconds=86400"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
