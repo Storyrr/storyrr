@@ -5,6 +5,13 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Storyrr/storyrr/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Storyrr/storyrr"></a>
+  <a href="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Storyrr/storyrr/ci.yml?branch=main&label=CI"></a>
+  <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker image" src="https://ghcr-badge.egpl.dev/storyrr/storyrr/latest_tag?label=docker"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/Storyrr/storyrr"></a>
+</p>
+
 A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to [Chaptarr](https://github.com/Chaptarr/chaptarr) and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/), [Kavita](https://www.kavitareader.com/), [Komga](https://komga.org/) and [Jellyfin](https://jellyfin.org/).
 
 - **Search and discover** audiobooks (Audible's catalog) and eBooks, manga and comics ([Hardcover](https://hardcover.app/)), with series, authors, genres and readers' ratings.
