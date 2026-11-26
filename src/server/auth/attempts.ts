@@ -22,3 +22,8 @@ export function createAttemptLimiter({ max, windowMs }: { max: number; windowMs:
     },
   };
 }
+
+/** Linking a media-server account: five wrong passwords, then a ten-minute wait. */
+export const linkAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });
+/** Same for the current password asked to change one's email. */
+export const passwordAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });

@@ -24,7 +24,7 @@ import {
   setAccountPassword,
   updateAccount,
 } from "#/server/auth/accounts";
-import { createAttemptLimiter } from "#/server/auth/attempts";
+import { linkAttempts, passwordAttempts } from "#/server/auth/attempts";
 import { linkedServers, linkOwnAccount, unlinkAccount } from "#/server/auth/media-server";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
 import { db } from "#/server/db";
@@ -36,11 +36,6 @@ import { requestQuota } from "#/server/requests/quota";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
 import { mediaServerSignIn } from "#/server/settings/definitions";
-
-/** Five wrong passwords, then a ten-minute wait. */
-const linkAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });
-/** Same for the current password asked to change one's email. */
-const passwordAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });
 
 type Caller = { session: { user: { id: string } }; permissions: readonly Permission[] };
 
