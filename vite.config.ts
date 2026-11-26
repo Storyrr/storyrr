@@ -19,7 +19,11 @@ const config = defineConfig({
       // No locale in URLs: the locale is a user preference (cookie), falling back to the browser's.
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
     }),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    nitro({
+      rollupConfig: { external: [/^@sentry\//] },
+      // Opens the database and starts the jobs at startup, not on the first request.
+      plugins: ["./src/nitro/startup.ts"],
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

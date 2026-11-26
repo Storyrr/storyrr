@@ -30,6 +30,8 @@ services:
       - ./data:/data
 ```
 
+The container runs as a non-root user (uid `1000`): create the data folder for it before the first start (`mkdir data && sudo chown 1000:1000 data`), or Storyrr stops with a message saying it can't write there.
+
 Then open `http://<server-ip>:6066`: the first visit runs the setup wizard, which creates the administrator account and asks for the application URL, the address your users open Storyrr at (for example a Cloudflare Tunnel's): links in emails and notifications use it. Storyrr keeps working at every address it's reached at, so you can use it on your local network while friends use the tunnel. Connect Chaptarr, your media servers and a Hardcover token in Settings afterwards. There is no public sign-up; the administrator creates or imports the other accounts.
 
 The SQLite database lives in `/data` (keep it on a volume); migrations run automatically at startup. `GET /api/health` reports the app version and database state, and the image uses it as its healthcheck.
@@ -64,3 +66,7 @@ bun run dev   # http://localhost:6066; the database goes to database/dev.db
 | `bun run db:generate` | Generate a migration from `src/server/db/schema/`                    |
 
 How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md). Full guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
+
+## License
+
+[MIT](LICENSE).

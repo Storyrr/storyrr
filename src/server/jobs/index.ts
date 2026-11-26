@@ -89,3 +89,9 @@ export function startScheduler(): void {
     (name) => new Cron(jobs[name].pattern, { name, protect: true }, () => runJob(name)),
   );
 }
+
+/** Stops the jobs' timers, so the process can exit (a job already running finishes). */
+export function stopScheduler(): void {
+  for (const job of globalThis.storyrrScheduler ?? []) job.stop();
+  globalThis.storyrrScheduler = undefined;
+}
