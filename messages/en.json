@@ -164,6 +164,8 @@
   "request_error_ebook_defaults_missing": "No default folder and profiles for eBooks. An admin can set them in Settings → Services.",
   "settings_ebook_defaults_title": "eBook defaults",
   "settings_ebook_defaults_description": "Where eBook, manga and comics requests go unless an admin picks another folder (e.g. Books, Manga or Comics).",
+  "search_tab_all": "All",
+  "search_tab_count": "{label} ({count})",
   "search_tab_audiobooks": "Audiobooks",
   "search_tab_books": "Books",
   "media_pages": "Pages",

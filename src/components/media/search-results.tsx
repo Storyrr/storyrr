@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useId } from "react";
 
 import { FormError } from "#/components/form/form-error";
 import { MediaCard } from "#/components/media/media-card";
+import { MediaRow, MediaRowItem } from "#/components/media/media-row";
 import { SeriesCard } from "#/components/media/series-card";
 import { Skeleton } from "#/components/ui/skeleton";
 import type { SearchableType } from "#/lib/media-types";
@@ -21,69 +21,88 @@ const providers: Record<SearchableType, "audible" | "hardcover"> = {
 };
 
 /**
- * Search results for one type, as a grid of cards (with a heading when several
- * types are shown). A series' volumes make one series card, like Seerr shows a
- * show once; eBooks add the series Hardcover's series search finds (a translation
- * numbered apart is its own series there, its volumes rarely among the books found).
+ * A type's search results, ready to show: a series' volumes make one series
+ * entry, like Seerr shows a show once; eBooks add the series Hardcover's series
+ * search finds (a translation numbered apart is its own series there, its
+ * volumes rarely among the books found). Accepted languages come first.
+ */
+export function useSearchEntries(type: SearchableType, query: string) {
+  const search = useQuery(mediaSearchQuery(type, query));
+  // Best effort, added when it arrives: the titles don't wait for it.
+  const seriesSearch = useQuery({ ...seriesSearchQuery(type, query), enabled: type === "ebook" });
+  const found = search.data?.ok ? search.data : null;
+  const extra = seriesSearch.data?.ok ? seriesSearch.data.results : [];
+  const entries = found
+    ? groupBySeries(found.results, extra).toSorted(
+        (x, y) => acceptanceRank(entryAccepted(x)) - acceptanceRank(entryAccepted(y)),
+      )
+    : [];
+  return { search, entries, acceptedLanguages: found?.acceptedLanguages ?? null };
+}
+
+/**
+ * Search results for one type. `layout="grid"`: every result, as a grid of
+ * cards. `layout="row"`: a preview, one scrolling row under its title with
+ * `action` (a link to the full grid) next to it.
  */
 export function SearchResults({
   type,
   query,
-  titled,
+  layout,
+  action,
 }: {
   type: SearchableType;
   query: string;
-  titled: boolean;
+  layout: "grid" | "row";
+  action?: React.ReactNode;
 }) {
-  const search = useQuery(mediaSearchQuery(type, query));
-  // Best effort, added when it arrives: the titles don't wait for it.
-  const seriesSearch = useQuery({ ...seriesSearchQuery(type, query), enabled: type === "ebook" });
-  const headingId = useId();
+  const { search, entries, acceptedLanguages } = useSearchEntries(type, query);
+  const row = layout === "row";
 
-  let body: React.ReactNode;
-  if (search.isPending) {
-    body = <ResultsSkeleton />;
-  } else if (search.isError) {
-    body = <FormError message={search.error.message || m.error_generic()} />;
-  } else if (!search.data.ok) {
-    body = <FormError message={serviceErrorMessage(providers[type], search.data.error)} />;
-  } else if (search.data.results.length === 0) {
-    body = <p className="text-muted-foreground">{m.search_no_results({ query })}</p>;
-  } else {
-    const { results, acceptedLanguages } = search.data;
-    const extra = seriesSearch.data?.ok ? seriesSearch.data.results : [];
-    const entries = groupBySeries(results, extra).toSorted(
-      (x, y) => acceptanceRank(entryAccepted(x)) - acceptanceRank(entryAccepted(y)),
-    );
-    body = (
-      <ul
-        className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-        aria-busy={search.isFetching}
-      >
-        {entries.map((entry) =>
-          entry.kind === "series" ? (
-            <li key={`series-${entry.series.id}`}>
-              <SeriesCard type={type} series={entry.series} acceptedLanguages={acceptedLanguages} />
-            </li>
-          ) : (
-            <li key={entry.item.externalId}>
-              <MediaCard type={type} item={entry.item} acceptedLanguages={acceptedLanguages} />
-            </li>
-          ),
-        )}
-      </ul>
-    );
+  let message: React.ReactNode = null;
+  if (search.isError) {
+    message = <FormError message={search.error.message || m.error_generic()} />;
+  } else if (search.data && !search.data.ok) {
+    message = <FormError message={serviceErrorMessage(providers[type], search.data.error)} />;
+  } else if (search.data && entries.length === 0) {
+    message = <p className="text-muted-foreground">{m.search_no_results({ query })}</p>;
   }
 
+  const cards = entries.map((entry) => {
+    const card =
+      entry.kind === "series" ? (
+        <SeriesCard type={type} series={entry.series} acceptedLanguages={acceptedLanguages} />
+      ) : (
+        <MediaCard type={type} item={entry.item} acceptedLanguages={acceptedLanguages} />
+      );
+    const key = entry.kind === "series" ? `series-${entry.series.id}` : entry.item.externalId;
+    return row ? <MediaRowItem key={key}>{card}</MediaRowItem> : <li key={key}>{card}</li>;
+  });
+
+  if (row) {
+    return (
+      <MediaRow title={sectionTitles[type]()} action={action}>
+        {search.isPending
+          ? Array.from({ length: 6 }, (_, i) => (
+              <MediaRowItem key={i}>
+                <Skeleton className="aspect-[2/3] w-full" />
+              </MediaRowItem>
+            ))
+          : null}
+        {message ? <li className="w-full">{message}</li> : cards}
+      </MediaRow>
+    );
+  }
+  if (search.isPending) return <ResultsSkeleton />;
   return (
-    <section className="flex flex-col gap-3" aria-labelledby={titled ? headingId : undefined}>
-      {titled ? (
-        <h2 id={headingId} className="text-lg font-semibold">
-          {sectionTitles[type]()}
-        </h2>
-      ) : null}
-      {body}
-    </section>
+    message ?? (
+      <ul
+        className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+        aria-busy={search.isFetching}
+      >
+        {cards}
+      </ul>
+    )
   );
 }
 

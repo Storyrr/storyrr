@@ -164,6 +164,8 @@
   "request_error_ebook_defaults_missing": "Aucun dossier ni profil par défaut pour les eBooks. Un administrateur peut les définir dans Paramètres → Services.",
   "settings_ebook_defaults_title": "eBooks par défaut",
   "settings_ebook_defaults_description": "Où vont les demandes d’eBooks, de mangas et de BD, sauf si un administrateur choisit un autre dossier (par exemple Books, Manga ou Comics).",
+  "search_tab_all": "Tout",
+  "search_tab_count": "{label} ({count})",
   "search_tab_audiobooks": "Livres audio",
   "search_tab_books": "Livres",
   "media_pages": "Pages",

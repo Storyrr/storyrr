@@ -164,6 +164,8 @@
   "request_error_ebook_defaults_missing": "Kein Standardordner und keine Standardprofile für E-Books. Ein Administrator kann sie unter Einstellungen → Dienste festlegen.",
   "settings_ebook_defaults_title": "Standards für E-Books",
   "settings_ebook_defaults_description": "Wohin Anfragen für E-Books, Manga und Comics gehen, sofern ein Administrator keinen anderen Ordner wählt (z. B. Books, Manga oder Comics).",
+  "search_tab_all": "Alle",
+  "search_tab_count": "{label} ({count})",
   "search_tab_audiobooks": "Hörbücher",
   "search_tab_books": "Bücher",
   "media_pages": "Seiten",

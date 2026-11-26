@@ -164,6 +164,8 @@
   "request_error_ebook_defaults_missing": "No hay carpeta ni perfiles predeterminados para eBooks. Un administrador puede definirlos en Ajustes → Servicios.",
   "settings_ebook_defaults_title": "Valores predeterminados de eBooks",
   "settings_ebook_defaults_description": "Adónde van las solicitudes de eBooks, manga y cómics, salvo que un administrador elija otra carpeta (p. ej., Books, Manga o Comics).",
+  "search_tab_all": "Todo",
+  "search_tab_count": "{label} ({count})",
   "search_tab_audiobooks": "Audiolibros",
   "search_tab_books": "Libros",
   "media_pages": "Páginas",

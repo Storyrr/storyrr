@@ -42,7 +42,7 @@ Shown when the database has no user: it creates the admin account (name, email, 
 
 ### 4.2 Search
 
-- One search bar, with **tabs/filters: Audiobooks, Books** (default: All).
+- One search bar; the results page has **tabs: All, Audiobooks, Books**, with each format's result count (decided 2026-11-26). **All** shows one scrolling row per format, so both are visible without scrolling, each with "See all" to its tab; a format's tab shows its full grid. The tab lives in the URL. The two catalogs aren't mixed in one list (unlike Seerr's movies and shows): each ranks its own results, and a work often exists in both formats.
 - Result cards: cover, title, author (narrator for audiobooks), year, series badge, and a **status badge**: _Available_, _Requested_, _Processing_, or a **Request** button.
 - **A series is one card (decided 2026-11-25, like Seerr shows a show once):** the volumes found of the same series fold into one "Series" card (cover of the lowest volume found, at the place of the first one found) that opens the series page; titles outside a series keep their own card. Searching a volume shows its series.
 - Owned detection: audiobooks by ASIN in Audiobookshelf, or by title in Jellyfin; eBooks by title in Kavita, Komga and Jellyfin, "probably owned" (and Chaptarr files). Any configured server counts (decided 2026-11-24).
