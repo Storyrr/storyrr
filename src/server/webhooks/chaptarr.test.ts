@@ -77,6 +77,18 @@ describe("handleChaptarrWebhook", () => {
     ).toEqual(["az:B000000001"]);
   });
 
+  it("asks Chaptarr nothing for an import Storyrr didn't request", async () => {
+    await submitted("B000000001", 10);
+    const chaptarr = fakeChaptarr({ lookup: [book(10, "audiobook", 1)] });
+    const services = createServices(store, chaptarr.fetch);
+    const result = await handleChaptarrWebhook(
+      { db, services },
+      { eventType: "download", book: { id: 999 } },
+    );
+    expect(result).toEqual({ checked: true, available: [] });
+    expect(chaptarr.calls("GET", "/api/v1/book/lookup")).toEqual([]);
+  });
+
   it("ignores events that can't add files", async () => {
     await submitted("B000000001", 10);
     const services = createServices(store, fakeChaptarr().fetch);

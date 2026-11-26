@@ -65,17 +65,21 @@ export async function handleChaptarrWebhook(
     .from(request)
     .where(inArray(request.status, ["submitted"]))
     .all();
+  // The requests for these books, plus those Chaptarr only queued (no book id yet):
+  // the event may be theirs. An event naming no book re-checks everything.
   const affected = submitted
-    .filter(
-      (row) =>
-        typeof row.backendRef?.chaptarrBookId === "number" &&
-        bookIds.includes(row.backendRef.chaptarrBookId),
-    )
+    .filter((row) => {
+      const bookId = row.backendRef?.chaptarrBookId;
+      return typeof bookId === "number" ? bookIds.includes(bookId) : true;
+    })
     .map((row) => row.id);
+  // An import Storyrr didn't ask for: nothing to check (a bulk import in
+  // Chaptarr would otherwise re-check every request once per book).
+  if (bookIds.length > 0 && affected.length === 0) return { checked: true, available: [] };
 
   const available = await checkAvailability(deps, {
     actor: "webhook",
-    requestIds: affected.length > 0 ? affected : undefined,
+    requestIds: bookIds.length > 0 ? affected : undefined,
   });
   return { checked: true, available };
 }
