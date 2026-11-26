@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "#/components/ui/table";
 import { getJobs, getLogs, runJobNow } from "#/functions/settings.functions";
+import { copyText } from "#/lib/clipboard";
 import { formatDate } from "#/lib/format";
 import { m } from "#/paraglide/messages.js";
 
@@ -155,7 +156,7 @@ function Logs() {
     const text = (logs.data ?? [])
       .map((e) => `${new Date(e.time).toISOString()} ${e.level.toUpperCase()} ${e.message}`)
       .join("\n");
-    void navigator.clipboard.writeText(text).then(() => setCopied(true));
+    void copyText(text).then(setCopied);
   };
 
   return (

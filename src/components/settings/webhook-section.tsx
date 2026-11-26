@@ -11,6 +11,7 @@ import {
   InputGroupInput,
 } from "#/components/ui/input-group";
 import { Skeleton } from "#/components/ui/skeleton";
+import { copyText } from "#/lib/clipboard";
 import { chaptarrWebhookQuery } from "#/lib/queries/settings";
 import { m } from "#/paraglide/messages.js";
 
@@ -35,7 +36,7 @@ export function WebhookRow() {
             <InputGroupButton
               aria-label={copied ? m.action_copied() : m.action_copy()}
               onPress={() => {
-                void navigator.clipboard.writeText(webhook.data.url).then(() => setCopied(true));
+                void copyText(webhook.data.url).then(setCopied);
               }}
             >
               {copied ? <CheckIcon /> : <CopyIcon />}
