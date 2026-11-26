@@ -28,7 +28,7 @@ import { services } from "#/server/services";
 import { fail, ok } from "#/server/services/result";
 import { db } from "#/server/db";
 import { user } from "#/server/db/schema";
-import { accountLock, setUserPermissions } from "#/server/permissions";
+import { accountLock, defaultPermissions, setUserPermissions } from "#/server/permissions";
 import { settings } from "#/server/settings";
 import { setUserRequestLimits } from "#/server/requests/quota";
 import { listUsers } from "#/server/users";
@@ -77,7 +77,13 @@ export const getUsers = createServerFn({ method: "GET" })
 export const createUser = createServerFn({ method: "POST" })
   .middleware([requireManageUsers])
   .validator(CreateUserSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // A new account gets the default permissions: a manager who holds fewer
+    // can't create one (and sign in as it) to get them.
+    if (holdsMoreThan(await defaultPermissions(settings), context.permissions)) {
+      setResponseStatus(403);
+      throw new Error(m.users_grant_beyond_yours());
+    }
     const { user: created } = await auth.api.createUser({
       body: { name: data.name, email: data.email, password: data.password, role: "user" },
     });
