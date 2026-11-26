@@ -59,7 +59,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
             <UserIcon />
             {m.nav_profile()}
           </DropdownMenuItem>
-          <DropdownMenuItem href="/requests" textValue={m.nav_requests()}>
+          <DropdownMenuItem href="/requests?scope=mine" textValue={m.nav_requests()}>
             <InboxIcon />
             {m.nav_requests()}
           </DropdownMenuItem>
