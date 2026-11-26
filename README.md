@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/Storyrr/storyrr/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Storyrr/storyrr"></a>
   <a href="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Storyrr/storyrr/ci.yml?branch=main&label=CI"></a>
-  <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker image" src="https://ghcr-badge.egpl.dev/storyrr/storyrr/latest_tag?label=docker"></a>
+  <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker pulls" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2FStoryrr%2Fstoryrr%2Fstoryrr&query=downloadCount&label=docker%20pulls"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/Storyrr/storyrr"></a>
 </p>
 
