@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/Storyrr/storyrr/compare/v0.1.0...v0.2.0) (2026-11-26)
+
+
+### 🚀 Features
+
+* **issues:** resolve or reopen an issue from the list ([d2c2136](https://github.com/Storyrr/storyrr/commit/d2c213617015d6a66ae8912078cd3540f2145858))
+* **requests:** show requests one per line, like Seerr ([567ac98](https://github.com/Storyrr/storyrr/commit/567ac98003ab2ac49c0116d90de43d6d9548010c))
+* **search:** show both formats at a glance, with a tab for each ([62481aa](https://github.com/Storyrr/storyrr/commit/62481aae283c7d88cc7468373dc4e5d68b9ca27d))
+* **settings:** show each release's changelog in Settings → About ([8accd12](https://github.com/Storyrr/storyrr/commit/8accd1263e7651da5216d9642301df7a2a2cc0a4))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** keep the attempt limiters out of the browser's code ([1cc9763](https://github.com/Storyrr/storyrr/commit/1cc976369a6c184f48927a7df2d1fb6665c41562))
+* **requests:** open one's own requests from the account menu ([988ddcc](https://github.com/Storyrr/storyrr/commit/988ddccd9f9a33965ae4422bd39318558b768a0c))
+
 ## 0.1.0 (2026-11-26)
 
 
