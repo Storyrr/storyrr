@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import * as v from "valibot";
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { desc, eq, inArray } from "drizzle-orm";
 
@@ -21,8 +22,11 @@ import { requirePermission, requireUser } from "#/server/auth/middleware";
 const requireManageRequests = requirePermission("manage_requests");
 import { db } from "#/server/db";
 import { media, request } from "#/server/db/schema";
+import { SEARCHABLE_TYPES } from "#/lib/media-types";
+import type { RequestStatus } from "#/lib/requests";
 import { runJob } from "#/server/jobs";
 import {
+  activeRequestsByExternalId,
   countPending,
   listRequests,
   requestHistory,
@@ -136,6 +140,26 @@ export const requestMany = createServerFn({ method: "POST" })
     return results;
   });
 
+/**
+ * `rows` with each sent request's download in Chaptarr, or null: not sent, or
+ * sent with nothing grabbed yet ("Downloading" only when Chaptarr's queue says
+ * so). Requests Chaptarr first only queued are looked up too: it may have
+ * started on them since.
+ */
+async function withDownloads<T extends { id: string; status: RequestStatus }>(rows: readonly T[]) {
+  const sentIds = rows.filter((r) => r.status === "submitted").map((r) => r.id);
+  const sent =
+    sentIds.length > 0
+      ? db
+          .select({ id: request.id, format: request.format, backendRef: request.backendRef })
+          .from(request)
+          .where(inArray(request.id, sentIds))
+          .all()
+      : [];
+  const downloads = await downloadsFor(services, sent);
+  return rows.map((row) => ({ ...row, download: downloads.get(row.id) ?? null }));
+}
+
 /** The caller's requests (and those they watch), or every request for admins. */
 export const getRequests = createServerFn({ method: "GET" })
   .middleware([requireUser])
@@ -154,19 +178,7 @@ export const getRequests = createServerFn({ method: "GET" })
       sort: data.sort,
       order: data.order,
     });
-    // "Downloading" only when Chaptarr's queue says so; otherwise a sent request is just requested.
-    // Those Chaptarr first only queued too: it may have started on them since.
-    const sentIds = rows.filter((r) => r.status === "submitted").map((r) => r.id);
-    const sent =
-      sentIds.length > 0
-        ? db
-            .select({ id: request.id, format: request.format, backendRef: request.backendRef })
-            .from(request)
-            .where(inArray(request.id, sentIds))
-            .all()
-        : [];
-    const downloads = await downloadsFor(services, sent);
-    return rows.map((row) => ({ ...row, download: downloads.get(row.id) ?? null }));
+    return withDownloads(rows);
   });
 
 /** A request's status history. Its requester, a watcher, or who can view all requests. */
@@ -315,14 +327,15 @@ export const removeFromChaptarr = createServerFn({ method: "POST" })
  */
 export const getDiscoverRequests = createServerFn({ method: "GET" })
   .middleware([requireUser])
-  .handler(({ context }) => {
+  .handler(async ({ context }) => {
     const { user } = context.session;
-    const recentRequests = listRequests(db, {
+    const recent = listRequests(db, {
       userId: hasPermission(context.permissions, "view_requests") ? undefined : user.id,
       filter: "all",
     })
       .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 20);
+    const recentRequests = await withDownloads(recent);
     const added = db
       .select({
         type: media.type,
@@ -387,3 +400,28 @@ export const getMyQuota = createServerFn({ method: "GET" })
 export const getPendingCount = createServerFn({ method: "GET" })
   .middleware([requireManageRequests])
   .handler(() => ({ count: countPending(db) }));
+
+/**
+ * Where a title's active request stands, for its page while Chaptarr has it:
+ * the request's status and the download's progress. Light enough to poll (the
+ * catalog isn't asked again). Signed-in users.
+ */
+export const getTitleDownload = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(
+    v.object({
+      type: v.picklist(SEARCHABLE_TYPES),
+      id: v.pipe(v.string(), v.nonEmpty(), v.maxLength(200)),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const source = mediaSources[data.type];
+    const active = activeRequestsByExternalId(db, {
+      source: source.source,
+      format: source.type,
+      externalIds: [data.id],
+    }).get(data.id);
+    if (!active) return { status: null, download: null };
+    const [row] = await withDownloads([{ id: active.requestId, status: active.status }]);
+    return { status: active.status, download: row?.download ?? null };
+  });

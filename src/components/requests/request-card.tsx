@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 import { UserAvatar } from "#/components/layout/user-avatar";
 import { Cover } from "#/components/media/cover";
+import { DownloadProgress } from "#/components/requests/download-progress";
 import { RequestStatusBadge } from "#/components/requests/request-status-badge";
 import { yearOf } from "#/lib/format";
 import type { MediaType, RequestStatus } from "#/lib/requests";
@@ -13,6 +14,8 @@ export type RequestCardItem = {
   waitingForChaptarr: boolean;
   /** Null once the requester's account is deleted. */
   requester: { name: string } | null;
+  /** Present while Chaptarr downloads it. */
+  download?: { progress: number | null } | null;
   media: {
     type: MediaType;
     externalId: string;
@@ -59,8 +62,12 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
           <RequestStatusBadge
             status={request.status}
             waitingForChaptarr={request.waitingForChaptarr}
+            download={request.download}
           />
         </span>
+        {request.status === "submitted" && request.download ? (
+          <DownloadProgress download={request.download} />
+        ) : null}
       </div>
       <Cover
         src={request.media.coverUrl}

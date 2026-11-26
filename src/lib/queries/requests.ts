@@ -6,7 +6,9 @@ import {
   getRequestHistory,
   getPendingCount,
   getRequests,
+  getTitleDownload,
 } from "#/functions/requests.functions";
+import type { SearchableType } from "#/lib/media-types";
 import { IN_FLIGHT_STATUSES } from "#/lib/request-status";
 import type { MediaType, RequestFilter } from "#/lib/requests";
 import type { ListRequestsInput } from "#/lib/schemas/requests";
@@ -55,6 +57,19 @@ export const discoverRequestsQuery = () =>
   queryOptions({
     queryKey: [...requestKeys.all, "discover"] as const,
     queryFn: () => getDiscoverRequests(),
+    // Like the Requests page: follow downloads while something is on its way.
+    refetchInterval: (query) =>
+      query.state.data?.recentRequests.some((r) => IN_FLIGHT_STATUSES.includes(r.status))
+        ? 10_000
+        : false,
+  });
+
+/** A title's active request and its download, polled while Chaptarr has it. */
+export const titleDownloadQuery = (type: SearchableType, id: string) =>
+  queryOptions({
+    queryKey: [...requestKeys.all, "title-download", type, id] as const,
+    queryFn: () => getTitleDownload({ data: { type, id } }),
+    refetchInterval: (query) => (query.state.data?.status === "submitted" ? 10_000 : false),
   });
 
 /** Pending requests count for the sidebar badge, refreshed every minute. */

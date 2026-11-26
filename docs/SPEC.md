@@ -121,6 +121,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - Status: `pending → approved → submitted → available`; failures go to `failed` with the upstream reason and a **Retry** action. While Chaptarr is unreachable or answers 429/502/503/504, an approved request stays `approved` and the 5-minute job sends it later (decided 2026-11-26); a timeout still fails, since Chaptarr may have taken it.
 - A library match by title alone doesn't make a request available when that title was already in the library as the request was sent (decided 2026-11-26: it is another book, or the copy to replace): Chaptarr's file or an exact ID does. Removing a media server forgets its titles.
 - Availability updates from: Chaptarr webhook (import events), a periodic job (every ~15 min) checking Chaptarr files and the media servers (Audiobookshelf, Kavita, Komga, Jellyfin), and a manual "Check now".
+- While Chaptarr downloads a sent request, its progress (from Chaptarr's queue, by provider ID) shows as a bar with a percentage on the Requests page, Discover's recent requests and the title's page, refreshed about every 10 seconds (decided 2026-11-26, like Seerr).
 - Every transition is recorded (who, when, from → to, message) and shown in the request history.
 
 ### 4.7 Requests page (user view)
