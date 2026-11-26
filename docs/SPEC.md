@@ -176,7 +176,7 @@ Seerr-like tabs (decided 2026-11-24), label column on the left, control on the r
 ### 4.9b Polish (decided 2026-11-24)
 
 - When the server runs another version than the open page (Storyrr was updated), a dialog offers to reload.
-- Accounts without a real email (media-server sign-in) see a notice until they add one; users can change their own email in their settings (no verification: invite-only instance).
+- Accounts without a real email (media-server sign-in) see a notice until they add one; users can change their own email in their settings (no verification: invite-only instance; confirmed with their current password when the account has one, decided 2026-11-26).
 
 ### 4.10 Installable app (decided 2026-11-24)
 

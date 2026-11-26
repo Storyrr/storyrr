@@ -640,6 +640,7 @@
   "account_warning_email_description": "Votre compte n’a pas encore d’e-mail : les réinitialisations de mot de passe et les notifications par e-mail ne peuvent pas vous parvenir.",
   "account_warning_email_action": "L’ajouter dans vos paramètres",
   "profile_email_own_description": "Pour vous connecter, réinitialiser votre mot de passe et recevoir les notifications par e-mail.",
+  "profile_email_password_description": "Pour changer votre e-mail, confirmez avec votre mot de passe actuel.",
   "profile_email_taken": "Un autre compte utilise déjà cet e-mail.",
   "settings_tab_network": "Réseau",
   "network_proxy_title": "Proxy sortant",

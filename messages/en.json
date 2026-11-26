@@ -640,6 +640,7 @@
   "account_warning_email_description": "Your account has no email yet, so password resets and email notifications can't reach you.",
   "account_warning_email_action": "Add it in your settings",
   "profile_email_own_description": "Used to sign in, reset your password and receive email notifications.",
+  "profile_email_password_description": "To change your email, confirm with your current password.",
   "profile_email_taken": "Another account already uses this email.",
   "settings_tab_network": "Network",
   "network_proxy_title": "Outbound proxy",

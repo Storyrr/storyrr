@@ -79,12 +79,14 @@ export function GeneralSettings({ userId }: { userId?: string }) {
   });
   const locale: LocaleChoice =
     account.locale && isLocale(account.locale) ? account.locale : "default";
+  // A made-up address (media-server account without one) starts blank, to be filled in.
+  const initialEmail = isPlaceholderEmail(account.email) ? "" : account.email;
   const form = useForm({
     defaultValues: {
       name: account.name,
-      // A made-up address (media-server account without one) starts blank, to be filled in.
-      email: isPlaceholderEmail(account.email) ? "" : account.email,
+      email: initialEmail,
       locale,
+      currentPassword: "",
     },
     validators: { onSubmit: ProfileFormSchema },
     onSubmit: async ({ value, formApi }) => {
@@ -148,6 +150,29 @@ export function GeneralSettings({ userId }: { userId?: string }) {
               />
             )}
           </form.Field>
+          <form.Subscribe selector={(state) => state.values.email}>
+            {(email) =>
+              // Changing one's own email takes the current password (accounts that have one).
+              account.self && account.hasPassword && email !== initialEmail ? (
+                <form.Field name="currentPassword">
+                  {(field) => (
+                    <TextField
+                      label={m.profile_current_password()}
+                      layout="row"
+                      description={m.profile_email_password_description()}
+                      type="password"
+                      name={field.name}
+                      autoComplete="current-password"
+                      value={field.state.value}
+                      onChange={field.handleChange}
+                      onBlur={field.handleBlur}
+                      errors={field.state.meta.errors}
+                    />
+                  )}
+                </form.Field>
+              ) : null
+            }
+          </form.Subscribe>
           <form.Field name="locale">
             {(field) => (
               <SelectField

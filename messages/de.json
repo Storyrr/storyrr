@@ -640,6 +640,7 @@
   "account_warning_email_description": "Ihr Konto hat noch keine E-Mail-Adresse, daher können Sie weder Passwort-Zurücksetzungen noch E-Mail-Benachrichtigungen erhalten.",
   "account_warning_email_action": "In Ihren Einstellungen hinzufügen",
   "profile_email_own_description": "Wird zum Anmelden, zum Zurücksetzen Ihres Passworts und für E-Mail-Benachrichtigungen verwendet.",
+  "profile_email_password_description": "Um Ihre E-Mail-Adresse zu ändern, bestätigen Sie mit Ihrem aktuellen Passwort.",
   "profile_email_taken": "Ein anderes Konto verwendet diese E-Mail-Adresse bereits.",
   "settings_tab_network": "Netzwerk",
   "network_proxy_title": "Ausgehender Proxy",

@@ -640,6 +640,7 @@
   "account_warning_email_description": "Su cuenta aún no tiene correo electrónico, así que no pueden llegarle los restablecimientos de contraseña ni las notificaciones por correo.",
   "account_warning_email_action": "Añadirlo en sus ajustes",
   "profile_email_own_description": "Se usa para iniciar sesión, restablecer su contraseña y recibir notificaciones por correo electrónico.",
+  "profile_email_password_description": "Para cambiar su correo, confirme con su contraseña actual.",
   "profile_email_taken": "Otra cuenta ya usa este correo electrónico.",
   "settings_tab_network": "Red",
   "network_proxy_title": "Proxy de salida",

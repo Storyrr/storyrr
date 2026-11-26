@@ -62,6 +62,23 @@ export async function setAccountPassword(userId: string, password: string): Prom
   await ctx.internalAdapter.deleteUserSessions(userId);
 }
 
+/** Whether the account has a Storyrr password (not one signing in with a media server only). */
+export async function hasAccountPassword(userId: string): Promise<boolean> {
+  const ctx = await context();
+  return Boolean((await ctx.internalAdapter.findCredentialAccount(userId))?.password);
+}
+
+/** Whether `password` is the account's: "none" when it has no password (media-server sign-in only). */
+export async function checkAccountPassword(
+  userId: string,
+  password: string,
+): Promise<"ok" | "wrong" | "none"> {
+  const ctx = await context();
+  const hash = (await ctx.internalAdapter.findCredentialAccount(userId))?.password;
+  if (!hash) return "none";
+  return (await ctx.password.verify({ hash, password })) ? "ok" : "wrong";
+}
+
 export async function updateAccount(
   userId: string,
   data: { name?: string; email?: string; role?: "admin" | "user" },

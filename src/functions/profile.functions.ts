@@ -18,7 +18,12 @@ import { hasPermission, type Permission } from "#/lib/permissions";
 import { CHAPTARR_FORMATS } from "#/lib/schemas/settings";
 import { m } from "#/paraglide/messages.js";
 import { auth } from "#/server/auth";
-import { setAccountPassword, updateAccount } from "#/server/auth/accounts";
+import {
+  checkAccountPassword,
+  hasAccountPassword,
+  setAccountPassword,
+  updateAccount,
+} from "#/server/auth/accounts";
 import { createAttemptLimiter } from "#/server/auth/attempts";
 import { linkedServers, linkOwnAccount, unlinkAccount } from "#/server/auth/media-server";
 import { requirePermission, requireUser } from "#/server/auth/middleware";
@@ -34,6 +39,8 @@ import { mediaServerSignIn } from "#/server/settings/definitions";
 
 /** Five wrong passwords, then a ten-minute wait. */
 const linkAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });
+/** Same for the current password asked to change one's email. */
+const passwordAttempts = createAttemptLimiter({ max: 5, windowMs: 10 * 60_000 });
 
 type Caller = { session: { user: { id: string } }; permissions: readonly Permission[] };
 
@@ -102,6 +109,8 @@ export const getAccount = createServerFn({ method: "GET" })
       /** Why they may not (null when they may). */
       lock,
       banned: row.banned ?? false,
+      /** One's own account only: whether it has a Storyrr password (asked to change the email). */
+      hasPassword: self && (await hasAccountPassword(row.id)),
       locale: pref?.locale ?? null,
       /** Effective permissions (with the defaults and what they imply). */
       permissions,
@@ -129,6 +138,26 @@ export const updateProfile = createServerFn({ method: "POST" })
         .get();
       if (taken)
         return { ok: false as const, field: "email" as const, message: m.profile_email_taken() };
+    }
+    // The email signs in and receives password resets: changing one's own takes the
+    // current password, so a borrowed session can't quietly take the account over.
+    if (self && data.email.toLowerCase() !== row.email.toLowerCase()) {
+      if (!passwordAttempts.allowed(row.id))
+        return {
+          ok: false as const,
+          field: "currentPassword" as const,
+          message: m.sign_in_error_too_many(),
+        };
+      const check = await checkAccountPassword(row.id, data.currentPassword);
+      if (check === "wrong") {
+        passwordAttempts.failed(row.id);
+        return {
+          ok: false as const,
+          field: "currentPassword" as const,
+          message: m.password_wrong(),
+        };
+      }
+      passwordAttempts.succeeded(row.id);
     }
     if (self && data.email === row.email) {
       if (data.name !== row.name)

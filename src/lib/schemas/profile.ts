@@ -15,9 +15,11 @@ export const AccountTargetSchema = v.object({
 
 export const ProfileFormSchema = v.object({
   name: SetupSchema.entries.name,
-  /** Only admins change it, and only on other accounts. */
+  /** One's own (confirmed with the current password), or another account's for user managers. */
   email: SetupSchema.entries.email,
   locale: v.picklist(LOCALE_CHOICES),
+  /** Asked to change one's own email (when the account has a password); empty otherwise. */
+  currentPassword: v.pipe(v.string(), v.maxLength(PASSWORD_MAX_LENGTH)),
 });
 
 export const ProfileSchema = v.object({
