@@ -147,8 +147,9 @@ export function createJellyfinClient({ url, apiKey }: JellyfinConnection, fetch:
           if (!result.ok) return result;
           for (const item of result.value.Items) {
             const audio = item.Type === "AudioBook";
-            // An audiobook's files share their Album (the book); a book's Name is its title.
-            const titles = (audio ? [item.Album, item.Name] : [item.Name]).filter(
+            // An audiobook's files share their Album (the book): a file's own Name is a
+            // chapter ("Prologue"), used only when it has no album. A book's Name is its title.
+            const titles = (audio ? [item.Album ?? item.Name] : [item.Name]).filter(
               (title): title is string => Boolean(title),
             );
             items.push({

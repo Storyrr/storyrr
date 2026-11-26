@@ -41,7 +41,7 @@ describe("Jellyfin client", () => {
           itemId: "a1",
           libraryId: "lib-books",
           format: "audiobook",
-          titles: ["Dune", "Chapitre 1"],
+          titles: ["Dune"],
           author: "Frank Herbert",
         },
         {
