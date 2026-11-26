@@ -6,7 +6,7 @@ import { ok, requestJson } from "#/server/services/result";
 
 /** Public GitHub repository the releases come from (release-please tags them vX.Y.Z). */
 export const REPOSITORY_URL = "https://github.com/Storyrr/storyrr";
-const RELEASES_API = "https://api.github.com/repos/Storyrr/storyrr/releases?per_page=5";
+const RELEASES_API = "https://api.github.com/repos/Storyrr/storyrr/releases?per_page=20";
 
 const ReleasesSchema = v.array(
   v.looseObject({
@@ -14,12 +14,22 @@ const ReleasesSchema = v.array(
     name: v.nullable(v.string()),
     html_url: v.string(),
     published_at: v.nullable(v.string()),
+    body: v.optional(v.nullable(v.string())),
     draft: v.optional(v.boolean(), false),
     prerelease: v.optional(v.boolean(), false),
   }),
 );
 
-export type Release = { version: string; url: string; publishedAt: string | null };
+export type Release = {
+  version: string;
+  url: string;
+  publishedAt: string | null;
+  /** The release notes, in Markdown (shown in Settings → About). */
+  notes: string;
+};
+
+/** Enough for any changelog; a longer body is cut rather than sent whole to every admin page. */
+const MAX_NOTES_LENGTH = 40_000;
 
 const TTL_MS = 60 * 60_000;
 let cache: { at: number; releases: Release[] } | undefined;
@@ -43,6 +53,7 @@ export async function latestReleases(fetch: FetchFn): Promise<ServiceResult<Rele
       version: release.tag_name.replace(/^v/, ""),
       url: release.html_url,
       publishedAt: release.published_at,
+      notes: (release.body ?? "").slice(0, MAX_NOTES_LENGTH),
     }));
   cache = { at: Date.now(), releases };
   return ok(releases);

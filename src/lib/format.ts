@@ -29,6 +29,14 @@ export function formatDate(
       );
 }
 
+/** "14 days ago" / "today", in the current locale: how long ago a date was, in whole days. */
+export function formatDaysAgo(value: string | Date, now = new Date()): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  const days = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 86_400_000));
+  return new Intl.RelativeTimeFormat(getLocale(), { numeric: "auto" }).format(-days, "day");
+}
+
 export const yearOf = (isoDate: string | undefined) => isoDate?.slice(0, 4);
 
 /** "A, B and C" in the current locale. */

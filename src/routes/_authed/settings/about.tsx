@@ -1,10 +1,19 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, FileTextIcon } from "lucide-react";
 
 import { SettingsRow, SettingsSection } from "#/components/settings/settings-section";
+import { Markdown } from "#/components/markdown";
 import { Badge } from "#/components/ui/badge";
-import { formatDate } from "#/lib/format";
+import { Button } from "#/components/ui/button";
+import {
+  Dialog,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "#/components/ui/dialog";
+import { formatDaysAgo } from "#/lib/format";
 import { aboutQuery } from "#/lib/queries/about";
 import { m } from "#/paraglide/messages.js";
 
@@ -84,26 +93,62 @@ function AboutPage() {
         {about.releases.length === 0 ? (
           <p className="text-sm text-muted-foreground">{m.about_releases_unavailable()}</p>
         ) : (
-          about.releases.map((release) => (
-            <SettingsRow
-              key={release.version}
-              label={release.version}
-              description={
-                release.publishedAt
-                  ? formatDate(new Date(release.publishedAt), { dateStyle: "long" })
-                  : undefined
-              }
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                {release.version === about.version ? (
-                  <Badge variant="secondary">{m.about_current_version()}</Badge>
-                ) : null}
-                <ExternalLink href={release.url}>{m.about_release_notes()}</ExternalLink>
-              </div>
-            </SettingsRow>
-          ))
+          <ul className="flex flex-col gap-2">
+            {about.releases.map((release, index) => (
+              <ReleaseRow
+                key={release.version}
+                release={release}
+                latest={index === 0}
+                current={release.version === about.version}
+              />
+            ))}
+          </ul>
         )}
       </SettingsSection>
     </div>
+  );
+}
+
+type AboutRelease = { version: string; url: string; publishedAt: string | null; notes: string };
+
+/** One version, like Seerr's: how old, its name, where it stands, and its changelog in a dialog. */
+function ReleaseRow({
+  release,
+  latest,
+  current,
+}: {
+  release: AboutRelease;
+  latest: boolean;
+  current: boolean;
+}) {
+  const name = m.about_release_name({ version: release.version });
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-4 py-3">
+      {release.publishedAt ? (
+        <span className="text-xs text-muted-foreground">{formatDaysAgo(release.publishedAt)}</span>
+      ) : null}
+      <span className="font-heading text-base font-semibold">{name}</span>
+      {latest ? <Badge>{m.about_latest_version()}</Badge> : null}
+      {current ? <Badge variant="secondary">{m.about_current_version()}</Badge> : null}
+      <DialogTrigger>
+        <Button variant="outline" size="sm" className="ml-auto">
+          <FileTextIcon data-icon="inline-start" />
+          {m.about_view_changelog()}
+        </Button>
+        <Dialog className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{m.about_changelog_title({ name })}</DialogTitle>
+          </DialogHeader>
+          {release.notes.trim() ? (
+            <Markdown source={release.notes} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{m.about_changelog_empty()}</p>
+          )}
+          <DialogFooter>
+            <ExternalLink href={release.url}>{m.about_view_on_github()}</ExternalLink>
+          </DialogFooter>
+        </Dialog>
+      </DialogTrigger>
+    </li>
   );
 }
