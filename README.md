@@ -6,10 +6,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Storyrr/storyrr/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Storyrr/storyrr"></a>
-  <a href="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Storyrr/storyrr/ci.yml?branch=main&label=CI"></a>
+  <a href="https://github.com/Storyrr/storyrr/actions/workflows/release.yml"><img alt="Storyrr Release" src="https://github.com/Storyrr/storyrr/actions/workflows/release.yml/badge.svg"></a>
+  <a href="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml"><img alt="Storyrr CI" src="https://github.com/Storyrr/storyrr/actions/workflows/ci.yml/badge.svg"></a>
+</p>
+<p align="center">
   <a href="https://github.com/Storyrr/storyrr/pkgs/container/storyrr"><img alt="Docker pulls" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2FStoryrr%2Fstoryrr%2Fstoryrr&query=downloadCount&label=docker%20pulls"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/Storyrr/storyrr"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to [Chaptarr](https://github.com/Chaptarr/chaptarr) and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/), [Kavita](https://www.kavitareader.com/), [Komga](https://komga.org/) and [Jellyfin](https://jellyfin.org/).
