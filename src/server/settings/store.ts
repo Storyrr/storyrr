@@ -5,7 +5,7 @@ import * as v from "valibot";
 import type { AppDatabase } from "#/server/db/client";
 import { setting } from "#/server/db/schema";
 
-import { seal, unseal } from "./crypto";
+import { isSealed, seal, unseal } from "./crypto";
 
 /**
  * A typed setting: its key, its Valibot schema, and whether the whole value
@@ -15,6 +15,8 @@ export type SettingDefinition<TSchema extends v.GenericSchema> = {
   key: string;
   schema: TSchema;
   secret: boolean;
+  /** A secret that older versions stored in clear: such a stored value is still read. */
+  sealedLater?: boolean;
 };
 
 export function defineSetting<TSchema extends v.GenericSchema>(
@@ -36,7 +38,10 @@ export function createSettingsStore(db: AppDatabase, key: Buffer) {
         .where(eq(setting.key, definition.key));
       if (!row) return undefined;
       const stored: unknown = JSON.parse(row.value);
-      const json: unknown = definition.secret ? JSON.parse(unseal(key, stored)) : stored;
+      // `sealedLater`: the setting was stored in clear by older versions; read
+      // such a value as it is (the next save seals it).
+      const sealed = definition.secret && !(definition.sealedLater && !isSealed(stored));
+      const json: unknown = sealed ? JSON.parse(unseal(key, stored)) : stored;
       return v.parse(definition.schema, json);
     },
 

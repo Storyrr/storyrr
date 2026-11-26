@@ -4,7 +4,7 @@ import * as v from "valibot";
 import {
   AppUrlSchema,
   FormatDefaultsSchema,
-  NetworkSettingsSchema,
+  StoredNetworkSettingsSchema,
   LibrarySelectionSchema,
   MetadataSettingsSchema,
   UserSettingsSchema,
@@ -169,8 +169,10 @@ export const appUrlSetting = defineSetting({
 /** Settings → Network: outbound proxy and the cover image cache. */
 export const networkSettings = defineSetting({
   key: "network",
-  schema: NetworkSettingsSchema,
-  secret: false,
+  schema: StoredNetworkSettingsSchema,
+  // The proxy URL can carry a password. Stored in clear before 0.1.
+  secret: true,
+  sealedLater: true,
 });
 
 /** Discover's rows, in order (Settings → General → Discover). */

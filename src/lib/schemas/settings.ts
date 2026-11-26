@@ -155,10 +155,22 @@ export const NetworkSettingsSchema = v.object({
   noProxy: v.pipe(v.string(), v.trim(), v.maxLength(1000)),
   /** Serve covers through Storyrr, cached on disk. */
   imageCache: v.boolean(),
+  /**
+   * Storyrr is only reached through a reverse proxy or tunnel: take the
+   * visitor's address from its X-Forwarded-For header (sign-in rate limits).
+   * Off: the connection's own address, which a visitor can't forge.
+   */
+  trustProxy: v.boolean(),
+});
+/** As stored: values saved before `trustProxy` existed don't have it. */
+export const StoredNetworkSettingsSchema = v.object({
+  ...NetworkSettingsSchema.entries,
+  trustProxy: v.optional(v.boolean(), false),
 });
 export type NetworkSettings = v.InferOutput<typeof NetworkSettingsSchema>;
 export const DEFAULT_NETWORK_SETTINGS: NetworkSettings = {
   proxyUrl: "",
   noProxy: "",
   imageCache: false,
+  trustProxy: false,
 };

@@ -73,6 +73,20 @@ describe("settings store", () => {
     expect(await store.get(plain)).toEqual({ enabled: false });
   });
 
+  it("reads a secret an older version stored in clear, and seals it on the next save", async () => {
+    const later = defineSetting({ ...plain, key: "test.later", secret: true, sealedLater: true });
+    const store = createSettingsStore(db, key);
+    await db.insert(setting).values({ key: later.key, value: JSON.stringify({ enabled: true }) });
+    expect(await store.get(later)).toEqual({ enabled: true });
+    await store.set(later, { enabled: false });
+    const [row] = await db.select().from(setting).where(eq(setting.key, later.key));
+    expect(row?.value).not.toContain("enabled");
+    expect(await store.get(later)).toEqual({ enabled: false });
+    // A secret that was always sealed still refuses a value in clear.
+    await db.insert(setting).values({ key: service.key, value: JSON.stringify({ url: "x" }) });
+    await expect(store.get(service)).rejects.toBeInstanceOf(SettingsDecryptionError);
+  });
+
   it("validates values before writing", async () => {
     const store = createSettingsStore(db, key);
     await expect(store.set(service, { url: "not a url", apiKey: "k" })).rejects.toThrow();

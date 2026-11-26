@@ -35,6 +35,11 @@ export function seal(key: Buffer, plaintext: string): Sealed {
   };
 }
 
+/** Whether a stored value is a sealed one (as opposed to a value saved in clear). */
+export function isSealed(stored: unknown): boolean {
+  return v.is(SealedSchema, stored);
+}
+
 export class SettingsDecryptionError extends Error {
   constructor() {
     super("Stored secret can't be decrypted (was BETTER_AUTH_SECRET changed?)");
