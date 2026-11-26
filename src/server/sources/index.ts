@@ -47,7 +47,9 @@ export type MediaSource = {
    */
   owned(
     db: AppDatabase,
-    items: readonly Pick<MediaSummary, "externalId" | "title">[],
+    items: readonly (Pick<MediaSummary, "externalId" | "title" | "altTitles"> & {
+      series?: readonly { name: string }[] | null;
+    })[],
     options?: { exact?: boolean },
   ): Set<string>;
 };
@@ -143,14 +145,15 @@ const ebooks: MediaSource = {
     return hardcover ? hardcover.tag(id, page) : fail("not_configured", "Hardcover token missing");
   },
   // By normalized title in Kavita, Komga and Jellyfin (no shared ID): "probably owned".
+  // Under any of the work's titles: a library often holds a translation.
   owned(db, items, { exact = false } = {}) {
-    const owned = exact
-      ? new Set<string>()
-      : ownedTitles(
-          db,
-          "ebook",
-          items.map((item) => item.title),
-        );
+    // Some editions are titled like the series ("Harry Potter"), which a library also
+    // lists as a series: that title would mark every volume as owned.
+    const titlesOf = (item: (typeof items)[number]) => {
+      const series = new Set(item.series?.map(({ name }) => titleKey(name)));
+      return [item.title, ...(item.altTitles ?? []).filter((alt) => !series.has(titleKey(alt)))];
+    };
+    const owned = exact ? new Set<string>() : ownedTitles(db, "ebook", items.flatMap(titlesOf));
     const manual = manuallyOwned(
       db,
       "hardcover",
@@ -158,7 +161,11 @@ const ebooks: MediaSource = {
     );
     return new Set(
       items
-        .filter((item) => owned.has(titleKey(item.title)) || manual.has(item.externalId))
+        .filter(
+          (item) =>
+            titlesOf(item).some((title) => owned.has(titleKey(title))) ||
+            manual.has(item.externalId),
+        )
         .map((i) => i.externalId),
     );
   },

@@ -61,7 +61,7 @@ async function annotate(type: SearchableType, items: MediaSummary[], sortAccepte
     source.source,
     items.map((item) => item.externalId),
   );
-  const results = items.map((item) => ({
+  const results = items.map(({ altTitles: _altTitles, ...item }) => ({
     ...item,
     availability: availabilityOf(
       item.externalId,
@@ -133,9 +133,10 @@ export const getMedia = createServerFn({ method: "GET" })
       format: source.type,
       externalIds: [result.value.externalId],
     }).get(result.value.externalId);
+    const { altTitles: _altTitles, ...item } = result.value;
     return {
       ok: true as const,
-      item: result.value,
+      item,
       availability: availabilityOf(
         result.value.externalId,
         owned ? new Set([result.value.externalId]) : new Set<string>(),

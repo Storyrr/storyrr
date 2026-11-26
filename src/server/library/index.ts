@@ -226,6 +226,8 @@ export async function syncJellyfin(
   return ok({ items: grouped.size });
 }
 
+const KEYS_PER_QUERY = 500;
+
 /**
  * Which of these titles a media server probably holds in this format (normalized
  * title match: no shared ID). Audiobookshelf is left out: its titles are often
@@ -238,16 +240,21 @@ export function ownedTitles(
 ): Set<string> {
   const keys = [...new Set(titles.map(titleKey).filter(Boolean))];
   if (keys.length === 0) return new Set();
-  const rows = db
-    .selectDistinct({ key: libraryItem.matchKey })
-    .from(libraryItem)
-    .where(
-      and(
-        eq(libraryItem.format, format),
-        ne(libraryItem.backend, "audiobookshelf"),
-        inArray(libraryItem.matchKey, keys),
-      ),
-    )
-    .all();
-  return new Set(rows.flatMap((row) => (row.key ? [row.key] : [])));
+  const found = new Set<string>();
+  // Translated titles can make thousands of keys: stay under SQLite's variable limit.
+  for (let start = 0; start < keys.length; start += KEYS_PER_QUERY) {
+    const rows = db
+      .selectDistinct({ key: libraryItem.matchKey })
+      .from(libraryItem)
+      .where(
+        and(
+          eq(libraryItem.format, format),
+          ne(libraryItem.backend, "audiobookshelf"),
+          inArray(libraryItem.matchKey, keys.slice(start, start + KEYS_PER_QUERY)),
+        ),
+      )
+      .all();
+    for (const row of rows) if (row.key) found.add(row.key);
+  }
+  return found;
 }

@@ -35,6 +35,7 @@ describe("Hardcover client", () => {
         releaseDate: "1965",
         series: [{ name: "Dune", position: "1" }],
         coverUrl: "https://assets.hardcover.app/edition/30408655/cover.jpg",
+        altTitles: ["Dune", "Dune : Le cycle de Dune"],
       },
       expect.objectContaining({ externalId: "435109", series: [], coverUrl: undefined }),
     ]);

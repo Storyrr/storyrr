@@ -44,6 +44,8 @@ const SearchDocumentSchema = v.looseObject({
   featured_series_position: v.optional(v.nullable(v.number())),
   image: v.optional(v.nullable(v.looseObject({ url: v.optional(v.nullable(v.string())) }))),
   has_ebook: v.optional(v.nullable(v.boolean())),
+  // Checked on 2026-11-26: the titles of the book's editions, translations included.
+  alternative_titles: v.optional(v.nullable(v.array(v.string())), []),
 });
 type SearchDocument = v.InferOutput<typeof SearchDocumentSchema>;
 
@@ -119,6 +121,10 @@ const BookSchema = v.looseObject({
     ),
   ),
   editions: EditionLanguagesSchema,
+  edition_titles: v.optional(
+    v.array(v.looseObject({ title: v.optional(v.nullable(v.string())) })),
+    [],
+  ),
   default_ebook_edition: v.optional(
     v.nullable(
       v.looseObject({
@@ -201,6 +207,11 @@ const SEARCH_QUERY = `query StoryrrSearch($query: String!, $perPage: Int!) {
 // One edition per language is enough to know which languages a book exists in.
 const EDITION_LANGUAGES = `editions(distinct_on: language_id, order_by: {language_id: asc}) { language { code3 code2 } }`;
 
+// A book's titles across its editions: a library may hold it under a translation's title.
+// (`books.alternative_titles` is empty in GraphQL, checked on 2026-11-26; search documents fill it.)
+const EDITION_TITLES_LIMIT = 300;
+const EDITION_TITLES = `edition_titles: editions(distinct_on: title, order_by: {title: asc}, limit: ${EDITION_TITLES_LIMIT}) { title }`;
+
 const SERIES_SEARCH_QUERY = `query StoryrrSeriesSearch($query: String!, $perPage: Int!) {
   search(query: $query, query_type: "Series", per_page: $perPage, page: 1) { results }
 }`;
@@ -235,7 +246,8 @@ const BOOK_CARD = `id slug title subtitle release_date pages rating ratings_coun
     image { url }
     contributions(where: {contributor_role: {slug: {_eq: "author"}}}) { author { id name } }
     featured_book_series { position details series { id name } }
-    ${EDITION_LANGUAGES}`;
+    ${EDITION_LANGUAGES}
+    ${EDITION_TITLES}`;
 
 const BOOKS_QUERY = `query StoryrrBooks($ids: [Int!]!) {
   books(where: {id: {_in: $ids}}) { ${BOOK_CARD} }
@@ -432,6 +444,7 @@ const BOOK_QUERY = `query StoryrrBook($id: Int!) {
     featured_book_series { position details series { id name } }
     default_ebook_edition { publisher { name } language { language } }
     ${EDITION_LANGUAGES}
+    ${EDITION_TITLES}
   }
 }`;
 
@@ -738,6 +751,7 @@ function toSummary(document: SearchDocument): MediaSummary | null {
       ? [{ name: seriesName, position: positionText(document.featured_series_position) }]
       : [],
     coverUrl: document.image?.url ?? undefined,
+    altTitles: document.alternative_titles ?? [],
   };
 }
 
@@ -792,6 +806,7 @@ function toDetails(book: HardcoverBook): MediaDetails {
     pages: book.pages ?? undefined,
     rating: bookRating(book),
     languages: editionLanguages(book.editions),
+    altTitles: book.edition_titles.flatMap(({ title }) => (title ? [title] : [])),
     description: book.description ? htmlToText(book.description) : undefined,
     // Hardcover's "add an edition" form for this book (by ISBN or another identifier).
     addEditionUrl: book.slug

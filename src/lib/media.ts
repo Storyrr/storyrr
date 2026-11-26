@@ -35,6 +35,12 @@ export type MediaSummary = {
    * member): offered when no edition is in a language Chaptarr accepts.
    */
   addEditionUrl?: string;
+  /**
+   * The work's titles in its other editions (translations), to recognize it in
+   * a library under another language's title. Server-side only: removed before
+   * an item is sent to the browser.
+   */
+  altTitles?: string[];
 };
 
 export type MediaRating = { value: number; count: number };
