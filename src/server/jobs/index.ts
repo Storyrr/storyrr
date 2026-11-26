@@ -25,9 +25,15 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
         ["komga", "Komga"],
         ["jellyfin", "Jellyfin"],
       ] as const) {
-        const synced = await syncLibrary({ db, services, settings }, service);
-        if (!synced.ok && synced.error.kind !== "not_configured")
-          failures.push(`${label} sync: ${synced.error.message}`);
+        try {
+          const synced = await syncLibrary({ db, services, settings }, service);
+          if (!synced.ok && synced.error.kind !== "not_configured")
+            failures.push(`${label} sync: ${synced.error.message}`);
+        } catch (error) {
+          // E.g. a stored connection that can no longer be read: the other servers
+          // and the availability check below still run.
+          failures.push(`${label} sync: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       await checkAvailability({ db, services });
       await failStuckRequests({ db, services, settings });

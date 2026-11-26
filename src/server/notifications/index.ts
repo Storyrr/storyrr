@@ -1,3 +1,5 @@
+import type * as v from "valibot";
+
 import "@tanstack/react-start/server-only";
 import { eq } from "drizzle-orm";
 
@@ -25,7 +27,7 @@ import { onAppEvent, type AppEvent } from "#/server/events";
 import { permissionsOf } from "#/server/permissions";
 import type { FetchFn } from "#/server/services/result";
 import { notificationAgentSettings, notificationGeneral } from "#/server/settings/definitions";
-import type { SettingsStore } from "#/server/settings/store";
+import type { SettingDefinition, SettingsStore } from "#/server/settings/store";
 
 import {
   sendPersonal,
@@ -224,6 +226,23 @@ const tag = (
 ): StoredAgent[] =>
   stored && target ? [{ enabled: stored.enabled, events: stored.events, target }] : [];
 
+/**
+ * An agent's stored settings, or none when they can't be read (saved by an
+ * older version, or sealed with another secret): that agent stays quiet, the
+ * others keep working.
+ */
+async function read<TSchema extends v.GenericSchema>(
+  settings: SettingsStore,
+  definition: SettingDefinition<TSchema>,
+): Promise<v.InferOutput<TSchema> | undefined> {
+  try {
+    return await settings.get(definition);
+  } catch (error) {
+    console.error(`Notification settings "${definition.key}" can't be read:`, error);
+    return undefined;
+  }
+}
+
 /** Every configured agent with its settings (one typed read per agent). */
 export async function loadAgents(settings: SettingsStore): Promise<StoredAgent[]> {
   const s = notificationAgentSettings;
@@ -239,16 +258,16 @@ export async function loadAgents(settings: SettingsStore): Promise<StoredAgent[]
     webhook,
     webpushAgent,
   ] = await Promise.all([
-    settings.get(s.email),
-    settings.get(s.discord),
-    settings.get(s.slack),
-    settings.get(s.telegram),
-    settings.get(s.ntfy),
-    settings.get(s.gotify),
-    settings.get(s.pushover),
-    settings.get(s.pushbullet),
-    settings.get(s.webhook),
-    settings.get(s.webpush),
+    read(settings, s.email),
+    read(settings, s.discord),
+    read(settings, s.slack),
+    read(settings, s.telegram),
+    read(settings, s.ntfy),
+    read(settings, s.gotify),
+    read(settings, s.pushover),
+    read(settings, s.pushbullet),
+    read(settings, s.webhook),
+    read(settings, s.webpush),
   ]);
   return [
     ...tag(email, email ? { agent: "email", config: email.config } : null),
