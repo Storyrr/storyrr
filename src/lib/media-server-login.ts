@@ -50,6 +50,8 @@ export const MEDIA_SERVER_SIGN_IN_ERRORS = [
   "email_in_use",
   /** Linking: the media-server account is already another Storyrr user's. */
   "linked_elsewhere",
+  /** Linking: too many wrong passwords in a row. */
+  "too_many",
 ] as const;
 export type MediaServerSignInError = (typeof MEDIA_SERVER_SIGN_IN_ERRORS)[number];
 
@@ -71,6 +73,7 @@ const ERROR_MESSAGES: Record<MediaServerSignInError, () => string> = {
   unreachable: m.sign_in_error_unreachable,
   email_in_use: m.sign_in_error_email_in_use,
   linked_elsewhere: m.sign_in_error_linked_elsewhere,
+  too_many: m.sign_in_error_too_many,
 };
 
 /** What to tell the user for a refusal code (any case; unknown codes: the generic error). */

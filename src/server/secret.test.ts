@@ -29,6 +29,14 @@ describe("generated secret", () => {
     expect(await readFile(file, "utf8")).toBe(`${"k".repeat(40)}\n`);
   });
 
+  it("refuses an empty or damaged file instead of replacing or using it", async () => {
+    dir = await mkdtemp(join(tmpdir(), "storyrr-secret-"));
+    const file = join(dir, "auth-secret");
+    await writeFile(file, "");
+    expect(() => loadOrCreateSecret(file)).toThrow(/empty or damaged/);
+    expect(await readFile(file, "utf8")).toBe("");
+  });
+
   it("lives next to the database", () => {
     expect(dataDirectory("file:/data/storyrr.db")).toBe("/data");
   });

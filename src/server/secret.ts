@@ -27,7 +27,14 @@ export function loadOrCreateSecret(file: string): string {
   try {
     writeFileSync(file, `${secret}\n`, { mode: 0o600, flag: "wx" });
   } catch {
-    return readFileSync(file, "utf8").trim();
+    // The file exists: written by another process just now, or damaged.
+    const stored = readFileSync(file, "utf8").trim();
+    if (stored.length < 32)
+      throw new Error(
+        `${file} is empty or damaged. Restore it from a backup, or delete it to start with a new ` +
+          "secret (everyone signs in again and saved service keys must be re-entered).",
+      );
+    return stored;
   }
   return secret;
 }

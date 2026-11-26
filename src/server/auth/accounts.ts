@@ -38,7 +38,11 @@ export async function removeAccount(userId: string): Promise<void> {
   await ctx.internalAdapter.deleteUser(userId);
 }
 
-/** Sets a new password, creating the email/password credential if the account had none. */
+/**
+ * Sets a new password, creating the email/password credential if the account
+ * had none, and ends the account's sessions: whoever knew the old password
+ * (the reason for most resets) is signed out.
+ */
 export async function setAccountPassword(userId: string, password: string): Promise<void> {
   const ctx = await context();
   const hashed = await ctx.password.hash(password);
@@ -52,6 +56,7 @@ export async function setAccountPassword(userId: string, password: string): Prom
       password: hashed,
     });
   }
+  await ctx.internalAdapter.deleteUserSessions(userId);
 }
 
 export async function updateAccount(
