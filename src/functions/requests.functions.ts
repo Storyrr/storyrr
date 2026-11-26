@@ -155,9 +155,8 @@ export const getRequests = createServerFn({ method: "GET" })
       order: data.order,
     });
     // "Downloading" only when Chaptarr's queue says so; otherwise a sent request is just requested.
-    const sentIds = rows
-      .filter((r) => r.status === "submitted" && !r.waitingForChaptarr)
-      .map((r) => r.id);
+    // Those Chaptarr first only queued too: it may have started on them since.
+    const sentIds = rows.filter((r) => r.status === "submitted").map((r) => r.id);
     const sent =
       sentIds.length > 0
         ? db

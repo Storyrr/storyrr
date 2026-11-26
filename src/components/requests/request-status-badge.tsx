@@ -36,10 +36,14 @@ export function RequestStatusBadge({
 }) {
   let label = statusLabels[status]();
   if (status === "submitted") {
-    if (waitingForChaptarr) label = m.status_waiting_for_chaptarr();
-    else if (!download) label = m.status_requested();
-    else if (download.progress === null) label = m.status_downloading();
-    else label = m.status_downloading_progress({ percent: formatPercent(download.progress) });
+    // A download wins: Chaptarr may have started one it first only queued.
+    if (download) {
+      label =
+        download.progress === null
+          ? m.status_downloading()
+          : m.status_downloading_progress({ percent: formatPercent(download.progress) });
+    } else if (waitingForChaptarr) label = m.status_waiting_for_chaptarr();
+    else label = m.status_requested();
   }
   return <Badge variant={variants[status]}>{label}</Badge>;
 }

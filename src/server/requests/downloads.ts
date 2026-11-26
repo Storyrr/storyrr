@@ -5,7 +5,8 @@ import { downloadQueue, type QueueItem } from "#/server/services/chaptarr/client
 
 export type DownloadInfo = { progress: number | null; state: string | null };
 
-const TTL_MS = 15_000;
+// Shorter than the Requests page's 10 s poll, so each poll shows fresh progress.
+const TTL_MS = 8_000;
 let cached: { at: number; items: QueueItem[] } | undefined;
 
 /** Chaptarr's queue, shared briefly between the polls of every open Requests page. */

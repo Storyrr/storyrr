@@ -38,6 +38,7 @@ import { m } from "#/paraglide/messages.js";
 
 import { DeleteRequestButton, RemoveFromChaptarrButton } from "./request-admin-actions";
 import { RequestHistory } from "./request-history";
+import { DownloadProgress } from "#/components/requests/download-progress";
 import { RequestStatusBadge } from "./request-status-badge";
 import { useRequestAction } from "./use-request-action";
 
@@ -119,6 +120,9 @@ export function RequestRow({ request }: { request: RequestListItem }) {
               download={request.download}
             />
           </p>
+          {request.status === "submitted" && request.download ? (
+            <DownloadProgress download={request.download} className="max-w-xs" />
+          ) : null}
           {failure ? <p className="text-sm text-destructive">{failure}</p> : null}
         </div>
         <Cover
