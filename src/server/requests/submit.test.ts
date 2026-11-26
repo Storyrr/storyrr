@@ -89,6 +89,14 @@ describe("submitRequest", () => {
     );
   });
 
+  it("stays approved while Chaptarr is down, for the job to try again", async () => {
+    const d = deps();
+    const down = createServices(settings, () => Promise.resolve(new Response("", { status: 503 })));
+    expect(await submitRequest({ ...d, services: down }, requestId)).toBe("approved");
+    expect(statusOf(requestId)?.status).toBe("approved");
+    expect(await submitRequest(d, requestId)).toBe("submitted");
+  });
+
   it("fails with the upstream reason when Chaptarr refuses", async () => {
     const d = deps();
     await settings.set(chaptarrConnection, { url: "http://chaptarr:8789", apiKey: "wrong" });
@@ -214,6 +222,29 @@ describe("eBooks", () => {
       author: "",
       syncedAt: new Date(),
     });
+    expect(await checkAvailability(d)).toEqual([id]);
+  });
+
+  it("doesn't trust a title a library already held when the request was sent", async () => {
+    const id = await ebookRequest();
+    // Another "Dune" is already in Kavita.
+    await db.insert(libraryItem).values({
+      backend: "kavita",
+      format: "ebook",
+      itemId: "7#0",
+      libraryId: "1",
+      externalId: null,
+      matchKey: "dune",
+      title: "Dune",
+      author: "",
+      syncedAt: new Date(),
+    });
+    const d = deps(fakeChaptarr({ lookup: [{ ...book(0, "ebook"), foreignBookId: "hc:312460" }] }));
+    await submitRequest(d, id);
+    d.chaptarr.state.lookup = [];
+    expect(await checkAvailability(d)).toEqual([]);
+    // Chaptarr's own file still counts.
+    d.chaptarr.state.lookup = [book(2, "ebook", 1)];
     expect(await checkAvailability(d)).toEqual([id]);
   });
 });

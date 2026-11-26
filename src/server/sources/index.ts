@@ -41,8 +41,15 @@ export type MediaSource = {
   author(services: Services, id: string, name: string): Promise<ServiceResult<MediaCollection>>;
   /** A genre's or keyword's titles, most popular first (`id`: MediaTag.id). */
   tag(services: Services, id: string, page: number): Promise<ServiceResult<MediaTagPage>>;
-  /** External ids of the items a library already holds. */
-  owned(db: AppDatabase, items: readonly Pick<MediaSummary, "externalId" | "title">[]): Set<string>;
+  /**
+   * External ids of the items a library already holds. `exact` leaves out
+   * matches by title alone ("probably owned"): another book can share a title.
+   */
+  owned(
+    db: AppDatabase,
+    items: readonly Pick<MediaSummary, "externalId" | "title">[],
+    options?: { exact?: boolean },
+  ): Set<string>;
 };
 
 const audiobooks: MediaSource = {
@@ -70,14 +77,16 @@ const audiobooks: MediaSource = {
     return (await services.audible()).category(id, page);
   },
   // By ASIN in Audiobookshelf (titles there are often wrong); by title in Jellyfin (no ASIN).
-  owned(db, items) {
+  owned(db, items, { exact = false } = {}) {
     const ids = items.map((item) => item.externalId);
     const owned = ownedAsins(db, ids);
-    const titles = ownedTitles(
-      db,
-      "audiobook",
-      items.map((item) => item.title),
-    );
+    const titles = exact
+      ? new Set<string>()
+      : ownedTitles(
+          db,
+          "audiobook",
+          items.map((item) => item.title),
+        );
     const manual = manuallyOwned(db, "audible", ids);
     return new Set(
       items
@@ -134,12 +143,14 @@ const ebooks: MediaSource = {
     return hardcover ? hardcover.tag(id, page) : fail("not_configured", "Hardcover token missing");
   },
   // By normalized title in Kavita, Komga and Jellyfin (no shared ID): "probably owned".
-  owned(db, items) {
-    const owned = ownedTitles(
-      db,
-      "ebook",
-      items.map((item) => item.title),
-    );
+  owned(db, items, { exact = false } = {}) {
+    const owned = exact
+      ? new Set<string>()
+      : ownedTitles(
+          db,
+          "ebook",
+          items.map((item) => item.title),
+        );
     const manual = manuallyOwned(
       db,
       "hardcover",

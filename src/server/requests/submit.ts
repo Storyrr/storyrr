@@ -9,7 +9,10 @@ import type { RequestStatus } from "#/lib/requests";
 import type { AppDatabase } from "#/server/db/client";
 import { media, request } from "#/server/db/schema";
 import { formatDefaults } from "#/server/settings/definitions";
+import type { ServiceError } from "#/server/services/result";
 import { chaptarrProviderId, mediaSources } from "#/server/sources";
+
+import { OWNED_AT_SUBMIT } from "./availability";
 import type { SettingsStore } from "#/server/settings/store";
 import type { Services } from "#/server/services/factory";
 import { submitBook } from "#/server/services/chaptarr/client";
@@ -85,21 +88,43 @@ async function submit(
     qualityProfileId: qualityProfileId ?? defaults.qualityProfileId,
     metadataProfileId: defaults.metadataProfileId,
   });
-  if (!result.ok) return failWith({ code: "service", service: "chaptarr", ...result.error });
+  if (!result.ok) {
+    // Chaptarr is restarting or busy: stay approved, the job tries again in a few minutes.
+    // (A timeout is not in that case: Chaptarr may have taken the request.)
+    if (isTemporarilyDown(result.error)) return "approved";
+    return failWith({ code: "service", service: "chaptarr", ...result.error });
+  }
 
+  // Was the title already in a library (by title alone)? Then that match can't
+  // tell when this request is fulfilled: only Chaptarr's file or an exact ID can.
+  const source = isSearchableType(format) ? mediaSources[format] : null;
+  const ownedBefore =
+    source !== null &&
+    source.owned(db, [row.media]).has(row.media.externalId) &&
+    !source.owned(db, [row.media], { exact: true }).has(row.media.externalId);
   return transitionRequest(db, requestId, {
     to: "submitted",
     actor: "system",
-    backendRef:
-      result.value.state === "added"
+    backendRef: {
+      ...(result.value.state === "added"
         ? { chaptarrBookId: result.value.bookId, chaptarrForeignBookId: result.value.foreignBookId }
         : {
             ...(result.value.pendingId === undefined
               ? {}
               : { chaptarrPendingId: result.value.pendingId }),
             chaptarrForeignBookId: result.value.foreignBookId,
-          },
+          }),
+      ...(ownedBefore ? { [OWNED_AT_SUBMIT]: 1 } : {}),
+    },
   });
+}
+
+/** Chaptarr can't be reached or says to come back later: worth another try, unlike a refusal. */
+function isTemporarilyDown(error: ServiceError): boolean {
+  return (
+    error.kind === "retryable" &&
+    (error.network === "unreachable" || [429, 502, 503, 504].includes(error.status ?? 0))
+  );
 }
 
 /** Submits every approved request (job safety net for approvals whose submission didn't run). */
@@ -109,7 +134,15 @@ export async function submitApproved(deps: SubmitDeps): Promise<number> {
     .from(request)
     .where(eq(request.status, "approved"))
     .all();
-  for (const { id } of approved) await submitRequest(deps, id);
+  for (const { id } of approved) {
+    try {
+      await submitRequest(deps, id);
+    } catch (error) {
+      // One request (deleted or changed meanwhile, a setting that can't be read)
+      // must not keep the others from being sent.
+      console.error(`Could not submit request ${id}:`, error);
+    }
+  }
   return approved.length;
 }
 

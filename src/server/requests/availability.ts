@@ -8,12 +8,16 @@ import type { Services } from "#/server/services/factory";
 import { hasBookFile } from "#/server/services/chaptarr/client";
 import { chaptarrProviderId, mediaSources } from "#/server/sources";
 
-import { transitionRequest } from "./transitions";
+import { InvalidTransitionError, RequestNotFoundError, transitionRequest } from "./transitions";
+
+/** `backendRef` flag: a library already held this title (by title alone) when the request was sent. */
+export const OWNED_AT_SUBMIT = "ownedAtSubmit";
 
 /**
  * Marks submitted requests available once a library holds the book
- * (Audiobookshelf by ASIN, Kavita by title) or Chaptarr reports a file for it
- * (by provider ID). Idempotent. Pass `requestIds` to check only those (e.g.
+ * (Audiobookshelf by ASIN, the others by title, unless that title was already
+ * there when the request was sent) or Chaptarr reports a file for it (by
+ * provider ID). Idempotent, and safe to run concurrently. Pass `requestIds` to check only those (e.g.
  * after a webhook).
  */
 export async function checkAvailability(
@@ -27,6 +31,7 @@ export async function checkAvailability(
       source: media.source,
       externalId: media.externalId,
       title: media.title,
+      backendRef: request.backendRef,
     })
     .from(request)
     .innerJoin(media, eq(media.id, request.mediaId))
@@ -45,15 +50,23 @@ export async function checkAvailability(
 
   for (const row of rows) {
     if (!isSearchableType(row.format)) continue;
-    let present = mediaSources[row.format].owned(db, [row]).has(row.externalId);
+    // A title a library already held when the request was sent proves nothing:
+    // it is another book with the same title, or the copy the user wants replaced.
+    const exact = row.backendRef?.[OWNED_AT_SUBMIT] === 1;
+    let present = mediaSources[row.format].owned(db, [row], { exact }).has(row.externalId);
     const providerId = chaptarrProviderId(row.source, row.externalId);
     if (!present && chaptarr && providerId) {
       const file = await hasBookFile(chaptarr, { term: providerId, media: row.format });
       present = file.ok && file.value;
     }
-    if (present) {
+    if (!present) continue;
+    try {
       transitionRequest(db, row.id, { to: "available", actor });
       available.push(row.id);
+    } catch (error) {
+      // Changed while Chaptarr was answering (another check, a deletion): nothing to do.
+      if (!(error instanceof InvalidTransitionError || error instanceof RequestNotFoundError))
+        throw error;
     }
   }
   return available;
