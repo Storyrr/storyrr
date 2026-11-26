@@ -115,7 +115,8 @@ export async function sendShared(
         "Slack",
         c.webhookUrl,
         json({
-          text: `${n.subject}\n${n.message}${link ? `\n${link}` : ""}`,
+          // Escaped: `<!channel>` or `<https://…|label>` typed in an issue would ping or spoof.
+          text: `${slackText(n.subject)}\n${slackText(n.message)}${link ? `\n${link}` : ""}`,
         }),
       );
     }
@@ -292,4 +293,9 @@ ${link ? `<tr><td style="padding-top:20px"><a href="${escapeHtml(link)}" style="
     // nodemailer's messages describe the SMTP exchange, without credentials.
     return { ok: false, error: `SMTP: ${error instanceof Error ? error.message : String(error)}` };
   }
+}
+
+/** Text with Slack's control characters escaped (its own rule: only `&`, `<` and `>`). */
+function slackText(text: string): string {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
