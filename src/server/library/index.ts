@@ -65,6 +65,11 @@ export function replaceIndex(
   });
 }
 
+/** Forgets what a media server held (its connection was removed). */
+export function clearIndex(db: AppDatabase, backend: LibraryService): void {
+  db.delete(libraryItem).where(eq(libraryItem.backend, backend)).run();
+}
+
 /** Items indexed per library, and when the backend was last synced. */
 export function libraryStats(db: AppDatabase, backend: LibraryService) {
   const rows = db

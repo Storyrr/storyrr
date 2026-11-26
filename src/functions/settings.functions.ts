@@ -63,7 +63,7 @@ import {
 import { media, request } from "#/server/db/schema";
 import { latestReleases, REPOSITORY_URL } from "#/server/releases";
 import { APP_VERSION } from "#/server/version";
-import { libraryStats } from "#/server/library";
+import { clearIndex, libraryStats } from "#/server/library";
 import { syncLibrary } from "#/server/library/sync";
 import { checkAvailability } from "#/server/requests/availability";
 import {
@@ -268,6 +268,8 @@ export const deleteServiceConnection = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await settings.remove(connectionSettings[data.service]);
     if (data.service === "chaptarr") clearLanguagePolicyCache();
+    // Its titles must stop counting as owned.
+    else clearIndex(db, data.service);
     return { ok: true };
   });
 
