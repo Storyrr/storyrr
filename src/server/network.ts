@@ -12,11 +12,20 @@ export async function getNetworkSettings(settings: SettingsStore): Promise<Netwo
   return (await settings.get(networkSettings)) ?? DEFAULT_NETWORK_SETTINGS;
 }
 
+let trustProxy = false;
+
+/** Whether the visitor's address comes from the reverse proxy's header (Settings → Network). */
+export const trustsProxy = (): boolean => trustProxy;
+
 /**
- * Routes Storyrr's outbound HTTP calls (Node's fetch) through the configured
- * proxy, except hosts in the bypass list; or directly when none is set.
+ * Applies the network settings to the running process: Storyrr's outbound HTTP
+ * calls (Node's fetch) go through the configured proxy, except hosts in the
+ * bypass list, or directly when none is set; and whether visitors' addresses
+ * are read from a reverse proxy.
  */
-export function applyProxy({ proxyUrl, noProxy }: NetworkSettings): void {
+export function applyProxy(network: NetworkSettings): void {
+  const { proxyUrl, noProxy } = network;
+  trustProxy = network.trustProxy;
   setGlobalDispatcher(
     proxyUrl
       ? new EnvHttpProxyAgent({ httpProxy: proxyUrl, httpsProxy: proxyUrl, noProxy })

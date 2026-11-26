@@ -8,6 +8,7 @@ import type { AppDatabase } from "#/server/db/client";
 import * as schema from "#/server/db/schema";
 import type { MediaServerSignInInput } from "#/lib/media-server-login";
 
+import { CLIENT_IP_HEADER } from "./client-ip";
 import { linkOnAppUrl, requestOrigin } from "./origins";
 
 import type { MediaServerResolution } from "./media-server";
@@ -63,6 +64,9 @@ export function createAuth(database: AppDatabase, config: AuthConfig, hooks: Aut
       useSecureCookies: false,
       // On everywhere, tests included (better-auth turns it off under test by default).
       disableOriginCheck: false,
+      // Rate limits count per visitor address, which Storyrr sets itself on each
+      // request (client-ip.ts): better-auth's default, X-Forwarded-For, can be forged.
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     logger: {
       log: (level, message, ...args) => {

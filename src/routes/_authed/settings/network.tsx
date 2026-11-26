@@ -110,6 +110,27 @@ function NetworkPage() {
         </FieldGroup>
       </SettingsSection>
       <SettingsSection
+        title={m.network_reverse_proxy_title()}
+        description={m.network_reverse_proxy_description()}
+      >
+        <FieldGroup>
+          <form.Field name="trustProxy">
+            {(field) => (
+              <SettingsRow
+                label={m.network_trust_proxy()}
+                description={m.network_trust_proxy_description()}
+              >
+                <Switch
+                  aria-label={m.network_trust_proxy()}
+                  isSelected={field.state.value}
+                  onChange={field.handleChange}
+                />
+              </SettingsRow>
+            )}
+          </form.Field>
+        </FieldGroup>
+      </SettingsSection>
+      <SettingsSection
         title={m.network_images_title()}
         description={m.network_images_description()}
       >

@@ -3,10 +3,11 @@ import handler from "@tanstack/react-start/server-entry";
 import { paraglideMiddleware } from "./paraglide/server.js";
 import { db } from "./server/db";
 import { getAppUrl } from "./server/app-url";
+import { withClientIp } from "./server/auth/client-ip";
 import { secureCookiesOnHttps } from "./server/auth/origins";
 import { startScheduler, stopScheduler } from "./server/jobs";
 import { installLogCapture } from "./server/logs";
-import { applyProxy, getNetworkSettings } from "./server/network";
+import { applyProxy, getNetworkSettings, trustsProxy } from "./server/network";
 import { startNotifications } from "./server/notifications";
 import { settings } from "./server/settings";
 
@@ -48,6 +49,9 @@ if (!globalThis.storyrrShutdown) {
  */
 export default {
   async fetch(req: Request): Promise<Response> {
+    // The server's requests carry the connection's address (srvx's `ip`).
+    const connectionIp = "ip" in req && typeof req.ip === "string" ? req.ip : undefined;
+    withClientIp(req, connectionIp, trustsProxy());
     return secureCookiesOnHttps(req, await paraglideMiddleware(req, () => handler.fetch(req)));
   },
 };
