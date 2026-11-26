@@ -31,7 +31,10 @@ export async function unbanAccount(userId: string): Promise<void> {
   });
 }
 
-/** Deletes the account (sessions, credentials, and by cascade its requests and issues). */
+/**
+ * Deletes the account: its sessions, credentials and, by cascade, its issues.
+ * Its requests stay, without a requester: others may be watching them.
+ */
 export async function removeAccount(userId: string): Promise<void> {
   const ctx = await context();
   await ctx.internalAdapter.deleteUserSessions(userId);

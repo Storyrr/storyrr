@@ -56,9 +56,8 @@ export const request = sqliteTable(
     mediaId: text("media_id")
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    /** Who asked; null once that account is deleted (the request and its watchers stay). */
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     format: text("format", { enum: MEDIA_TYPES }).notNull(),
     status: text("status", { enum: REQUEST_STATUSES }).notNull().default("pending"),
     target: text("target", { mode: "json" }).$type<RequestTarget>().notNull(),

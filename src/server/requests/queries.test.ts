@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { MediaSummary } from "#/lib/media";
@@ -95,5 +96,27 @@ describe("listRequests", () => {
       listRequests(db, { filter: "all", sort: "added", order }).map((r) => r.id);
     expect(added("asc")).toEqual(added("desc").toReversed());
     expect(added("asc")).toContain(second);
+  });
+});
+
+describe("a deleted requester", () => {
+  it("leaves the request, its history and its watchers", async () => {
+    const mediaId = upsertMedia(db, item("B000000001"));
+    const { requestId } = request(mediaId, "alice");
+    request(mediaId, "bob");
+    await db.delete(user).where(eq(user.id, "alice"));
+
+    const [kept] = listRequests(db, { filter: "all" });
+    expect(kept).toMatchObject({ id: requestId, watchers: 1 });
+    expect(kept?.requester?.name ?? null).toBeNull();
+    expect(listRequests(db, { userId: "bob", filter: "all" }).map((r) => r.id)).toEqual([
+      requestId,
+    ]);
+    const active = activeRequestsByExternalId(db, {
+      source: "audible",
+      format: "audiobook",
+      externalIds: ["B000000001"],
+    });
+    expect(active.get("B000000001")).toMatchObject({ status: "pending", requesterName: null });
   });
 });

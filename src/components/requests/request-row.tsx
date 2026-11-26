@@ -56,9 +56,10 @@ export function RequestRow({ request }: { request: RequestListItem }) {
   const failure = request.status === "failed" ? describeRequestError(request.lastError) : null;
   const manager = can(user, "manage_requests");
   // Like Seerr: managers delete any request; requesters withdraw their own while pending.
-  const canDelete = manager || (request.status === "pending" && request.requester.id === user.id);
+  const canDelete = manager || (request.status === "pending" && request.requester?.id === user.id);
 
   const year = yearOf(request.media.releaseDate ?? undefined);
+  const requesterName = request.requester?.name ?? m.users_deleted();
 
   return (
     <li className="relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-4">
@@ -94,10 +95,10 @@ export function RequestRow({ request }: { request: RequestListItem }) {
             </p>
           ) : null}
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <UserAvatar name={request.requester.name} className="size-5 text-[0.6rem]" />
+            <UserAvatar name={requesterName} className="size-5 text-[0.6rem]" />
             <span className="truncate">
               {m.requests_requested_on({
-                name: request.requester.name,
+                name: requesterName,
                 date: formatDate(new Date(request.createdAt)),
               })}
               {request.watchers > 0

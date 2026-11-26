@@ -132,6 +132,7 @@ Request managers get a "Manage" side panel on title pages (Seerr's): the title's
 - List, create/invite (email + temporary password; invite links later), set role, toggle auto-approve, disable/remove.
 - Import users from a media server (like Seerr's Plex import): accounts linked to theirs, default permissions. One whose email a Storyrr account already uses is skipped (never linked by email): its owner links it in their settings.
 - Per-user request limits overriding the global ones (decided 2026-11-24).
+- Deleting an account keeps its requests (decided 2026-11-26): they show "Deleted user" as requester, with their history and watchers; its issues are deleted with it.
 - Seerr-like table (decided 2026-11-24): user (avatar, name, email), requests, role, joined; search, sortable columns, pages. **Edit** opens that user's settings (the same General / Password / Permissions tabs as one's own): admins change their name, email and language, set a new password, and edit role, auto-approval, ban and request limits there. Admins can't demote, ban or delete themselves. The Owner's settings are read-only for everyone else, with a notice saying why, and their Delete button is disabled.
 - Optional link to an Audiobookshelf user (future: "already listened").
 

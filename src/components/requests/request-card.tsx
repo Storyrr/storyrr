@@ -11,7 +11,8 @@ import { m } from "#/paraglide/messages.js";
 export type RequestCardItem = {
   status: RequestStatus;
   waitingForChaptarr: boolean;
-  requester: { name: string };
+  /** Null once the requester's account is deleted. */
+  requester: { name: string } | null;
   media: {
     type: MediaType;
     externalId: string;
@@ -25,6 +26,7 @@ export type RequestCardItem = {
 export function RequestCard({ request }: { request: RequestCardItem }) {
   const imageUrl = useImageUrl();
   const year = yearOf(request.media.releaseDate ?? undefined);
+  const requesterName = request.requester?.name ?? m.users_deleted();
   return (
     <Link
       to="/media/$type/$id"
@@ -49,8 +51,8 @@ export function RequestCard({ request }: { request: RequestCardItem }) {
           {request.media.title}
         </span>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <UserAvatar name={request.requester.name} className="size-5 text-[0.6rem]" />
-          <span className="truncate">{request.requester.name}</span>
+          <UserAvatar name={requesterName} className="size-5 text-[0.6rem]" />
+          <span className="truncate">{requesterName}</span>
         </span>
         <span className="mt-auto flex items-center gap-2 pt-2 text-xs text-muted-foreground">
           {m.request_card_status()}

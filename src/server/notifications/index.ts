@@ -67,7 +67,8 @@ export async function planNotification(
       .select({ request, media, requester: { id: user.id, name: user.name } })
       .from(request)
       .innerJoin(media, eq(media.id, request.mediaId))
-      .innerJoin(user, eq(user.id, request.userId))
+      // Left: the requester's account may be gone, the request and its watchers stay.
+      .leftJoin(user, eq(user.id, request.userId))
       .where(eq(request.id, event.requestId))
       .get();
     if (!row) return null;
@@ -75,13 +76,13 @@ export async function planNotification(
       event: kind,
       media: mediaOf(row.media),
       requestId: row.request.id,
-      requestedBy: row.requester.name,
+      requestedBy: row.requester?.name,
       reason: event.message,
       url: link(deps, `/media/${row.media.type}/${encodeURIComponent(row.media.externalId)}`),
     };
     if (kind === "request_pending" || kind === "request_auto_approved") {
       const managers = await usersWith(deps, "manage_requests");
-      return { data, recipientIds: managers.filter((id) => id !== row.requester.id) };
+      return { data, recipientIds: managers.filter((id) => id !== row.requester?.id) };
     }
     const watchers = db
       .select({ userId: requestWatcher.userId })
@@ -89,7 +90,7 @@ export async function planNotification(
       .where(eq(requestWatcher.requestId, row.request.id))
       .all()
       .map((w) => w.userId);
-    return { data, recipientIds: [row.requester.id, ...watchers] };
+    return { data, recipientIds: [...(row.requester ? [row.requester.id] : []), ...watchers] };
   }
 
   const found = db

@@ -39,7 +39,12 @@ export function upsertMedia(
     .get().id;
 }
 
-export type ActiveRequestInfo = { requestId: string; status: RequestStatus; requesterName: string };
+export type ActiveRequestInfo = {
+  requestId: string;
+  status: RequestStatus;
+  /** Null once the requester's account is deleted. */
+  requesterName: string | null;
+};
 
 /** The active request (any target) for each external id of one source and format. */
 export function activeRequestsByExternalId(
@@ -56,7 +61,7 @@ export function activeRequestsByExternalId(
     })
     .from(request)
     .innerJoin(media, eq(media.id, request.mediaId))
-    .innerJoin(user, eq(user.id, request.userId))
+    .leftJoin(user, eq(user.id, request.userId))
     .where(
       and(
         eq(media.source, source),
@@ -126,7 +131,7 @@ export function listRequests(
     })
     .from(request)
     .innerJoin(media, eq(media.id, request.mediaId))
-    .innerJoin(user, eq(user.id, request.userId))
+    .leftJoin(user, eq(user.id, request.userId))
     .where(
       and(
         userId

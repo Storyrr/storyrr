@@ -94,7 +94,7 @@ function MediaPage() {
         ) : null}
         {request ? (
           <p className="text-sm text-muted-foreground">
-            {m.media_requested_by({ name: request.requesterName })}
+            {m.media_requested_by({ name: request.requesterName ?? m.users_deleted() })}
           </p>
         ) : null}
         {block?.reason ? (
