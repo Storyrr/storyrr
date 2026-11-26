@@ -73,18 +73,24 @@ function IssuesPage() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <ul className="flex flex-col divide-y">
+        <ul className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card">
           {issues.map((item) => (
-            <li key={item.id} className="flex items-center gap-3">
+            <li
+              key={item.id}
+              // The whole line lights up, button included, not just the link.
+              className="flex items-center gap-3 px-3 transition-colors hover:bg-muted/40"
+            >
               <Link
                 to="/issues/$id"
                 params={{ id: item.id }}
-                className="flex min-w-0 flex-1 items-center gap-4 py-3 hover:bg-muted/40"
+                className="group flex min-w-0 flex-1 items-center gap-4 py-3"
               >
                 <Cover src={item.media.coverUrl} type={item.media.type} className="w-14 shrink-0" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-medium">{item.media.title}</span>
+                    <span className="truncate font-medium group-hover:underline">
+                      {item.media.title}
+                    </span>
                     <IssueStatusBadge status={item.status} />
                   </div>
                   <span className="text-sm">{issueTypeLabels[item.type]()}</span>
