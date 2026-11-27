@@ -88,7 +88,7 @@ Laid out like Seerr's title page (decided 2026-11-27): a header over the blurred
 
 ### 4.3c Blocklist (decided 2026-11-24)
 
-- Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. A block wins over every other status (decided 2026-11-27): a title the library holds, or requested before, shows as _Blocked_ too. The Blocklist page lists them and unblocks.
+- Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. A title the library holds can't be blocked (decided 2026-11-27, like Seerr): its page has no block button and the server refuses; it shows as _Available_ even if it was blocked before it arrived, and that block can still be lifted. The Blocklist page lists them and unblocks.
 
 ### 4.3d Issues (decided 2026-11-24)
 

@@ -223,6 +223,7 @@
   "request_blocked": "Un administrateur a bloqué ce titre : il ne peut pas être demandé.",
   "action_block": "Bloquer",
   "action_unblock": "Débloquer",
+  "blocklist_owned": "Ce titre est déjà dans la bibliothèque : il n’y a rien à bloquer.",
   "blocklist_title": "Blocages",
   "blocklist_description": "Les titres que personne ne peut demander. Les demandes faites avant le blocage restent telles quelles.",
   "blocklist_empty": "Rien n’est bloqué.",

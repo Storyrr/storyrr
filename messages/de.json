@@ -223,6 +223,7 @@
   "request_blocked": "Ein Administrator hat diesen Titel gesperrt: Er kann nicht angefordert werden.",
   "action_block": "Sperren",
   "action_unblock": "Entsperren",
+  "blocklist_owned": "Dieser Titel ist bereits in der Bibliothek: Es gibt nichts zu sperren.",
   "blocklist_title": "Sperrliste",
   "blocklist_description": "Titel, die niemand anfordern kann. Anfragen von vor der Sperrung bleiben unverändert.",
   "blocklist_empty": "Nichts ist gesperrt.",

@@ -365,6 +365,9 @@ export const blockMedia = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const details = await mediaSources[data.media.type].getDetails(services, data.media.id);
     if (!details.ok) throw new Error(details.error.message);
+    // Blocking keeps a title from being requested: one the library holds needs none.
+    if (mediaSources[data.media.type].owned(db, [details.value]).has(details.value.externalId))
+      throw new Error(m.blocklist_owned());
     const id = block(db, details.value, {
       reason: data.reason || null,
       userId: context.session.user.id,

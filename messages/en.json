@@ -223,6 +223,7 @@
   "request_blocked": "An admin blocked this title: it can't be requested.",
   "action_block": "Block",
   "action_unblock": "Unblock",
+  "blocklist_owned": "This title is already in the library: there is nothing to block.",
   "blocklist_title": "Blocklist",
   "blocklist_description": "Titles nobody can request. Requests made before blocking are left as they are.",
   "blocklist_empty": "Nothing is blocked.",

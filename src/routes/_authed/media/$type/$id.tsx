@@ -179,7 +179,8 @@ function MediaPage() {
                 available={availability === "available"}
               />
             ) : null}
-            {can(user, "manage_blocklist") ? (
+            {/* A title the library holds can't be blocked; an earlier block can still be lifted. */}
+            {can(user, "manage_blocklist") && (availability !== "available" || block) ? (
               <BlockButton
                 type={type}
                 externalId={item.externalId}
