@@ -20,6 +20,8 @@ import { defineSetting } from "./store";
 const StoredConnectionSchema = v.object({
   url: v.pipe(v.string(), v.url()),
   apiKey: v.pipe(v.string(), v.nonEmpty()),
+  /** The address users open a media server at; unset: `url`. */
+  externalUrl: v.optional(v.string()),
 });
 
 export const chaptarrConnection = defineSetting({

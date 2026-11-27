@@ -29,11 +29,12 @@ export async function resolveConnection(
   store: SettingsStore,
   service: ServiceName,
   form: ConnectionForm,
-): Promise<{ url: string; apiKey: string }> {
-  if (form.apiKey) return { url: form.url, apiKey: form.apiKey };
+): Promise<{ url: string; apiKey: string; externalUrl?: string }> {
+  const externalUrl = form.externalUrl || undefined;
+  if (form.apiKey) return { url: form.url, apiKey: form.apiKey, externalUrl };
   const stored = await store.get(connectionSettings[service]);
   if (!stored) throw new MissingApiKeyError();
-  return { url: form.url, apiKey: stored.apiKey };
+  return { url: form.url, apiKey: stored.apiKey, externalUrl };
 }
 
 export async function testConnection(

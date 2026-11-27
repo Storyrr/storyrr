@@ -19,7 +19,11 @@ const store = () =>
 describe("resolveConnection", () => {
   it("uses the typed key when given", async () => {
     expect(
-      await resolveConnection(store(), "chaptarr", { url: "http://c", apiKey: "new" }),
+      await resolveConnection(store(), "chaptarr", {
+        url: "http://c",
+        apiKey: "new",
+        externalUrl: "",
+      }),
     ).toEqual({
       url: "http://c",
       apiKey: "new",
@@ -30,16 +34,25 @@ describe("resolveConnection", () => {
     const settings = store();
     await settings.set(chaptarrConnection, { url: "http://old", apiKey: "stored" });
     expect(
-      await resolveConnection(settings, "chaptarr", { url: "http://new", apiKey: "" }),
+      await resolveConnection(settings, "chaptarr", {
+        url: "http://new",
+        apiKey: "",
+        externalUrl: "https://books.example.test",
+      }),
     ).toEqual({
       url: "http://new",
       apiKey: "stored",
+      externalUrl: "https://books.example.test",
     });
   });
 
   it("requires a key when none is stored", async () => {
     await expect(
-      resolveConnection(store(), "audiobookshelf", { url: "http://a", apiKey: "" }),
+      resolveConnection(store(), "audiobookshelf", {
+        url: "http://a",
+        apiKey: "",
+        externalUrl: "",
+      }),
     ).rejects.toThrow(MissingApiKeyError);
   });
 });

@@ -46,7 +46,7 @@ export function ConnectionForm({
   onSaved,
 }: {
   service: ServiceName;
-  current: { url: string; hasApiKey: boolean } | null;
+  current: { url: string; hasApiKey: boolean; externalUrl?: string } | null;
   layout?: "stacked" | "row";
   onSaved?: () => void;
 }) {
@@ -86,7 +86,11 @@ export function ConnectionForm({
   });
 
   const form = useForm({
-    defaultValues: { url: current?.url ?? "", apiKey: "" },
+    defaultValues: {
+      url: current?.url ?? "",
+      apiKey: "",
+      externalUrl: current?.externalUrl ?? "",
+    },
     validators: { onSubmit: ConnectionFormSchema },
     onSubmit: async ({ value }) => {
       await save.mutateAsync(value).catch(() => undefined);
@@ -154,6 +158,24 @@ export function ConnectionForm({
             />
           )}
         </form.Field>
+        {service === "chaptarr" ? null : (
+          <form.Field name="externalUrl">
+            {(field) => (
+              <TextField
+                label={m.field_external_url()}
+                description={m.field_external_url_description()}
+                layout={layout}
+                name={field.name}
+                type="text"
+                autoComplete="off"
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                errors={field.state.meta.errors}
+              />
+            )}
+          </form.Field>
+        )}
       </FieldGroup>
       {layout === "row" ? (
         <SettingsActions>{buttons}</SettingsActions>

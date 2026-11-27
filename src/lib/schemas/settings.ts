@@ -34,6 +34,18 @@ export const ConnectionFormSchema = v.object({
     v.regex(/^https?:\/\//i, () => m.validation_url()),
   ),
   apiKey: v.pipe(v.string(), v.trim()),
+  /**
+   * Media servers: the address users open the server at, for "Open in…" links
+   * (Storyrr itself may reach it by a container name). Blank: the URL above.
+   */
+  externalUrl: v.pipe(
+    v.string(),
+    v.trim(),
+    v.check(
+      (value) => value === "" || /^https?:\/\/\S+$/i.test(value),
+      () => m.validation_url(),
+    ),
+  ),
 });
 export type ConnectionForm = v.InferOutput<typeof ConnectionFormSchema>;
 

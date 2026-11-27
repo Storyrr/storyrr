@@ -12,6 +12,7 @@ import { ManageTitle } from "#/components/media/manage-title";
 import { Rating } from "#/components/media/rating";
 import { RequestDialog } from "#/components/media/request-dialog";
 import { TagList } from "#/components/media/tag-list";
+import { OpenInLibrary } from "#/components/media/open-in-library";
 import { TitleDownload } from "#/components/media/title-download";
 import { Badge } from "#/components/ui/badge";
 import { formatDate, formatDuration, formatList, formatNumber } from "#/lib/format";
@@ -94,6 +95,7 @@ function MediaPage() {
           <RequestDialog item={{ ...item, type }} />
         ) : null}
         {request?.status === "submitted" ? <TitleDownload type={type} id={id} /> : null}
+        {availability === "available" ? <OpenInLibrary type={type} id={id} /> : null}
         {request ? (
           <p className="text-sm text-muted-foreground">
             {m.media_requested_by({ name: request.requesterName ?? m.users_deleted() })}

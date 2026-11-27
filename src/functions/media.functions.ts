@@ -20,6 +20,7 @@ import { services } from "#/server/services";
 import { fail, ok, type ServiceResult } from "#/server/services/result";
 import { settings } from "#/server/settings";
 import { discoverLayout } from "#/server/settings/definitions";
+import { libraryLinks } from "#/server/library/links";
 import { mediaSources } from "#/server/sources";
 import { getLocale } from "#/paraglide/runtime.js";
 
@@ -355,4 +356,14 @@ export const saveDiscoverLayout = createServerFn({ method: "POST" })
     if (data.rows) await settings.set(discoverLayout, data.rows);
     else await settings.remove(discoverLayout);
     return { ok: true };
+  });
+
+/** Where an available title can be opened: its page in each media server holding it. Signed-in users. */
+export const getTitleLinks = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .validator(MediaRefSchema)
+  .handler(async ({ data }) => {
+    const details = await mediaSources[data.type].getDetails(services, data.id);
+    if (!details.ok) return { links: [] };
+    return { links: await libraryLinks({ db, services, settings }, data.type, details.value) };
   });

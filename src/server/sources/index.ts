@@ -103,6 +103,28 @@ const audiobooks: MediaSource = {
   },
 };
 
+type Titled = Pick<MediaSummary, "title" | "altTitles"> & {
+  series?: readonly { name: string }[] | null;
+};
+
+/**
+ * The titles an eBook may have in a library: its own and its other editions'.
+ * Some editions are titled like the series ("Harry Potter"), which a library also
+ * lists as a series: that title would mark every volume as owned. Same for a title
+ * the book's own starts with ("Solo Leveling" for "Solo Leveling: The Novel Omnibus").
+ */
+export function ebookTitles(item: Titled): string[] {
+  const own = titleKey(item.title);
+  const series = new Set(
+    item.series?.flatMap(({ name }) => [titleKey(name), titleKey(name.replace(/\(.*?\)/g, ""))]),
+  );
+  const alternatives = (item.altTitles ?? []).filter((alt) => {
+    const key = titleKey(alt);
+    return !series.has(key) && !own.startsWith(`${key} `);
+  });
+  return [item.title, ...alternatives];
+}
+
 const ebooks: MediaSource = {
   type: "ebook",
   source: "hardcover",
@@ -148,24 +170,7 @@ const ebooks: MediaSource = {
   // Jellyfin (no shared ID): "probably owned", under any of the work's titles, since a
   // library often holds a translation.
   owned(db, items, { exact = false } = {}) {
-    // Some editions are titled like the series ("Harry Potter"), which a library also
-    // lists as a series: that title would mark every volume as owned. Same for a title
-    // the book's own starts with ("Solo Leveling" for "Solo Leveling: The Novel Omnibus").
-    const titlesOf = (item: (typeof items)[number]) => {
-      const own = titleKey(item.title);
-      const series = new Set(
-        item.series?.flatMap(({ name }) => [
-          titleKey(name),
-          titleKey(name.replace(/\(.*?\)/g, "")),
-        ]),
-      );
-      const alternatives = (item.altTitles ?? []).filter((alt) => {
-        const key = titleKey(alt);
-        return !series.has(key) && !own.startsWith(`${key} `);
-      });
-      return [item.title, ...alternatives];
-    };
-    const owned = exact ? new Set<string>() : ownedTitles(db, "ebook", items.flatMap(titlesOf));
+    const owned = exact ? new Set<string>() : ownedTitles(db, "ebook", items.flatMap(ebookTitles));
     const ids = items.map((item) => item.externalId);
     const held = ownedHardcoverIds(db, ids);
     const manual = manuallyOwned(db, "hardcover", ids);
@@ -174,7 +179,7 @@ const ebooks: MediaSource = {
         .filter(
           (item) =>
             held.has(item.externalId) ||
-            titlesOf(item).some((title) => owned.has(titleKey(title))) ||
+            ebookTitles(item).some((title) => owned.has(titleKey(title))) ||
             manual.has(item.externalId),
         )
         .map((i) => i.externalId),

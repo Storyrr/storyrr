@@ -70,6 +70,12 @@ Shown when the database has no user: it creates the admin account (name, email, 
 
 - Genres and keywords (decided 2026-11-24, like Seerr's keywords): chips under the description. Audiobooks show their Audible genres (every level of each genre path); books their main Hardcover genres (up to 8) and moods (up to 4), most tagged first, without readers' opinion tags, content warnings or spoiler-flagged tags. A chip opens `/tags/$type/$id`: the genre's bestsellers on Audible, or the tag's most-read books on Hardcover, 40 per page with "Load more".
 
+### 4.3g Open in the media server (decided 2026-11-27)
+
+- An available title's page has one button per media server holding it: **Open in Audiobookshelf / Kavita / Komga / Jellyfin**, to the item's page there (Kavita and Komga: its series).
+- The item is recognized like for availability (ASIN, else title). For a server giving no match, Storyrr asks Chaptarr for the file of the book it identified and finds the server's item by the end of that file's path: the same file is mounted in both. Only then is Chaptarr called, for that one book.
+- Links use each media server's **External URL** (its settings tab), the address users open it at; blank: its connection URL, which a browser can't reach when it is a container name.
+
 ### 4.3b Navigation and Discover (decided 2026-11-24)
 
 - Seerr-like layout: a sidebar with **Découvrir (Discover), Livres (eBooks), Livres audio (Audiobooks), Demandes (Requests), Blocages (Blocklist, admins), Problèmes (Issues), Utilisateurs (Users, admins), Paramètres (Settings, admins)**, a search bar at the top, the account menu at the top right. On phones the sidebar becomes a drawer.

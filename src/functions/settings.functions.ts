@@ -81,7 +81,9 @@ const globalFetch: typeof fetch = (input, init) => fetch(input, init);
 async function connectionSummary(service: keyof typeof connectionSettings) {
   const stored = await settings.get(connectionSettings[service]);
   // Never send the stored key back: only whether one exists.
-  return stored ? { url: stored.url, hasApiKey: true } : null;
+  return stored
+    ? { url: stored.url, hasApiKey: true, externalUrl: stored.externalUrl ?? "" }
+    : null;
 }
 
 /** Everything the Services settings page shows. Manage settings. */

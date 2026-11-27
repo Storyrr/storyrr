@@ -94,7 +94,7 @@ src/
 │   ├── services/           # one client per external service (audible, hardcover, chaptarr, audiobookshelf, kavita, komga, jellyfin), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: request-title.ts (every check before a request), transitions.ts (createRequest, transitionRequest), submit.ts and availability.ts (Chaptarr hand-off, availability checks), quota, blocklist, language policy; the status vocabulary and transition table are client-safe in src/lib/requests.ts
-│   ├── library/            # ownership index (library_item) synced from Chaptarr (books with a file, by ID) and the media servers (replaceIndex), with each item's format
+│   ├── library/            # ownership index (library_item) synced from Chaptarr (books with a file, by ID) and the media servers (replaceIndex), with each item's format and file path; links.ts: a title's page in each media server ("Open in…")
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
 │   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults) and accountLock (who may change whose account: user managers only grant what they hold); list and implications in src/lib/permissions.ts

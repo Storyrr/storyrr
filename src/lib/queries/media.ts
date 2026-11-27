@@ -8,6 +8,7 @@ import {
   getSeries,
   searchSeries,
   getTitleAdmin,
+  getTitleLinks,
   exploreMedia,
   getGenreOptions,
   getTagged,
@@ -23,6 +24,7 @@ export const mediaKeys = {
     [...mediaKeys.all, "search", type, query] as const,
   detail: (type: SearchableType, id: string) => [...mediaKeys.all, "detail", type, id] as const,
   admin: (type: SearchableType, id: string) => [...mediaKeys.all, "admin", type, id] as const,
+  links: (type: SearchableType, id: string) => [...mediaKeys.all, "links", type, id] as const,
   series: (type: SearchableType, id: string) => [...mediaKeys.all, "series", type, id] as const,
   author: (type: SearchableType, id: string) => [...mediaKeys.all, "author", type, id] as const,
   seriesSearch: (type: SearchableType, query: string) =>
@@ -30,6 +32,14 @@ export const mediaKeys = {
   relatedSeries: (type: SearchableType, id: string) =>
     [...mediaKeys.all, "related-series", type, id] as const,
 };
+
+/** Where an available title can be opened (its page in each media server). */
+export const titleLinksQuery = (type: SearchableType, id: string) =>
+  queryOptions({
+    queryKey: mediaKeys.links(type, id),
+    queryFn: () => getTitleLinks({ data: { type, id } }),
+    staleTime: 5 * 60_000,
+  });
 
 /** Series matching the top bar's search (Hardcover). */
 export const seriesSearchQuery = (type: SearchableType, query: string) =>
