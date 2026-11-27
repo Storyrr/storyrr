@@ -6,6 +6,8 @@ import { ok, requestJson } from "#/server/services/result";
 
 /** Public GitHub repository the releases come from (release-please tags them vX.Y.Z). */
 export const REPOSITORY_URL = "https://github.com/Storyrr/storyrr";
+/** The website and its documentation (the `Storyrr/storyrr.github.io` repository). */
+export const DOCUMENTATION_URL = "https://storyrr.github.io";
 const RELEASES_API = "https://api.github.com/repos/Storyrr/storyrr/releases?per_page=20";
 
 const ReleasesSchema = v.array(

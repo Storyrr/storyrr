@@ -78,9 +78,7 @@ function AboutPage() {
 
       <SettingsSection title={m.about_help_title()}>
         <SettingsRow label={m.about_documentation()}>
-          <ExternalLink href={`${about.repositoryUrl}#readme`}>
-            {`${about.repositoryUrl}#readme`}
-          </ExternalLink>
+          <ExternalLink href={about.documentationUrl}>{about.documentationUrl}</ExternalLink>
         </SettingsRow>
         <SettingsRow label={m.about_issues()}>
           <ExternalLink href={`${about.repositoryUrl}/issues`}>

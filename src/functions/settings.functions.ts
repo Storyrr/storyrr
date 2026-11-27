@@ -61,7 +61,7 @@ import {
   imageCacheStats,
 } from "#/server/network";
 import { media, request } from "#/server/db/schema";
-import { latestReleases, REPOSITORY_URL } from "#/server/releases";
+import { latestReleases, DOCUMENTATION_URL, REPOSITORY_URL } from "#/server/releases";
 import { APP_VERSION } from "#/server/version";
 import { clearIndex, libraryStats } from "#/server/library";
 import { syncLibrary } from "#/server/library/sync";
@@ -388,6 +388,7 @@ export const getAbout = createServerFn({ method: "GET" })
       updateAvailable: latest ? compareVersions(latest.version, APP_VERSION) > 0 : null,
       releases: releases.ok ? releases.value : [],
       repositoryUrl: REPOSITORY_URL,
+      documentationUrl: DOCUMENTATION_URL,
       totals: { media: totals.media ?? 0, requests: totals.requests ?? 0 },
       dataDirectory: dirname(resolve(getEnv().DATABASE_URL)),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
