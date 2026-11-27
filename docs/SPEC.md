@@ -72,7 +72,7 @@ Shown when the database has no user: it creates the admin account (name, email, 
 
 ### 4.3g Open in the media server (decided 2026-11-27)
 
-- An available title's page has one button per media server holding it: **Open in Audiobookshelf / Kavita / Komga / Jellyfin**, to the item's page there (Kavita and Komga: its series).
+- An available title's page has a **Read in… / Listen in…** button to its page in the media server holding it (Audiobookshelf, Kavita, Komga, Jellyfin; Kavita: its volume, Komga: the book), with a menu for the other servers holding it too. It sits in the title's action row, like Seerr's: Request or Read first, then icon buttons to report an issue, manage the title and block it (the eye).
 - The item is recognized like for availability (ASIN, else title). For a server giving no match, Storyrr asks Chaptarr for the file of the book it identified and finds the server's item by the end of that file's path: the same file is mounted in both. Only then is Chaptarr called, for that one book.
 - Links use each media server's **External URL** (its settings tab), the address users open it at; blank: its connection URL, which a browser can't reach when it is a container name.
 

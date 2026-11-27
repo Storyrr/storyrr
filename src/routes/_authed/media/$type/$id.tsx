@@ -91,11 +91,8 @@ function MediaPage() {
               />
             ) : null}
           </>
-        ) : data.canRequest ? (
-          <RequestDialog item={{ ...item, type }} />
         ) : null}
         {request?.status === "submitted" ? <TitleDownload type={type} id={id} /> : null}
-        {availability === "available" ? <OpenInLibrary type={type} id={id} /> : null}
         {request ? (
           <p className="text-sm text-muted-foreground">
             {m.media_requested_by({ name: request.requesterName ?? m.users_deleted() })}
@@ -106,31 +103,42 @@ function MediaPage() {
             {m.blocklist_reason_shown({ reason: block.reason })}
           </p>
         ) : null}
-        {availability === "available" && can(user, "create_issues") ? (
-          <ReportIssueDialog type={type} externalId={item.externalId} title={item.title} />
-        ) : null}
-        {can(user, "manage_requests") ? (
-          <ManageTitle
-            type={type}
-            externalId={item.externalId}
-            title={item.title}
-            available={availability === "available"}
-          />
-        ) : null}
-        {can(user, "manage_blocklist") ? (
-          <BlockButton
-            type={type}
-            externalId={item.externalId}
-            title={item.title}
-            blockId={block?.id ?? null}
-          />
-        ) : null}
       </div>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <Badge className={cn("border-transparent", FORMAT_BADGE[type])}>
-            {type === "ebook" ? m.media_type_ebook() : m.media_type_audiobook()}
-          </Badge>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <Badge className={cn("border-transparent", FORMAT_BADGE[type])}>
+              {type === "ebook" ? m.media_type_ebook() : m.media_type_audiobook()}
+            </Badge>
+            {/* Like Seerr's: where to read it, then what one may do about the title. */}
+            <div className="flex flex-wrap items-center gap-2">
+              {availability === "available" ? <OpenInLibrary type={type} id={id} /> : null}
+              {availability === "none" &&
+              !(accepted === false && acceptedLanguages) &&
+              data.canRequest ? (
+                <RequestDialog item={{ ...item, type }} />
+              ) : null}
+              {availability === "available" && can(user, "create_issues") ? (
+                <ReportIssueDialog type={type} externalId={item.externalId} title={item.title} />
+              ) : null}
+              {can(user, "manage_requests") ? (
+                <ManageTitle
+                  type={type}
+                  externalId={item.externalId}
+                  title={item.title}
+                  available={availability === "available"}
+                />
+              ) : null}
+              {can(user, "manage_blocklist") ? (
+                <BlockButton
+                  type={type}
+                  externalId={item.externalId}
+                  title={item.title}
+                  blockId={block?.id ?? null}
+                />
+              ) : null}
+            </div>
+          </div>
           <h1 className="text-2xl font-semibold">{item.title}</h1>
           {item.subtitle ? <p className="text-lg text-muted-foreground">{item.subtitle}</p> : null}
           {item.authorRefs && item.authorRefs.length > 0 ? (

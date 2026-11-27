@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BanIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useId, useState } from "react";
 
 import { FormError } from "#/components/form/form-error";
@@ -52,11 +52,12 @@ export function BlockButton({
       <>
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
+          aria-label={m.action_unblock()}
           isDisabled={unblock.isPending}
           onPress={() => unblock.mutate(blockId)}
         >
-          {m.action_unblock()}
+          <EyeIcon />
         </Button>
         <FormError message={unblock.error ? unblock.error.message || m.error_generic() : null} />
       </>
@@ -96,9 +97,8 @@ function BlockDialog({
 
   return (
     <DialogTrigger isOpen={open} onOpenChange={setOpen}>
-      <Button variant="outline" size="sm">
-        <BanIcon data-icon="inline-start" />
-        {m.action_block()}
+      <Button variant="outline" size="icon" aria-label={m.action_block()}>
+        <EyeOffIcon />
       </Button>
       <Dialog showCloseButton={false} className="sm:max-w-md">
         <form

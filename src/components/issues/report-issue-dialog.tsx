@@ -65,9 +65,8 @@ export function ReportIssueDialog({
 
   return (
     <DialogTrigger isOpen={open} onOpenChange={setOpen}>
-      <Button variant="outline" size="sm">
-        <TriangleAlertIcon data-icon="inline-start" />
-        {m.issue_report()}
+      <Button variant="outline" size="icon" aria-label={m.issue_report()}>
+        <TriangleAlertIcon />
       </Button>
       <Dialog showCloseButton={false} className="sm:max-w-md">
         <form

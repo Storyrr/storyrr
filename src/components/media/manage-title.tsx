@@ -60,9 +60,8 @@ export function ManageTitle({
   const [open, setOpen] = useState(false);
   return (
     <SheetTrigger isOpen={open} onOpenChange={setOpen}>
-      <Button variant="outline" size="sm">
-        <Settings2Icon data-icon="inline-start" />
-        {m.manage_title()}
+      <Button variant="outline" size="icon" aria-label={m.manage_title()}>
+        <Settings2Icon />
       </Button>
       <SheetContent className="sm:max-w-md">
         {open ? (
