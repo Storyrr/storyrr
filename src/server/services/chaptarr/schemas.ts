@@ -131,3 +131,6 @@ export const QueuePageSchema = v.looseObject({
     }),
   ),
 });
+
+/** `GET /bookfile?bookId=` (BookFileController): only the path is read. */
+export const BookFileSchema = v.looseObject({ path: v.optional(v.nullable(v.string())) });

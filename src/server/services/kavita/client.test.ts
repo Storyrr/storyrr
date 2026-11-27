@@ -40,6 +40,7 @@ describe("Kavita client", () => {
       seriesId: 999,
       libraryId: 1,
       names: ["Berserk", "ベルセルク"],
+      paths: [],
     });
     const auth = calls.filter((c) => c.url.pathname === "/api/Plugin/authenticate");
     expect(auth).toHaveLength(1);
@@ -69,7 +70,11 @@ describe("Kavita client", () => {
           {
             name: "9",
             chapters: [
-              { range: "-100000", titleName: "Frankenstein" },
+              {
+                range: "-100000",
+                titleName: "Frankenstein",
+                files: [{ filePath: "/ebooks/Frankenstein/Frankenstein.epub" }],
+              },
               { range: "-100000", titleName: "Alice's Adventures in Wonderland" },
             ],
           },
@@ -88,8 +93,9 @@ describe("Kavita client", () => {
           "Frankenstein",
           "Alice's Adventures in Wonderland",
         ],
+        paths: ["/ebooks/Frankenstein/Frankenstein.epub"],
       },
-      { seriesId: 7, libraryId: 2, names: ["Berserk"] },
+      { seriesId: 7, libraryId: 2, names: ["Berserk"], paths: [] },
     ]);
     const volumes = calls.filter((c) => c.url.pathname === "/api/Series/volumes");
     expect(volumes.map((c) => c.url.searchParams.get("seriesId"))).toEqual(["2"]);

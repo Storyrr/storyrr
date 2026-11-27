@@ -5,6 +5,7 @@ import type { FetchFn, ServiceResult } from "#/server/services/result";
 import { fail, ok, requestJson } from "#/server/services/result";
 
 import {
+  BookFileSchema,
   BookImportResponseSchema,
   BookSchema,
   HealthItemSchema,
@@ -104,6 +105,12 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
           pageSize: String(OWNED_PAGE_SIZE),
         },
         timeoutMs: 60_000,
+      }),
+    /** The files of one local book (each ~9 KB, with its match report: never in bulk). */
+    bookFiles: (bookId: number) =>
+      call("GET", "/bookfile", v.array(BookFileSchema), {
+        query: { bookId: String(bookId) },
+        timeoutMs: 30_000,
       }),
     /** Deletes one local book row (one media side); files only when asked. */
     deleteBook: (id: number, { deleteFiles }: { deleteFiles: boolean }) =>

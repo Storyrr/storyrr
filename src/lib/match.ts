@@ -15,3 +15,21 @@ export function titleKey(title: string): string {
       .trim()
   );
 }
+
+/**
+ * The last two parts of a file or folder path, to recognize the same file in two
+ * applications that mount it at different places ("/data/ebooks/Author/Book/b.epub"
+ * and "/ebooks/Author/Book/b.epub" → "book/b.epub").
+ */
+export function pathKey(path: string): string {
+  const parts = path
+    .normalize("NFC")
+    .split(/[\\/]+/)
+    .filter(Boolean);
+  return parts.slice(-2).join("/").toLowerCase();
+}
+
+/** The folder of a file path. */
+export function parentPath(path: string): string {
+  return path.replace(/[\\/]+[^\\/]*[\\/]*$/, "");
+}

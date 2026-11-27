@@ -23,6 +23,7 @@ describe("Jellyfin client", () => {
               Type: "AudioBook",
               Album: "Dune",
               AlbumArtist: "Frank Herbert",
+              Path: "/media/audiobooks/Frank Herbert/Dune/01.mp3",
             },
             { Id: "b1", Name: "L'Étranger", Type: "Book" },
           ],
@@ -43,6 +44,8 @@ describe("Jellyfin client", () => {
           format: "audiobook",
           titles: ["Dune"],
           author: "Frank Herbert",
+          // An audiobook's folder: each of its files is an item.
+          path: "/media/audiobooks/Frank Herbert/Dune",
         },
         {
           itemId: "b1",
@@ -50,6 +53,7 @@ describe("Jellyfin client", () => {
           format: "ebook",
           titles: ["L'Étranger"],
           author: "",
+          path: null,
         },
       ],
     });

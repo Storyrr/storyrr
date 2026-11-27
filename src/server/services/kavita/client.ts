@@ -29,7 +29,14 @@ const SeriesSchema = v.looseObject({
 const VolumesSchema = v.array(
   v.looseObject({
     chapters: v.optional(
-      v.array(v.looseObject({ titleName: v.optional(v.nullable(v.string())) })),
+      v.array(
+        v.looseObject({
+          titleName: v.optional(v.nullable(v.string())),
+          files: v.optional(
+            v.nullable(v.array(v.looseObject({ filePath: v.optional(v.nullable(v.string())) }))),
+          ),
+        }),
+      ),
       [],
     ),
   }),
@@ -45,7 +52,13 @@ const BOOK_LIBRARY_TYPES = new Set([2, 4]);
 /** Series whose volumes are fetched at once. */
 const VOLUME_CONCURRENCY = 8;
 
-export type KavitaSeries = { seriesId: number; libraryId: number; names: string[] };
+export type KavitaSeries = {
+  seriesId: number;
+  libraryId: number;
+  names: string[];
+  /** Its books' files, as Kavita mounts them (book libraries only). */
+  paths: string[];
+};
 
 // Login (POST /api/Account/login → UserDto) and users (GET /api/Users), checked
 // against a running Kavita 0.9.1 on 2026-11-25.
@@ -152,7 +165,7 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
           const names = [item.name, item.localizedName, item.originalName].filter(
             (name): name is string => Boolean(name),
           );
-          series.push({ seriesId: item.id, libraryId: item.libraryId, names });
+          series.push({ seriesId: item.id, libraryId: item.libraryId, names, paths: [] });
         }
         if (result.value.length < PAGE_SIZE) break;
       }
@@ -176,8 +189,11 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
           const item = batch[index];
           if (!item) continue;
           for (const volume of result.value)
-            for (const chapter of volume.chapters)
+            for (const chapter of volume.chapters) {
               if (chapter.titleName) item.names.push(chapter.titleName);
+              for (const file of chapter.files ?? [])
+                if (file.filePath) item.paths.push(file.filePath);
+            }
         }
       }
       return ok(series.map((item) => ({ ...item, names: [...new Set(item.names)] })));

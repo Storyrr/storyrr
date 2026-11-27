@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, inArray, ne, notLike, sql } from "drizzle-orm";
 
-import { titleKey } from "#/lib/match";
+import { pathKey, titleKey } from "#/lib/match";
 import type { SearchableType } from "#/lib/media-types";
 import type { LibraryService } from "#/lib/schemas/settings";
 
@@ -40,11 +40,20 @@ export type IndexedItem = {
   externalId: string | null;
   titles: string[];
   author: string;
+  /** Its files or folder, as the server mounts them (to recognize a file Chaptarr holds). */
+  paths?: readonly (string | null)[];
 };
 
 const KEYS_PER_QUERY = 500;
-/** Rows after the first title of an item get `#n` ids: stats count the first ones only. */
+/**
+ * An item has one row per way to recognize it: each of its titles, then each of
+ * its paths. Rows after the first get `#n` ids: stats count the first ones only.
+ */
 const EXTRA_TITLE = "#";
+const EXTRA_PATH = "#p";
+
+/** The item a row belongs to (a row's id without its `#n` part). */
+export const baseItemId = (itemId: string) => itemId.split(EXTRA_TITLE)[0] ?? itemId;
 
 /** Replaces a media server's part of the library index with what it holds now. */
 export function replaceIndex(
@@ -67,6 +76,26 @@ export function replaceIndex(
             externalId: item.externalId,
             matchKey: titleKey(title),
             title,
+            author: item.author,
+            syncedAt: now,
+          })
+          .onConflictDoNothing()
+          .run();
+      }
+      const keys = [
+        ...new Set((item.paths ?? []).flatMap((path) => (path ? [pathKey(path)] : []))),
+      ];
+      for (const [index, key] of keys.entries()) {
+        tx.insert(libraryItem)
+          .values({
+            backend,
+            itemId: `${item.itemId}${EXTRA_PATH}${index}`,
+            libraryId: item.libraryId,
+            format: item.format,
+            externalId: null,
+            matchKey: null,
+            pathKey: key,
+            title: titles[0] ?? "",
             author: item.author,
             syncedAt: now,
           })
@@ -119,6 +148,7 @@ export async function syncAudiobookshelf(
       externalId: item.asin,
       titles: [item.title],
       author: item.author,
+      paths: [item.path],
     })),
     now,
   );
@@ -223,6 +253,7 @@ export async function syncKavita(
       externalId: null,
       titles: item.names,
       author: "",
+      paths: item.paths,
     })),
     now,
   );
@@ -249,6 +280,7 @@ export async function syncKomga(
       externalId: null,
       titles: item.names,
       author: item.author,
+      paths: item.paths,
     })),
     now,
   );
@@ -291,6 +323,7 @@ export async function syncJellyfin(
       externalId: null,
       titles: item.titles,
       author: item.author,
+      paths: [item.path],
     });
   }
   replaceIndex(db, "jellyfin", [...grouped.values()], now);

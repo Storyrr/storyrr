@@ -23,6 +23,8 @@ const LibrariesSchema = v.looseObject({ libraries: v.array(LibrarySchema) });
 
 const ItemSchema = v.looseObject({
   id: v.string(),
+  /** The item's folder (or its file, for a single file), as Audiobookshelf mounts it. */
+  path: v.optional(v.nullable(v.string())),
   media: v.optional(
     v.looseObject({
       metadata: v.optional(
@@ -44,6 +46,7 @@ export type AbsItem = {
   asin: string | null;
   title: string;
   author: string;
+  path: string | null;
 };
 
 export type AbsConnection = { url: string; apiKey: string };
@@ -124,6 +127,7 @@ export function createAudiobookshelfClient({ url, apiKey }: AbsConnection, fetch
             asin: metadata?.asin?.trim().toUpperCase() || null,
             title: metadata?.title ?? "",
             author: metadata?.authorName ?? "",
+            path: item.path ?? null,
           });
         }
         if (result.value.results.length < PAGE_SIZE) break;

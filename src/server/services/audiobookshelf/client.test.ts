@@ -41,6 +41,7 @@ describe("Audiobookshelf client", () => {
       asin: "B07Q44JYLF",
       title: "Title last",
       author: "Author",
+      path: null,
     });
     expect(calls.some((c) => c.url.pathname.includes("lib-pods"))).toBe(false);
     expect(calls[0]?.init?.headers).toMatchObject({ Authorization: "Bearer abs-key" });

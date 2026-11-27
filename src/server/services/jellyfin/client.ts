@@ -1,6 +1,8 @@
 import "@tanstack/react-start/server-only";
 import * as v from "valibot";
 
+import { parentPath } from "#/lib/match";
+
 import type { FetchFn, ServiceResult } from "#/server/services/result";
 import { ok, requestJson } from "#/server/services/result";
 
@@ -27,6 +29,8 @@ const ItemSchema = v.looseObject({
   Album: v.optional(v.nullable(v.string())),
   AlbumArtist: v.optional(v.nullable(v.string())),
   SeriesName: v.optional(v.nullable(v.string())),
+  /** The item's file, as Jellyfin mounts it (asked for with `Fields=Path`). */
+  Path: v.optional(v.nullable(v.string())),
 });
 const ItemsPageSchema = v.looseObject({
   Items: v.array(ItemSchema),
@@ -44,6 +48,8 @@ export type JellyfinItem = {
   format: "audiobook" | "ebook";
   titles: string[];
   author: string;
+  /** A book's file; an audiobook's folder (its files are one item each). */
+  path: string | null;
 };
 
 export type JellyfinConnection = { url: string; apiKey: string };
@@ -143,6 +149,7 @@ export function createJellyfinClient({ url, apiKey }: JellyfinConnection, fetch:
             Limit: String(PAGE_SIZE),
             EnableImages: "false",
             EnableUserData: "false",
+            Fields: "Path",
           });
           if (!result.ok) return result;
           for (const item of result.value.Items) {
@@ -158,6 +165,7 @@ export function createJellyfinClient({ url, apiKey }: JellyfinConnection, fetch:
               format: audio ? "audiobook" : "ebook",
               titles: [...new Set(titles)],
               author: item.AlbumArtist ?? "",
+              path: item.Path ? (audio ? parentPath(item.Path) : item.Path) : null,
             });
           }
           if (result.value.Items.length < PAGE_SIZE) break;
