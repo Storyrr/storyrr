@@ -148,10 +148,21 @@ const ebooks: MediaSource = {
   // Under any of the work's titles: a library often holds a translation.
   owned(db, items, { exact = false } = {}) {
     // Some editions are titled like the series ("Harry Potter"), which a library also
-    // lists as a series: that title would mark every volume as owned.
+    // lists as a series: that title would mark every volume as owned. Same for a title
+    // the book's own starts with ("Solo Leveling" for "Solo Leveling: The Novel Omnibus").
     const titlesOf = (item: (typeof items)[number]) => {
-      const series = new Set(item.series?.map(({ name }) => titleKey(name)));
-      return [item.title, ...(item.altTitles ?? []).filter((alt) => !series.has(titleKey(alt)))];
+      const own = titleKey(item.title);
+      const series = new Set(
+        item.series?.flatMap(({ name }) => [
+          titleKey(name),
+          titleKey(name.replace(/\(.*?\)/g, "")),
+        ]),
+      );
+      const alternatives = (item.altTitles ?? []).filter((alt) => {
+        const key = titleKey(alt);
+        return !series.has(key) && !own.startsWith(`${key} `);
+      });
+      return [item.title, ...alternatives];
     };
     const owned = exact ? new Set<string>() : ownedTitles(db, "ebook", items.flatMap(titlesOf));
     const manual = manuallyOwned(

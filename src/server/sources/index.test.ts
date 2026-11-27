@@ -38,6 +38,27 @@ describe("eBook ownership", () => {
     expect(mediaSources.ebook.owned(library(), [goblet, stone])).toEqual(new Set(["383236"]));
   });
 
+  it("ignores an edition titled like the start of the book's title", () => {
+    const db = createDatabase(":memory:");
+    replaceIndex(db, "kavita", [
+      {
+        itemId: "8",
+        libraryId: "4",
+        format: "ebook",
+        externalId: null,
+        titles: ["Solo Leveling"],
+        author: "",
+      },
+    ]);
+    const omnibus = {
+      externalId: "1",
+      title: "Solo Leveling: The Novel Omnibus",
+      altTitles: ["Solo Leveling"],
+      series: [{ name: "Solo Leveling (Novel)" }],
+    };
+    expect(mediaSources.ebook.owned(db, [omnibus]).size).toBe(0);
+  });
+
   it("doesn't count a title match as exact, and looks up many titles", () => {
     const db = library();
     expect(mediaSources.ebook.owned(db, [goblet], { exact: true }).size).toBe(0);
