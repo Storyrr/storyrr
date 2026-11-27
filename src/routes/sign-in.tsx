@@ -55,13 +55,15 @@ function SignInPage() {
               setMethod(server ?? "local");
             }}
             variant="outline"
+            // Each method keeps its label's width and wraps to a new line: with every
+            // media server enabled, five don't fit in one.
             className="w-full flex-wrap"
           >
-            <ToggleGroupItem id="local" className="flex-1">
+            <ToggleGroupItem id="local" className="flex-auto">
               {m.sign_in_method_local()}
             </ToggleGroupItem>
             {mediaServerSignIn.map((server) => (
-              <ToggleGroupItem key={server} id={server} className="flex-1">
+              <ToggleGroupItem key={server} id={server} className="flex-auto">
                 {MEDIA_SERVER_NAMES[server]()}
               </ToggleGroupItem>
             ))}
