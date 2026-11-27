@@ -94,7 +94,7 @@ src/
 │   ├── services/           # one client per external service (audible, hardcover, chaptarr, audiobookshelf, kavita, komga, jellyfin), result.ts (requestJson → typed ServiceResult), factory.ts (clients from stored settings)
 │   ├── sources/            # MediaSource per type (audiobook: Audible + ABS by ASIN; ebook: Hardcover + Kavita by title), chaptarrProviderId (az:/hc:)
 │   ├── requests/           # request lifecycle: request-title.ts (every check before a request), transitions.ts (createRequest, transitionRequest), submit.ts and availability.ts (Chaptarr hand-off, availability checks), quota, blocklist, language policy; the status vocabulary and transition table are client-safe in src/lib/requests.ts
-│   ├── library/            # ownership index (library_item) synced from the media servers (replaceIndex), with each item's format
+│   ├── library/            # ownership index (library_item) synced from Chaptarr (books with a file, by ID) and the media servers (replaceIndex), with each item's format
 │   ├── webhooks/           # incoming webhooks (Chaptarr: token check, re-check availability)
 │   ├── events.ts           # app event bus: request transitions and issue changes, emitted after the write commits
 │   ├── permissions.ts      # effective permissions (role admin, the user's own list, or the defaults) and accountLock (who may change whose account: user managers only grant what they hold); list and implications in src/lib/permissions.ts
@@ -156,6 +156,8 @@ Source of truth: the code and `docs/API_IDENTITY_AND_LIFECYCLE.md` of [Chaptarr/
 - Legacy shared fields (`rootFolderPath`, `qualityProfileId`) on author/book writes need a media scope (`?mediaType=`), otherwise Chaptarr infers it or returns 400.
 - Chaptarr may pick a foreign-language edition if its metadata profile allows all languages: show the edition/language it resolved, don't assume.
 - Webhook (Settings → Connect → Webhook, POST): token in the URL query, compared in constant time. Import payload: `{ eventType: "download", author: { id }, book: { id }, bookFiles }`. Re-check availability with Chaptarr instead of trusting the payload.
+- **What Chaptarr holds:** `GET /api/v1/book/paged?downloaded=true&includeUnmonitored=true&offset=&pageSize=` (max 1000) returns only the books with a file, each with `foreignBookId`, `hardcoverBookId`, `asin` and `audibleASIN` (checked on 0.9.1000). Never list `GET /book` for this: it returns every book of every author (27 MB for 10 authors). `GET /bookfile?bookId=` gives file paths but ~9 KB per file (its match report): don't read it in bulk. Chaptarr imports files already in its root folders by itself, from their tags; `.cbz` files are ignored for now.
+- An audiobook has one ASIN per marketplace: Chaptarr may hold another than the one Audible's catalog lists, and `book/lookup?term=az:<ASIN>` can resolve to a different local book. Its `asin` and `audibleASIN` can differ too.
 - Chaptarr can be slow (free-space checks on network shares, its own metadata service): use generous per-call timeouts (status/health 15 s, profiles 30 s, root folders and lookups 60 s, book import 90 s). The connection Test also shows `GET /api/v1/health` warnings, which often explain slowness or failed adds.
 - Stackarr (`stackarr/chaptarr.py`, MIT) is a useful field-tested client, but it predates `book/import`.
 

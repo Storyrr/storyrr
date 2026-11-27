@@ -9,7 +9,7 @@ import type {
 } from "#/lib/media";
 import type { SearchableType } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
-import { ownedAsins, ownedTitles } from "#/server/library";
+import { ownedAsins, ownedHardcoverIds, ownedTitles } from "#/server/library";
 import { manuallyOwned } from "#/server/requests/manage";
 import { titleKey } from "#/lib/match";
 import type { Services } from "#/server/services/factory";
@@ -144,8 +144,9 @@ const ebooks: MediaSource = {
     const hardcover = await services.hardcover();
     return hardcover ? hardcover.tag(id, page) : fail("not_configured", "Hardcover token missing");
   },
-  // By normalized title in Kavita, Komga and Jellyfin (no shared ID): "probably owned".
-  // Under any of the work's titles: a library often holds a translation.
+  // By Hardcover id in Chaptarr (exact). Else by normalized title in Kavita, Komga and
+  // Jellyfin (no shared ID): "probably owned", under any of the work's titles, since a
+  // library often holds a translation.
   owned(db, items, { exact = false } = {}) {
     // Some editions are titled like the series ("Harry Potter"), which a library also
     // lists as a series: that title would mark every volume as owned. Same for a title
@@ -165,15 +166,14 @@ const ebooks: MediaSource = {
       return [item.title, ...alternatives];
     };
     const owned = exact ? new Set<string>() : ownedTitles(db, "ebook", items.flatMap(titlesOf));
-    const manual = manuallyOwned(
-      db,
-      "hardcover",
-      items.map((item) => item.externalId),
-    );
+    const ids = items.map((item) => item.externalId);
+    const held = ownedHardcoverIds(db, ids);
+    const manual = manuallyOwned(db, "hardcover", ids);
     return new Set(
       items
         .filter(
           (item) =>
+            held.has(item.externalId) ||
             titlesOf(item).some((title) => owned.has(titleKey(title))) ||
             manual.has(item.externalId),
         )

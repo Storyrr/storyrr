@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { titleKey } from "#/lib/match";
 import { createDatabase } from "#/server/db/client";
+import { createChaptarrClient } from "#/server/services/chaptarr/client";
 import { createKavitaClient } from "#/server/services/kavita/client";
 import { createJellyfinClient } from "#/server/services/jellyfin/client";
 import { createKomgaClient } from "#/server/services/komga/client";
@@ -12,6 +13,8 @@ import {
   ownedAsins,
   ownedTitles,
   replaceIndex,
+  ownedHardcoverIds,
+  syncChaptarr,
   syncJellyfin,
   syncKavita,
   syncKomga,
@@ -186,5 +189,75 @@ describe("Jellyfin library index", () => {
     expect(ownedTitles(db, "audiobook", ["Dune", "Hyperion"])).toEqual(new Set(["dune"]));
     expect(ownedTitles(db, "ebook", ["Dune", "Hyperion"])).toEqual(new Set(["hyperion"]));
     expect(libraryStats(db, "jellyfin").counts).toEqual(new Map([["lib", 2]]));
+  });
+});
+
+const chaptarrWith = (records: unknown[]) => {
+  const fake = fakeFetch((url) =>
+    url.pathname === "/api/v1/book/paged"
+      ? json({ records, totalCount: records.length })
+      : json([]),
+  );
+  return {
+    ...fake,
+    chaptarr: createChaptarrClient({ url: "http://chaptarr", apiKey: "k" }, fake.fetch),
+  };
+};
+
+describe("Chaptarr library index", () => {
+  it("indexes the books Chaptarr holds a file of by their IDs and titles", async () => {
+    const db = createDatabase(":memory:");
+    const { chaptarr, calls } = chaptarrWith([
+      // An eBook known by its Hardcover id; a French title Hardcover names in English.
+      {
+        id: 1,
+        title: "Harry Potter et la Coupe de Feu",
+        mediaType: "ebook",
+        foreignBookId: "hc:383236",
+        hardcoverBookId: "hc:383236",
+      },
+      // An audiobook under two ASINs (two editions) and a Hardcover id.
+      {
+        id: 2,
+        title: "La Machine à présages",
+        mediaType: "audiobook",
+        foreignBookId: "hc:459325",
+        asin: "B08644S8BY",
+        audibleASIN: "b08644zqf1",
+      },
+      {
+        id: 3,
+        title: "Le Cœur de la guerre",
+        mediaType: "audiobook",
+        foreignBookId: "az:B08F7YXNJF",
+      },
+      // No ID Storyrr knows: left out.
+      { id: 4, title: "Treasure Island", mediaType: "ebook", foreignBookId: "gr:125891353" },
+    ]);
+
+    expect(await syncChaptarr(db, chaptarr)).toEqual({ ok: true, value: { items: 4 } });
+    expect(calls[0]?.url.searchParams.get("downloaded")).toBe("true");
+    expect(ownedHardcoverIds(db, ["383236", "459325", "1"])).toEqual(new Set(["383236"]));
+    expect(ownedAsins(db, ["B08644S8BY", "B08644ZQF1", "B08F7YXNJF", "B000000000"])).toEqual(
+      new Set(["B08644S8BY", "B08644ZQF1", "B08F7YXNJF"]),
+    );
+    // Another marketplace's ASIN of the same audiobook: found by title.
+    expect(ownedTitles(db, "audiobook", ["Le cœur de la guerre"]).size).toBe(1);
+  });
+
+  it("forgets a book whose file was deleted, and keeps the index when Chaptarr is down", async () => {
+    const db = createDatabase(":memory:");
+    const book = { id: 1, title: "Dune", mediaType: "ebook", foreignBookId: "hc:312460" };
+    await syncChaptarr(db, chaptarrWith([book]).chaptarr);
+
+    const down = createChaptarrClient(
+      { url: "http://chaptarr", apiKey: "k" },
+      fakeFetch(() => new Response("", { status: 503 })).fetch,
+    );
+    expect((await syncChaptarr(db, down)).ok).toBe(false);
+    expect(ownedHardcoverIds(db, ["312460"]).size).toBe(1);
+
+    await syncChaptarr(db, chaptarrWith([]).chaptarr);
+    expect(ownedHardcoverIds(db, ["312460"]).size).toBe(0);
   });
 });

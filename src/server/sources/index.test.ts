@@ -59,6 +59,22 @@ describe("eBook ownership", () => {
     expect(mediaSources.ebook.owned(db, [omnibus]).size).toBe(0);
   });
 
+  it("knows a book Chaptarr holds by its Hardcover id, as an exact match", () => {
+    const db = createDatabase(":memory:");
+    replaceIndex(db, "chaptarr", [
+      {
+        itemId: "16573",
+        libraryId: "",
+        format: "ebook",
+        externalId: "hc:383236",
+        titles: ["Harry Potter et la Coupe de Feu"],
+        author: "J.K. Rowling",
+      },
+    ]);
+    const item = { externalId: "383236", title: "Harry Potter and the Goblet of Fire" };
+    expect(mediaSources.ebook.owned(db, [item], { exact: true })).toEqual(new Set(["383236"]));
+  });
+
   it("doesn't count a title match as exact, and looks up many titles", () => {
     const db = library();
     expect(mediaSources.ebook.owned(db, [goblet], { exact: true }).size).toBe(0);

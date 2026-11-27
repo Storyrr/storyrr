@@ -65,6 +65,28 @@ export const BookSchema = v.looseObject({
 export type Book = v.InferOutput<typeof BookSchema>;
 
 /**
+ * A page of `GET /book/paged` (BookController.GetBooksPaged, checked against
+ * Chaptarr 0.9.1000 on 2026-11-27): with `downloaded=true`, only the books
+ * that have a file. `asin` and `audibleASIN` can differ (two editions).
+ */
+export const OwnedBookSchema = v.looseObject({
+  id: v.number(),
+  title: v.optional(v.nullable(v.string())),
+  authorTitle: v.optional(v.nullable(v.string())),
+  /** "audiobook" | "ebook". */
+  mediaType: v.optional(v.nullable(v.string())),
+  foreignBookId: v.optional(v.nullable(v.string())),
+  hardcoverBookId: v.optional(v.nullable(v.string())),
+  asin: v.optional(v.nullable(v.string())),
+  audibleASIN: v.optional(v.nullable(v.string())),
+});
+export type OwnedBook = v.InferOutput<typeof OwnedBookSchema>;
+export const OwnedBooksPageSchema = v.looseObject({
+  records: v.optional(v.array(OwnedBookSchema), []),
+  totalCount: v.optional(v.number(), 0),
+});
+
+/**
  * `POST /book/import`: 201 `{ id }` once the book exists, or 202
  * `{ pendingId, message }` while Chaptarr waits for the author's metadata (it
  * then runs the requested search by itself).

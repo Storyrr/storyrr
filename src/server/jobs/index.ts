@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 import { Cron } from "croner";
 
 import { db } from "#/server/db";
-import { syncLibrary } from "#/server/library/sync";
+import { syncChaptarrLibrary, syncLibrary } from "#/server/library/sync";
 import { checkAvailability } from "#/server/requests/availability";
 import { failStuckRequests, submitApproved } from "#/server/requests/submit";
 import { services } from "#/server/services";
@@ -13,20 +13,24 @@ export type JobName = "library-sync" | "submit-approved";
 type JobRun = { startedAt: Date; finishedAt?: Date; error?: string };
 
 const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
-  /** Refresh the ownership index (every media server), then promote requests whose book arrived. */
+  /** Refresh the ownership index (Chaptarr and every media server), then promote requests whose book arrived. */
   "library-sync": {
     pattern: "*/15 * * * *",
     run: async () => {
       // Each library is synced on its own: one being down doesn't block the other.
       const failures: string[] = [];
       for (const [service, label] of [
+        ["chaptarr", "Chaptarr"],
         ["audiobookshelf", "Audiobookshelf"],
         ["kavita", "Kavita"],
         ["komga", "Komga"],
         ["jellyfin", "Jellyfin"],
       ] as const) {
         try {
-          const synced = await syncLibrary({ db, services, settings }, service);
+          const synced =
+            service === "chaptarr"
+              ? await syncChaptarrLibrary({ db, services })
+              : await syncLibrary({ db, services, settings }, service);
           if (!synced.ok && synced.error.kind !== "not_configured")
             failures.push(`${label} sync: ${synced.error.message}`);
         } catch (error) {

@@ -8,16 +8,22 @@ import {
   BookImportResponseSchema,
   BookSchema,
   HealthItemSchema,
+  OwnedBooksPageSchema,
   PendingImportSchema,
   QueuePageSchema,
   ProfileSchema,
   RootFolderSchema,
   SystemStatusSchema,
   type Book,
+  type OwnedBook,
 } from "./schemas";
 
 export type ChaptarrConnection = { url: string; apiKey: string };
 export type ChaptarrMedia = "audiobook" | "ebook";
+
+const OWNED_PAGE_SIZE = 500;
+/** Safety cap: 200,000 books. */
+const OWNED_MAX_PAGES = 400;
 
 /** Body of `POST /book/import` (Chaptarr's request-one-book endpoint for automation). */
 export type BookImportRequest = {
@@ -86,6 +92,17 @@ export function createChaptarrClient({ url, apiKey }: ChaptarrConnection, fetch:
     lookup: (term: string, media: ChaptarrMedia) =>
       call("GET", "/book/lookup", v.array(BookSchema), {
         query: { term, mediaType: media },
+        timeoutMs: 60_000,
+      }),
+    /** One page of the books Chaptarr holds a file of, either format. */
+    ownedBooksPage: (offset: number) =>
+      call("GET", "/book/paged", OwnedBooksPageSchema, {
+        query: {
+          downloaded: "true",
+          includeUnmonitored: "true",
+          offset: String(offset),
+          pageSize: String(OWNED_PAGE_SIZE),
+        },
         timeoutMs: 60_000,
       }),
     /** Deletes one local book row (one media side); files only when asked. */
@@ -267,4 +284,18 @@ export async function downloadQueue(client: ChaptarrClient): Promise<ServiceResu
     if (result.value.records.length < 200) break;
   }
   return ok(items);
+}
+
+/** Every book Chaptarr holds a file of (read page by page). */
+export async function ownedBooks(
+  chaptarr: Pick<ChaptarrClient, "ownedBooksPage">,
+): Promise<ServiceResult<OwnedBook[]>> {
+  const books: OwnedBook[] = [];
+  for (let page = 0; page < OWNED_MAX_PAGES; page++) {
+    const result = await chaptarr.ownedBooksPage(page * OWNED_PAGE_SIZE);
+    if (!result.ok) return result;
+    books.push(...result.value.records);
+    if (result.value.records.length < OWNED_PAGE_SIZE) break;
+  }
+  return ok(books);
 }

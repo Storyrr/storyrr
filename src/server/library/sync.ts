@@ -7,7 +7,7 @@ import { fail, ok, type ServiceResult } from "#/server/services/result";
 import { librarySelection } from "#/server/settings/definitions";
 import type { SettingsStore } from "#/server/settings/store";
 
-import { syncAudiobookshelf, syncJellyfin, syncKavita, syncKomga } from "./index";
+import { syncAudiobookshelf, syncChaptarr, syncJellyfin, syncKavita, syncKomga } from "./index";
 
 export type SyncDeps = { db: AppDatabase; services: Services; settings: SettingsStore };
 
@@ -36,4 +36,14 @@ export async function syncLibrary(
   if (!kavita) return fail("not_configured", "Kavita is not configured");
   const synced = await syncKavita(db, kavita, { excluded });
   return synced.ok ? ok({ items: synced.value.series }) : synced;
+}
+
+/** Re-indexes the books Chaptarr holds a file of. */
+export async function syncChaptarrLibrary({
+  db,
+  services,
+}: Pick<SyncDeps, "db" | "services">): Promise<ServiceResult<{ items: number }>> {
+  const chaptarr = await services.chaptarr();
+  if (!chaptarr) return fail("not_configured", "Chaptarr is not configured");
+  return syncChaptarr(db, chaptarr);
 }

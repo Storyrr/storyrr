@@ -269,7 +269,7 @@ export const deleteServiceConnection = createServerFn({ method: "POST" })
     await settings.remove(connectionSettings[data.service]);
     if (data.service === "chaptarr") clearLanguagePolicyCache();
     // Its titles must stop counting as owned.
-    else clearIndex(db, data.service);
+    clearIndex(db, data.service);
     return { ok: true };
   });
 
