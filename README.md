@@ -14,67 +14,42 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
-A self-hosted request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of Seerr, for the book side of a homelab. Invited users search, request and follow their requests; admins approve them and choose where each item lands. Storyrr hands requests to [Chaptarr](https://github.com/Chaptarr/chaptarr) and checks availability in [Audiobookshelf](https://www.audiobookshelf.org/), [Kavita](https://www.kavitareader.com/), [Komga](https://komga.org/) and [Jellyfin](https://jellyfin.org/).
+**Storyrr** is a free and open source request manager for **audiobooks and eBooks (including manga and comics)**, in the spirit of [Seerr](https://github.com/seerr-team/seerr), for the book side of a homelab. It hands requests to **[Chaptarr](https://github.com/Chaptarr/chaptarr)** and integrates with the media server of your choice: [Audiobookshelf](https://www.audiobookshelf.org/), [Kavita](https://www.kavitareader.com/), [Komga](https://komga.org/) and [Jellyfin](https://jellyfin.org/).
 
-- **Search and discover** audiobooks (Audible's catalog) and eBooks, manga and comics ([Hardcover](https://hardcover.app/)), with series, authors, genres and readers' ratings.
-- **Requests with approval:** per-user permissions and limits, auto-approval, a blocklist, and the target Chaptarr folder chosen per request.
-- **Availability** from your media servers' libraries and Chaptarr's imports, with issues to report a wrong edition or language.
-- **Sign in with a media server** (Audiobookshelf, Kavita, Komga, Jellyfin) or import its users; accounts are invite-only.
-- **Notifications** by email, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook and Web Push.
-- English, French, German and Spanish; installable as an app on phones.
+## Current Features
 
-> **Status: pre-release.** The v1 features work; expect changes until 1.0. See the [v1 spec](docs/SPEC.md).
+- Search and discovery of audiobooks (Audible's catalog) and eBooks, manga and comics ([Hardcover](https://hardcover.app/)), with series, authors, genres and readers' ratings.
+- Simple request management: approve or deny in one place, with auto-approval, per-user limits and the target Chaptarr folder chosen per request.
+- Library sync with Chaptarr, Audiobookshelf, Kavita, Komga and Jellyfin, to keep track of the titles which are already available.
+- A button to read or listen to an available title right in your media server.
+- Sign in with Audiobookshelf, Kavita, Komga or Jellyfin, with user import. Accounts are invite-only.
+- Granular permission system.
+- Issues, to report a wrong edition or language, and a blocklist.
+- Notifications by email, Discord, Slack, Telegram, ntfy, Gotify, Pushover, Pushbullet, webhook and Web Push.
+- Mobile-friendly design, installable as an app on phones.
+- English, French, German and Spanish.
 
-## Run with Docker
+> **Status: pre-release.** The v1 features work; expect changes until 1.0.
 
-```yaml
-# compose.yaml
-services:
-  storyrr:
-    image: ghcr.io/storyrr/storyrr:latest
-    restart: unless-stopped
-    ports:
-      - "6066:6066"
-    volumes:
-      - ./data:/data
-```
+## Getting Started
 
-The container runs as a non-root user (uid `1000`): create the data folder for it before the first start (`mkdir data && sudo chown 1000:1000 data`), or Storyrr stops with a message saying it can't write there.
+Check out our documentation for instructions on how to install and run Storyrr:
 
-Then open `http://<server-ip>:6066`: the first visit runs the setup wizard, which creates the administrator account and asks for the application URL, the address your users open Storyrr at (for example a Cloudflare Tunnel's): links in emails and notifications use it. Storyrr keeps working at every address it's reached at, so you can use it on your local network while friends use the tunnel. Connect Chaptarr, your media servers and a Hardcover token in Settings afterwards. There is no public sign-up; the administrator creates or imports the other accounts.
+https://storyrr.github.io/getting-started/introduction/
 
-The SQLite database lives in `/data` (keep it on a volume); migrations run automatically at startup. `GET /api/health` reports the app version and database state, and the image uses it as its healthcheck.
+## Preview
 
-### Environment
+<img src="docs/assets/preview.png" alt="Storyrr application preview">
 
-| Variable             | Required | Default            | Description                                                                                                                |
-| -------------------- | -------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_URL`    | no       |                    | The application URL; overrides the one set in Settings → General.                                                          |
-| `BETTER_AUTH_SECRET` | no       | generated          | At least 32 random characters. Signs sessions and encrypts stored service keys; generated in `/data/auth-secret` if unset. |
-| `DATABASE_URL`       | no       | `/data/storyrr.db` | SQLite database file (outside Docker: `database/dev.db`).                                                                  |
-| `PORT`               | no       | `6066`             | HTTP port inside the container.                                                                                            |
+## Support
 
-Behind a reverse proxy or Cloudflare Tunnel, the proxy must pass the original `Host` (or `X-Forwarded-Host`) and `X-Forwarded-Proto`; cookies are marked secure on HTTPS requests. Back up `/data` as a whole: `auth-secret` is needed to read the service keys stored in the database.
+- Check out the [Storyrr documentation](https://storyrr.github.io) before asking for help. Your question might already be answered there!
+- You can ask questions in [GitHub Discussions](https://github.com/Storyrr/storyrr/discussions).
+- Bug reports and feature requests can be submitted via [GitHub Issues](https://github.com/Storyrr/storyrr/issues).
 
-## Development
+## Contributing
 
-Requirements: [Node.js](https://nodejs.org/) 22.12+ (runs the app) and [Bun](https://bun.sh/) (package manager and script runner).
-
-```bash
-bun install
-bun run dev   # http://localhost:6066; the database goes to database/dev.db
-```
-
-| Script                | What it does                                                         |
-| --------------------- | -------------------------------------------------------------------- |
-| `bun run dev`         | Dev server with hot reload                                           |
-| `bun run build`       | Production build into `.output/` (`bun run start` serves it on Node) |
-| `bun run check`       | Message compile, format check, type-aware lint, tests (CI runs this) |
-| `bun run format`      | Format with oxfmt                                                    |
-| `bun run test`        | Vitest (use this, not `bun test`)                                    |
-| `bun run db:generate` | Generate a migration from `src/server/db/schema/`                    |
-
-How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md). Full guidelines (stack, architecture, conventions, commit format): [AGENTS.md](AGENTS.md).
+You can help improve Storyrr too! Check out the [Contribution Guide](CONTRIBUTING.md) to get started. The stack, architecture and conventions are described in [AGENTS.md](AGENTS.md), the product in the [v1 spec](docs/SPEC.md).
 
 ## License
 
