@@ -7,6 +7,7 @@ import { permissionsOf } from "#/server/permissions";
 import { settings } from "#/server/settings";
 
 import { auth } from "./index";
+import { UNAUTHORIZED } from "#/lib/auth-errors";
 
 /**
  * Server function middleware: rejects anonymous calls with 401 and exposes the
@@ -18,7 +19,7 @@ export const requireUser = createMiddleware({ type: "function" }).server(async (
   const session = await auth.api.getSession({ headers: getRequestHeaders() });
   if (!session) {
     setResponseStatus(401);
-    throw new Error("Unauthorized");
+    throw new Error(UNAUTHORIZED);
   }
   const permissions = await permissionsOf({ db, settings }, session.user);
   return next({ context: { session, permissions } });
