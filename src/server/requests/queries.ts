@@ -84,6 +84,7 @@ const filterStatuses: Record<Exclude<RequestFilter, "all">, RequestStatus[]> = {
   declined: ["denied"],
   failed: ["failed"],
   cancelled: ["cancelled"],
+  removed: ["removed"],
 };
 
 export type RequestListOptions = {

@@ -14,7 +14,7 @@ import {
 } from "#/server/settings/definitions";
 import { createSettingsStore, type SettingsStore } from "#/server/settings/store";
 
-import { checkAvailability } from "./availability";
+import { checkAvailability, removeDeleted } from "./availability";
 import { clearLanguagePolicyCache } from "./language-policy";
 import { listRequests } from "./queries";
 import { failStuckRequests, submitApproved, submitRequest } from "./submit";
@@ -151,6 +151,61 @@ describe("checkAvailability", () => {
     expect(await checkAvailability(d)).toEqual([]);
     d.chaptarr.state.lookup = [book(42, "audiobook", 1)];
     expect(await checkAvailability(d, { actor: "webhook" })).toEqual([requestId]);
+  });
+});
+
+/** A request Chaptarr delivered. */
+async function delivered() {
+  const d = deps();
+  await submitRequest(d, requestId);
+  d.chaptarr.state.lookup = [book(42, "audiobook", 1)];
+  await checkAvailability(d);
+  return d;
+}
+
+describe("removeDeleted", () => {
+  it("keeps a delivered request while Chaptarr or a library holds the book", async () => {
+    const d = await delivered();
+    // Chaptarr still reports the file.
+    expect(await removeDeleted(d)).toEqual([]);
+
+    // Its file is gone from Chaptarr, but Audiobookshelf has the book.
+    d.chaptarr.state.lookup = [book(42, "audiobook", 0)];
+    await db.insert(libraryItem).values({
+      backend: "audiobookshelf",
+      format: "audiobook",
+      itemId: "li1",
+      libraryId: "lib",
+      externalId: "B07Q44JYLF",
+      title: "Dune",
+      author: "Frank Herbert",
+      syncedAt: new Date(),
+    });
+    expect(await removeDeleted(d)).toEqual([]);
+    expect(statusOf(requestId)?.status).toBe("available");
+  });
+
+  it("marks it removed once the file is gone everywhere, so it can be requested again", async () => {
+    const d = await delivered();
+    d.chaptarr.state.lookup = [book(42, "audiobook", 0)];
+    expect(await removeDeleted(d)).toEqual([requestId]);
+    expect(statusOf(requestId)?.status).toBe("removed");
+
+    const again = createRequest(db, {
+      mediaId: statusOf(requestId)!.mediaId,
+      userId: "alice",
+      format: "audiobook",
+      target: { service: "chaptarr", rootFolderPath: "/audiobooks-fr" },
+      autoApprove: false,
+    });
+    expect(again.kind).toBe("created");
+  });
+
+  it("leaves it alone when Chaptarr can't be asked", async () => {
+    const d = await delivered();
+    const down = createServices(settings, () => Promise.resolve(new Response("", { status: 503 })));
+    expect(await removeDeleted({ ...d, services: down })).toEqual([]);
+    expect(statusOf(requestId)?.status).toBe("available");
   });
 });
 

@@ -3,7 +3,7 @@ import { Cron } from "croner";
 
 import { db } from "#/server/db";
 import { syncChaptarrLibrary, syncLibrary } from "#/server/library/sync";
-import { checkAvailability } from "#/server/requests/availability";
+import { checkAvailability, removeDeleted } from "#/server/requests/availability";
 import { failStuckRequests, submitApproved } from "#/server/requests/submit";
 import { services } from "#/server/services";
 import { settings } from "#/server/settings";
@@ -40,6 +40,8 @@ const jobs: Record<JobName, { pattern: string; run: () => Promise<void> }> = {
         }
       }
       await checkAvailability({ db, services });
+      // Deletions can only be told from an index that was refreshed everywhere.
+      if (failures.length === 0) await removeDeleted({ db, services });
       await failStuckRequests({ db, services, settings });
       if (failures.length > 0) throw new Error(failures.join("; "));
     },

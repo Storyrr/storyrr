@@ -44,6 +44,7 @@ const filterLabels: Record<RequestFilter, () => string> = {
   declined: m.requests_filter_declined,
   failed: m.requests_filter_failed,
   cancelled: m.requests_filter_cancelled,
+  removed: m.requests_filter_removed,
 };
 const sortLabels: Record<RequestSort, () => string> = {
   status: m.requests_sort_status,

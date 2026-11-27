@@ -61,9 +61,11 @@ beforeEach(async () => {
 
 describe("transition table", () => {
   it("has no way out of terminal statuses", () => {
-    for (const status of ["available", "denied", "cancelled"] as const) {
+    for (const status of ["denied", "cancelled", "removed"] as const) {
       expect(REQUEST_TRANSITIONS[status]).toEqual([]);
     }
+    // A delivered book can only go away.
+    expect(REQUEST_TRANSITIONS.available).toEqual(["removed"]);
   });
 
   it("only names known statuses", () => {

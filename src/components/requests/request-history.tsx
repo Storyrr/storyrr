@@ -24,7 +24,9 @@ export function RequestHistory({ requestId }: { requestId: string }) {
       {history.data.map((event) => {
         const actor = actorLabel(event.actor, event.actorName);
         const message =
-          event.toStatus === "failed" ? describeRequestError(event.message) : event.message;
+          event.toStatus === "failed"
+            ? describeRequestError(event.message)
+            : (event.message ?? (event.toStatus === "removed" ? m.request_removed_reason() : null));
         return (
           <li key={`${event.toStatus}-${String(event.createdAt)}`} className="flex flex-col">
             <span>

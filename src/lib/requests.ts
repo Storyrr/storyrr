@@ -11,6 +11,7 @@ export const REQUEST_STATUSES = [
   "denied",
   "failed",
   "cancelled",
+  "removed",
 ] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
@@ -35,9 +36,11 @@ export const REQUEST_TRANSITIONS: Readonly<Record<RequestStatus, readonly Reques
   submitted: ["available", "failed", "cancelled"],
   // Retry: back to approved, then submitted again. Admins can also give up.
   failed: ["approved", "cancelled", "available"],
-  available: [],
+  // Its file was deleted: the title can be requested again.
+  available: ["removed"],
   denied: [],
   cancelled: [],
+  removed: [],
 };
 
 export function canTransition(from: RequestStatus, to: RequestStatus): boolean {
@@ -61,6 +64,7 @@ export const REQUEST_FILTERS = [
   "declined",
   "failed",
   "cancelled",
+  "removed",
 ] as const;
 export type RequestFilter = (typeof REQUEST_FILTERS)[number];
 

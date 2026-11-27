@@ -152,6 +152,17 @@ export function ownedHardcoverIds(db: AppDatabase, ids: readonly string[]): Set<
   return new Set(ids.filter((id) => owned.has(hardcoverKey(id))));
 }
 
+/** Whether Chaptarr still holds a file of this book (its local id), as of the last sync. */
+export function chaptarrHoldsBook(db: AppDatabase, bookId: number): boolean {
+  return Boolean(
+    db
+      .select({ itemId: libraryItem.itemId })
+      .from(libraryItem)
+      .where(and(eq(libraryItem.backend, "chaptarr"), eq(libraryItem.itemId, String(bookId))))
+      .get(),
+  );
+}
+
 const ASIN = /^[A-Z0-9]{10}$/;
 /** The ASIN of an Amazon provider ID (`az:B0…`). */
 const asinOf = (providerId: string) => (providerId.startsWith("az:") ? providerId.slice(3) : null);

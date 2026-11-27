@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { isSearchableType, SEARCHABLE_TYPES } from "#/lib/media-types";
 import type { AppDatabase } from "#/server/db/client";
+import { chaptarrHoldsBook } from "#/server/library";
 import { media, request } from "#/server/db/schema";
 import type { Services } from "#/server/services/factory";
 import { hasBookFile } from "#/server/services/chaptarr/client";
@@ -70,4 +71,55 @@ export async function checkAvailability(
     }
   }
   return available;
+}
+
+/**
+ * Marks delivered requests removed once their book is gone: no library holds
+ * it any more, and Chaptarr has no file of it. The title can then be requested
+ * again (like Seerr's "deleted" media). Run after a library sync that worked:
+ * an index that couldn't be refreshed says nothing about deletions. A book
+ * Chaptarr can't be asked about right now is left alone.
+ */
+export async function removeDeleted(
+  { db, services }: { db: AppDatabase; services: Services },
+  { actor = "system" }: { actor?: string } = {},
+): Promise<string[]> {
+  const rows = db
+    .select({
+      id: request.id,
+      format: request.format,
+      source: media.source,
+      externalId: media.externalId,
+      title: media.title,
+      series: media.series,
+      backendRef: request.backendRef,
+    })
+    .from(request)
+    .innerJoin(media, eq(media.id, request.mediaId))
+    .where(and(eq(request.status, "available"), inArray(request.format, SEARCHABLE_TYPES)))
+    .all();
+  const chaptarr = rows.length > 0 ? await services.chaptarr() : null;
+  const removed: string[] = [];
+
+  for (const row of rows) {
+    if (!isSearchableType(row.format)) continue;
+    const bookId = row.backendRef?.chaptarrBookId;
+    if (typeof bookId === "number" && chaptarrHoldsBook(db, bookId)) continue;
+    if (mediaSources[row.format].owned(db, [row]).has(row.externalId)) continue;
+    // The index doesn't know it: ask Chaptarr itself before giving the book up
+    // (its local book ids change, and it may know the book under another ID).
+    const providerId = chaptarrProviderId(row.source, row.externalId);
+    if (chaptarr && providerId) {
+      const file = await hasBookFile(chaptarr, { term: providerId, media: row.format });
+      if (!file.ok || file.value) continue;
+    }
+    try {
+      transitionRequest(db, row.id, { to: "removed", actor });
+      removed.push(row.id);
+    } catch (error) {
+      if (!(error instanceof InvalidTransitionError || error instanceof RequestNotFoundError))
+        throw error;
+    }
+  }
+  return removed;
 }

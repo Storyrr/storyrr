@@ -12,6 +12,7 @@ export const statusLabels: Record<RequestStatus, () => string> = {
   denied: m.status_denied,
   failed: m.status_failed,
   cancelled: m.status_cancelled,
+  removed: m.status_removed,
 };
 
 const variants: Record<RequestStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -22,6 +23,7 @@ const variants: Record<RequestStatus, "default" | "secondary" | "outline" | "des
   denied: "destructive",
   failed: "destructive",
   cancelled: "outline",
+  removed: "outline",
 };
 
 export function RequestStatusBadge({
