@@ -30,7 +30,7 @@ const itemPages: Record<LibraryService, (base: string, row: Row) => string> = {
     row.partId
       ? `${base}/book/${encodeURIComponent(row.partId)}`
       : `${base}/series/${encodeURIComponent(row.itemId)}`,
-  // UNVERIFIED in a browser: the route of jellyfin-web 10.9+ (older ones used `#!/details`).
+  // The route of jellyfin-web 10.9+ (older ones used `#!/details`).
   jellyfin: (base, row) => `${base}/web/index.html#/details?id=${encodeURIComponent(row.itemId)}`,
 };
 
