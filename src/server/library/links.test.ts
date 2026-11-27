@@ -45,7 +45,7 @@ const goblet = {
 };
 
 describe("libraryLinks", () => {
-  it("links a title to its series in Kavita, at the address users open", async () => {
+  it("links a title to its volume in Kavita, at the address users open", async () => {
     replaceIndex(db, "kavita", [
       {
         itemId: "7",
@@ -54,11 +54,16 @@ describe("libraryLinks", () => {
         externalId: null,
         titles: ["Harry Potter", "Harry Potter et la Coupe de Feu"],
         author: "",
+        parts: [
+          { id: "13", titles: ["Harry Potter et la Coupe de Feu"], paths: [] },
+          { id: "12", titles: ["Harry Potter et le Prince de Sang-Mêlé"], paths: [] },
+        ],
       },
     ]);
     const d = deps();
+    // The book's own volume, not just its series.
     expect(await libraryLinks(d, "ebook", goblet)).toEqual([
-      { service: "kavita", url: "https://read.example.test/library/2/series/7" },
+      { service: "kavita", url: "https://read.example.test/library/2/series/7/volume/13" },
     ]);
     // Found by title: Chaptarr isn't asked.
     expect(d.calls).toHaveLength(0);

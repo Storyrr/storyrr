@@ -42,6 +42,8 @@ export type IndexedItem = {
   author: string;
   /** Its files or folder, as the server mounts them (to recognize a file Chaptarr holds). */
   paths?: readonly (string | null)[];
+  /** Its parts that have their own page in the server (a Kavita volume, a Komga book). */
+  parts?: readonly { id: string; titles: readonly string[]; paths: readonly (string | null)[] }[];
 };
 
 const KEYS_PER_QUERY = 500;
@@ -51,6 +53,10 @@ const KEYS_PER_QUERY = 500;
  */
 const EXTRA_TITLE = "#";
 const EXTRA_PATH = "#p";
+
+const pathKeys = (paths: readonly (string | null)[] = []) => [
+  ...new Set(paths.flatMap((path) => (path ? [pathKey(path)] : []))),
+];
 
 /** The item a row belongs to (a row's id without its `#n` part). */
 export const baseItemId = (itemId: string) => itemId.split(EXTRA_TITLE)[0] ?? itemId;
@@ -82,25 +88,33 @@ export function replaceIndex(
           .onConflictDoNothing()
           .run();
       }
-      const keys = [
-        ...new Set((item.paths ?? []).flatMap((path) => (path ? [pathKey(path)] : []))),
-      ];
-      for (const [index, key] of keys.entries()) {
-        tx.insert(libraryItem)
+      const row = (
+        itemId: string,
+        values: { matchKey?: string; pathKey?: string; partId?: string },
+      ) =>
+        tx
+          .insert(libraryItem)
           .values({
             backend,
-            itemId: `${item.itemId}${EXTRA_PATH}${index}`,
+            itemId,
             libraryId: item.libraryId,
             format: item.format,
             externalId: null,
-            matchKey: null,
-            pathKey: key,
             title: titles[0] ?? "",
             author: item.author,
             syncedAt: now,
+            ...values,
           })
           .onConflictDoNothing()
           .run();
+      for (const [index, key] of pathKeys(item.paths).entries())
+        row(`${item.itemId}${EXTRA_PATH}${index}`, { pathKey: key });
+      for (const part of item.parts ?? []) {
+        const id = `${item.itemId}${EXTRA_TITLE}${part.id}`;
+        for (const [index, title] of [...new Set(part.titles.filter(Boolean))].entries())
+          row(`${id}:t${index}`, { matchKey: titleKey(title), partId: part.id });
+        for (const [index, key] of pathKeys(part.paths).entries())
+          row(`${id}:p${index}`, { pathKey: key, partId: part.id });
       }
     }
   });
@@ -254,6 +268,7 @@ export async function syncKavita(
       titles: item.names,
       author: "",
       paths: item.paths,
+      parts: item.books.map((book) => ({ ...book, id: String(book.volumeId) })),
     })),
     now,
   );
@@ -281,6 +296,12 @@ export async function syncKomga(
       titles: item.names,
       author: item.author,
       paths: item.paths,
+      // A numbered volume's title ("01") says nothing: it is found by its file.
+      parts: item.books.map((book) => ({
+        id: book.bookId,
+        titles: /\p{L}/u.test(book.title) ? [book.title] : [],
+        paths: [book.path],
+      })),
     })),
     now,
   );

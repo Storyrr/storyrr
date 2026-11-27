@@ -39,6 +39,7 @@ const SeriesPageSchema = v.looseObject({
 const BookPageSchema = v.looseObject({
   content: v.array(
     v.looseObject({
+      id: v.optional(v.string()),
       seriesId: v.string(),
       deleted: v.optional(v.boolean(), false),
       /** The book's file, as Komga mounts it. */
@@ -62,6 +63,8 @@ export type KomgaSeries = {
   author: string;
   /** Its books' files. */
   paths: string[];
+  /** Its books, each with its own page. */
+  books: { bookId: string; title: string; path: string | null }[];
 };
 
 export type KomgaConnection = { url: string; apiKey: string };
@@ -145,6 +148,7 @@ export function createKomgaClient({ url, apiKey }: KomgaConnection, fetch: Fetch
             names,
             author: writers.map((a) => a.name).join(", "),
             paths: [],
+            books: [],
           });
         }
         if (result.value.last ?? result.value.content.length < PAGE_SIZE) break;
@@ -163,6 +167,12 @@ export function createKomgaClient({ url, apiKey }: KomgaConnection, fetch: Fetch
           if (!item || book.deleted) continue;
           if (hasLetter(book.metadata.title)) item.names.push(book.metadata.title);
           if (book.url) item.paths.push(book.url);
+          if (book.id)
+            item.books.push({
+              bookId: book.id,
+              title: book.metadata.title,
+              path: book.url ?? null,
+            });
         }
         if (result.value.last ?? result.value.content.length < PAGE_SIZE) break;
       }

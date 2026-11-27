@@ -16,14 +16,20 @@ import { baseItemId, hardcoverKey } from "./index";
 
 export type LibraryLink = { service: LibraryService; url: string };
 
-type Row = { backend: string; itemId: string; libraryId: string };
+type Row = { backend: string; itemId: string; libraryId: string; partId: string | null };
 
 /** The page of an item in its media server's own web app. */
 const itemPages: Record<LibraryService, (base: string, row: Row) => string> = {
   audiobookshelf: (base, row) => `${base}/audiobookshelf/item/${encodeURIComponent(row.itemId)}`,
+  // A book of a series is one of its volumes; without one, the series itself.
   kavita: (base, row) =>
-    `${base}/library/${encodeURIComponent(row.libraryId)}/series/${encodeURIComponent(row.itemId)}`,
-  komga: (base, row) => `${base}/series/${encodeURIComponent(row.itemId)}`,
+    `${base}/library/${encodeURIComponent(row.libraryId)}/series/${encodeURIComponent(row.itemId)}${
+      row.partId ? `/volume/${encodeURIComponent(row.partId)}` : ""
+    }`,
+  komga: (base, row) =>
+    row.partId
+      ? `${base}/book/${encodeURIComponent(row.partId)}`
+      : `${base}/series/${encodeURIComponent(row.itemId)}`,
   // UNVERIFIED in a browser: the route of jellyfin-web 10.9+ (older ones used `#!/details`).
   jellyfin: (base, row) => `${base}/web/index.html#/details?id=${encodeURIComponent(row.itemId)}`,
 };
@@ -66,6 +72,7 @@ export async function libraryLinks(
         backend: libraryItem.backend,
         itemId: libraryItem.itemId,
         libraryId: libraryItem.libraryId,
+        partId: libraryItem.partId,
       })
       .from(libraryItem)
       .where(
@@ -113,6 +120,7 @@ export async function libraryLinks(
             backend: libraryItem.backend,
             itemId: libraryItem.itemId,
             libraryId: libraryItem.libraryId,
+            partId: libraryItem.partId,
           })
           .from(libraryItem)
           .where(
@@ -127,7 +135,9 @@ export async function libraryLinks(
   }
 
   return servers.flatMap((service) => {
-    const row = found.find((candidate) => candidate.backend === service);
+    const rows = found.filter((candidate) => candidate.backend === service);
+    // The book's own page when the server has one, else its series or item.
+    const row = rows.find((candidate) => candidate.partId) ?? rows[0];
     const base = bases.get(service);
     return row && base
       ? [{ service, url: itemPages[service](base, { ...row, itemId: baseItemId(row.itemId) }) }]

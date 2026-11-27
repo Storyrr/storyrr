@@ -24,6 +24,8 @@ export const libraryItem = sqliteTable(
      * Chaptarr and a media server differs only by where each one mounts it.
      */
     pathKey: text("path_key"),
+    /** The part of the item this row is about, when it has its own page (a Kavita volume, a Komga book). */
+    partId: text("part_id"),
     title: text("title").notNull(),
     author: text("author").notNull(),
     syncedAt: integer("synced_at", { mode: "timestamp_ms" }).notNull(),

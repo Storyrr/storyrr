@@ -47,6 +47,7 @@ describe("Komga client", () => {
       names: ["Berserk", "ベルセルク"],
       author: "Kentaro Miura",
       paths: [],
+      books: [],
     });
     expect(calls.filter((c) => c.url.pathname === "/api/v1/series/list")).toHaveLength(2);
     expect(calls[0]?.init?.headers).toMatchObject({ "X-API-Key": "api-key" });
@@ -63,6 +64,7 @@ describe("Komga client", () => {
           content: [
             { seriesId: "s1", deleted: false, metadata: { title: "The War of the Worlds" } },
             {
+              id: "b2",
               seriesId: "s1",
               deleted: false,
               url: "/ebooks/H. G. Wells/The Time Machine.epub",
@@ -82,6 +84,13 @@ describe("Komga client", () => {
       "Le Monde's 100 Books of the Century",
       "The War of the Worlds",
       "The Time Machine",
+    ]);
+    expect(result.ok && result.value[0]?.books).toEqual([
+      {
+        bookId: "b2",
+        title: "The Time Machine",
+        path: "/ebooks/H. G. Wells/The Time Machine.epub",
+      },
     ]);
     expect(result.ok && result.value[0]?.paths).toEqual([
       "/ebooks/H. G. Wells/The Time Machine.epub",

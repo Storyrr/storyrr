@@ -28,6 +28,9 @@ const SeriesSchema = v.looseObject({
 /** A series' volumes and their chapters: in a book library, each chapter is a book (one EPUB). */
 const VolumesSchema = v.array(
   v.looseObject({
+    id: v.optional(v.number()),
+    /** Below zero for Kavita's own groups (specials, loose chapters): not a book's volume. */
+    minNumber: v.optional(v.nullable(v.number())),
     chapters: v.optional(
       v.array(
         v.looseObject({
@@ -58,6 +61,8 @@ export type KavitaSeries = {
   names: string[];
   /** Its books' files, as Kavita mounts them (book libraries only). */
   paths: string[];
+  /** Its books that have their own page: a volume each (book libraries only). */
+  books: { volumeId: number; titles: string[]; paths: string[] }[];
 };
 
 // Login (POST /api/Account/login → UserDto) and users (GET /api/Users), checked
@@ -165,7 +170,13 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
           const names = [item.name, item.localizedName, item.originalName].filter(
             (name): name is string => Boolean(name),
           );
-          series.push({ seriesId: item.id, libraryId: item.libraryId, names, paths: [] });
+          series.push({
+            seriesId: item.id,
+            libraryId: item.libraryId,
+            names,
+            paths: [],
+            books: [],
+          });
         }
         if (result.value.length < PAGE_SIZE) break;
       }
@@ -188,12 +199,18 @@ export function createKavitaClient({ url, apiKey }: KavitaConnection, fetch: Fet
           if (!result.ok) return result;
           const item = batch[index];
           if (!item) continue;
-          for (const volume of result.value)
+          for (const volume of result.value) {
+            const titles: string[] = [];
+            const paths: string[] = [];
             for (const chapter of volume.chapters) {
-              if (chapter.titleName) item.names.push(chapter.titleName);
-              for (const file of chapter.files ?? [])
-                if (file.filePath) item.paths.push(file.filePath);
+              if (chapter.titleName) titles.push(chapter.titleName);
+              for (const file of chapter.files ?? []) if (file.filePath) paths.push(file.filePath);
             }
+            item.names.push(...titles);
+            item.paths.push(...paths);
+            if (volume.id !== undefined && (volume.minNumber ?? 0) >= 0)
+              item.books.push({ volumeId: volume.id, titles, paths });
+          }
         }
       }
       return ok(series.map((item) => ({ ...item, names: [...new Set(item.names)] })));
