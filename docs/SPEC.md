@@ -64,6 +64,8 @@ Shown when the database has no user: it creates the admin account (name, email, 
 
 ### 4.3 Media detail page
 
+Laid out like Seerr's title page (decided 2026-11-27): a header over the blurred cover (cover, format and status, title, authors, rating, series) with the action row at its right, under the title and centered on phones; below, the summary and tags beside a Details card (pages or length, release date, languages, publisher).
+
 - Cover, title, authors, narrators, series (with position), description, language, duration/pages, publication date.
 - Other formats of the same work when known (e.g. "Also available as eBook").
 - Request button (or current status + who requested it).
