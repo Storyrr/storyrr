@@ -86,7 +86,7 @@ Shown when the database has no user: it creates the admin account (name, email, 
 
 ### 4.3c Blocklist (decided 2026-11-24)
 
-- Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. The Blocklist page lists them and unblocks.
+- Admins block a book or audiobook (from its page or a request) with an optional reason. Blocked items show as _Blocked_ in search and can't be requested. A block wins over every other status (decided 2026-11-27): a title the library holds, or requested before, shows as _Blocked_ too. The Blocklist page lists them and unblocks.
 
 ### 4.3d Issues (decided 2026-11-24)
 

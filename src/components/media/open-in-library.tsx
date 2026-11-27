@@ -16,11 +16,12 @@ export function OpenInLibrary({ type, id }: { type: SearchableType; id: string }
   const { data } = useQuery(titleLinksQuery(type, id));
   if (!data || data.links.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <>
       {data.links.map((link) => (
         <LinkButton
           key={link.service}
           variant="outline"
+          size="sm"
           href={link.url}
           target="_blank"
           rel="noreferrer"
@@ -29,6 +30,6 @@ export function OpenInLibrary({ type, id }: { type: SearchableType; id: string }
           <ExternalLinkIcon data-icon="inline-end" />
         </LinkButton>
       ))}
-    </div>
+    </>
   );
 }

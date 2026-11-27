@@ -35,16 +35,19 @@ const languageInfo = (policy: LanguagePolicy | null) => ({
   acceptedLanguages: policy?.allowed ?? null,
 });
 
-/** In the library first, then blocked, then the state of its active request. */
+/**
+ * Blocked first: an admin's block shows even on a title the library holds or
+ * that was requested before. Then in the library, then the state of its request.
+ */
 function availabilityOf(
   externalId: string,
   owned: Set<string>,
   blocked: Set<string>,
   status: RequestStatus | undefined,
 ): MediaAvailability {
+  if (blocked.has(externalId)) return "blocked";
   if (owned.has(externalId)) return "available";
-  const fromRequest = availabilityFromRequest(status);
-  return fromRequest === "none" && blocked.has(externalId) ? "blocked" : fromRequest;
+  return availabilityFromRequest(status);
 }
 
 /** Each item's status for this library and Chaptarr's language acceptance; accepted first. */
