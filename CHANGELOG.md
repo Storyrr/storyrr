@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0](https://github.com/Storyrr/storyrr/compare/v0.2.0...v0.3.0) (2026-11-27)
+
+
+### 🚀 Features
+
+* **chaptarr:** know the books Chaptarr holds by their ID ([cde5b48](https://github.com/Storyrr/storyrr/commit/cde5b48ad0a1eca24ba209b3ea23429d9590d5be))
+* **media:** gather a title's actions in one row, like Seerr ([ad05588](https://github.com/Storyrr/storyrr/commit/ad055884f01ab500c06bc671410ca50c8f6ced18))
+* **media:** lay a title's page out like Seerr's ([fe16516](https://github.com/Storyrr/storyrr/commit/fe165168269b22ba3e3b77c53c232bff4fe24730))
+* **media:** open a book's own page in Kavita and Komga ([9f1d0bb](https://github.com/Storyrr/storyrr/commit/9f1d0bb7a5d2a263c3cff625343b6e8f06bea283))
+* **media:** open an available title in the media server that holds it ([e5b93d6](https://github.com/Storyrr/storyrr/commit/e5b93d6690e402df684756c9040ff9b3d8e4a3bd))
+* **requests:** free a title again once its delivered book is deleted ([603f9cc](https://github.com/Storyrr/storyrr/commit/603f9cc2e4528cae4661a5e47c1c9fc315a038fc))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** go back to sign-in when the session has ended ([0b71f27](https://github.com/Storyrr/storyrr/commit/0b71f271c36461381cc37540c7b9fa28782d5e9a))
+* **auth:** keep the sign-in methods readable when every media server is offered ([23e86bd](https://github.com/Storyrr/storyrr/commit/23e86bd5815793b8224cbcbb6cd679bd71bfb609))
+* **media:** don't offer to block a title the library already holds ([fd5c844](https://github.com/Storyrr/storyrr/commit/fd5c844b00ec407fe8049b2635fcd20c0618bf2d))
+* **media:** don't take a series' name for one of its books ([a87b57f](https://github.com/Storyrr/storyrr/commit/a87b57f6616e7fe730c123fc1c102766aadab9d4))
+* **media:** recognize a book a library holds under a translated title ([0af9935](https://github.com/Storyrr/storyrr/commit/0af9935cfade3f5f5be51e00040050408f59da7e))
+* **media:** show a block on a title the library already holds ([f3a5d97](https://github.com/Storyrr/storyrr/commit/f3a5d97ffb9a58ea20e673cd92d7cfebe9b3d45a))
+* **settings:** copy the webhook URL and the logs on pages served over http ([62ef07e](https://github.com/Storyrr/storyrr/commit/62ef07e99e6481da1bc08ac2190d79bb3893e26c))
+* **settings:** link About's documentation to the website ([39c765d](https://github.com/Storyrr/storyrr/commit/39c765dc63e83477c18869242178bb5d8c7b9a78))
+* **ui:** keep a side panel's title clear of its close button ([23bb978](https://github.com/Storyrr/storyrr/commit/23bb97820fb90799e78255754476732932c08e56))
+
 ## [0.2.0](https://github.com/Storyrr/storyrr/compare/v0.1.0...v0.2.0) (2026-11-26)
 
 
